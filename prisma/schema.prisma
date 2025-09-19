@@ -1,0 +1,61 @@
+// Prisma schema for barcode scanner app
+// Database: PostgreSQL
+// field must be snake_case
+
+generator client {
+    provider = "prisma-client-js"
+    // output   = "../app/generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id         Int       @id // ID dari Odoo langsung
+    name       String
+    email      String    @unique
+    password   String
+    created_at DateTime  @default(now())
+    updated_at DateTime  @default(now()) @updatedAt
+    Session    Session[] // One-to-many relation with sessions
+    Product    Product[]
+}
+
+// create model session for one-to-many relation with products resulting from scans
+model Session {
+    id         Int          @id @default(autoincrement())
+    name       String
+    created_at DateTime     @default(now())
+    state      SessionState @default(DRAFT)
+
+    // Foreign key to user
+    user_id Int?
+
+    // Relationships
+    products Product[] // One-to-many relation with products
+    user     User?     @relation(fields: [user_id], references: [id])
+}
+
+model Product {
+    id         Int      @id @default(autoincrement())
+    barcode    String
+    name       String?
+    created_at DateTime @default(now())
+    quantity   Int      @default(1)
+    uom_id     Int? // Unit of Measure ID
+
+    // Foreign key to session
+    session_id Int?
+    userId     Int?
+
+    // Relationship
+    session Session? @relation(fields: [session_id], references: [id])
+    User    User?    @relation(fields: [userId], references: [id])
+}
+
+enum SessionState {
+    DRAFT
+    POST
+}
