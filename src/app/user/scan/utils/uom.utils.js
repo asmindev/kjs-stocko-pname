@@ -46,11 +46,12 @@ export const isUomDisabled = (product) => {
  * @param {Object} product - Data produk dari Odoo
  * @returns {string} UoM ID sebagai string
  */
-export const getDefaultUomId = (product) => {
+export const getDefaultUom = (product) => {
     if (!product || !product.uom_id) {
         return "";
     }
-    return product.uom_id[0].toString();
+    // return product.uom_id[0].toString();
+    return { uom_id: product.uom_id[0], uom_name: product.uom_id[1] };
 };
 
 /**

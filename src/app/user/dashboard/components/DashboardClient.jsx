@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import SessionTable from "./SessionTable";
-import SessionDetail from "./SessionDetail";
+import SessionDetail from "../../session/[id]/SessionDetail";
 import {
     Card,
     CardContent,
@@ -75,7 +75,7 @@ export default function DashboardClient({ sessions }) {
             </div>
 
             {/* Sessions Table */}
-            <SessionTable sessions={sessions} onViewDetail={handleViewDetail} />
+            <SessionTable sessions={sessions} />
         </div>
     );
 }

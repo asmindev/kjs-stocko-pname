@@ -13,22 +13,44 @@ datasource db {
 }
 
 model User {
-    id         Int       @id // ID dari Odoo langsung
-    name       String
-    email      String    @unique
-    password   String
-    created_at DateTime  @default(now())
-    updated_at DateTime  @default(now()) @updatedAt
-    Session    Session[] // One-to-many relation with sessions
-    Product    Product[]
+    id          Int           @id // ID dari Odoo langsung
+    name        String
+    email       String        @unique
+    password    String
+    created_at  DateTime      @default(now())
+    updated_at  DateTime      @default(now()) @updatedAt
+    Session     Session[] // One-to-many relation with sessions
+    Product     Product[]
+    OdooSession OdooSession[]
+}
+
+model OdooSession {
+    id           String   @id @default(cuid())
+    user_id      Int
+    email        String // Email untuk Odoo
+    session_data Json // Menyimpan data session Odoo (terenkripsi)
+    expires_at   DateTime
+    is_active    Boolean  @default(true)
+    created_at   DateTime @default(now())
+    updated_at   DateTime @updatedAt
+
+    // Relasi ke User
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+    @@index([user_id])
+    @@index([expires_at])
+    @@map("odoo_sessions")
 }
 
 // create model session for one-to-many relation with products resulting from scans
 model Session {
-    id         Int          @id @default(autoincrement())
-    name       String
-    created_at DateTime     @default(now())
-    state      SessionState @default(DRAFT)
+    id             Int          @id @default(autoincrement())
+    name           String
+    created_at     DateTime     @default(now())
+    state          SessionState @default(DRAFT)
+    warehouse_id   Int?
+    warehouse_name String?
+    inventory_id   Int? // ID dari Odoo
 
     // Foreign key to user
     user_id Int?
@@ -40,11 +62,13 @@ model Session {
 
 model Product {
     id         Int      @id @default(autoincrement())
+    product_id Int? // ID dari Odoo
     barcode    String
     name       String?
     created_at DateTime @default(now())
     quantity   Int      @default(1)
     uom_id     Int? // Unit of Measure ID
+    uom_name   String? // Unit of Measure Name
 
     // Foreign key to session
     session_id Int?

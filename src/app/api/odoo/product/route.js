@@ -1,6 +1,9 @@
 import Client from "@/app/odoo";
+import { OdooSessionManager } from "@/lib/sessionManager";
 import { OdooAuthenticationError, OdooClient } from "@tapni/odoo-xmlrpc";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 /**
  * GET /api/odoo
@@ -11,13 +14,14 @@ import { NextResponse } from "next/server";
 export const GET = async (request) => {
     const params = request.nextUrl.searchParams;
     const barcode = params.get("barcode");
-    console.log("Barcode from query params:", barcode);
+    const session = await getServerSession(authOptions);
 
     try {
-        const client = new Client({
-            email: "fachmi.maasy@technoindo.com",
-            password: "Aldev@r08919",
-        });
+        const client = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+            // Tidak perlu password karena sudah tersimpan di database
+        );
         const product = await client.product(barcode);
         if (product.error) {
             return NextResponse.json(

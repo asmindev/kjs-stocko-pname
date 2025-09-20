@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { uploadToOdoo } from "@/app/user/actions";
 
 export async function POST(request) {
     try {
@@ -19,9 +20,72 @@ export async function POST(request) {
 
         const userId = parseInt(session.user.id);
 
-        // Check if data contains products array (batch submission)
-        if (data.products && Array.isArray(data.products)) {
-            // Batch submission - create session and multiple products
+        // Check if data contains the new format with warehouse and products
+        if (data.warehouse && data.products && Array.isArray(data.products)) {
+            // New format with warehouse - create session and multiple products
+            const { warehouse, warehouse_name, products } = data;
+
+            console.log("Received scan data with warehouse:", data);
+
+            // Create session with authenticated user ID and warehouse
+            const scanSession = await prisma.session.create({
+                data: {
+                    name: `Session ${new Date().toISOString()}`,
+                    user_id: userId,
+                    warehouse_id: parseInt(warehouse),
+                    warehouse_name: warehouse_name || null,
+                },
+            });
+
+            const results = [];
+            let successCount = 0;
+            let failedCount = 0;
+
+            // Process each product
+            for (const product of products) {
+                try {
+                    const productData = {
+                        barcode: product.barcode,
+                        name: product.name || "",
+                        product_id: product.product_id || null, // ID dari Odoo
+                        uom_id: product.uom_id
+                            ? parseInt(product.uom_id)
+                            : null,
+                        uom_name: product.uom_name || null,
+                        quantity: product.quantity || 1,
+                        session_id: scanSession.id,
+                        userId: userId,
+                    };
+
+                    await prisma.product.create({
+                        data: productData,
+                    });
+                    successCount++;
+                } catch (error) {
+                    console.error(
+                        `Error creating product for barcode ${product.barcode}:`,
+                        error
+                    );
+                    failedCount++;
+                }
+            }
+            const opnameId = await uploadToOdoo(scanSession.id);
+            return Response.json({
+                data: {
+                    sessionId: scanSession.id,
+                    opnameId: opnameId,
+                },
+                success: successCount > 0,
+                successCount,
+                failedCount,
+                sessionId: scanSession.id,
+                warehouseId: parseInt(warehouse),
+                message: `${successCount} produk berhasil disimpan di gudang, ${failedCount} gagal`,
+            });
+        }
+        // Check if data contains products array (legacy batch submission)
+        else if (data.products && Array.isArray(data.products)) {
+            // Legacy batch submission - create session and multiple products
             const { products } = data;
 
             // Create session with authenticated user ID

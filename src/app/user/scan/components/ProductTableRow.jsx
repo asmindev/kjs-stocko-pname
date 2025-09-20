@@ -35,6 +35,12 @@ export default function ProductTableRow({
     triggerImmediateSearch,
 }) {
     const product = productData[index];
+    console.log(
+        "Rendering ProductTableRow for index:",
+        index,
+        "with product:",
+        product
+    );
 
     return (
         <TableRow key={field.id}>

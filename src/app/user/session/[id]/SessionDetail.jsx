@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
     Table,
     TableBody,
@@ -20,42 +19,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
-import { getSessionById } from "../services/actions";
+import { uploadToOdoo } from "../../actions";
+import { toast } from "sonner";
 
-export default function SessionDetail({ sessionId, onBack }) {
-    const [session, setSession] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        const fetchSessionDetail = async () => {
-            try {
-                setLoading(true);
-                const result = await getSessionById(sessionId);
-
-                if (result.success) {
-                    setSession(result.data);
-                } else {
-                    setError(result.error);
-                }
-            } catch (err) {
-                setError("Terjadi kesalahan saat mengambil data session");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (sessionId) {
-            fetchSessionDetail();
-        }
-    }, [sessionId]);
-
+export default function SessionDetail({ data }) {
+    console.log("SessionDetail data:", data);
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
         } catch (error) {
             return "Invalid Date";
         }
+    };
+
+    const onBack = () => {
+        window.history.back();
     };
 
     const getStateBadgeVariant = (state) => {
@@ -69,57 +47,19 @@ export default function SessionDetail({ sessionId, onBack }) {
         }
     };
 
-    if (loading) {
-        return (
-            <Card>
-                <CardContent className="p-8">
-                    <div className="text-center">
-                        <p>Memuat detail session...</p>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (error) {
-        return (
-            <Card>
-                <CardContent className="p-8">
-                    <div className="text-center text-red-500">
-                        <p>Error: {error}</p>
-                        <Button
-                            variant="outline"
-                            onClick={onBack}
-                            className="mt-4"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Kembali
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (!session) {
-        return (
-            <Card>
-                <CardContent className="p-8">
-                    <div className="text-center">
-                        <p>Session tidak ditemukan</p>
-                        <Button
-                            variant="outline"
-                            onClick={onBack}
-                            className="mt-4"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            Kembali
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
+    const onPost = async () => {
+        // Implementasi logika untuk posting session
+        try {
+            toast.promise(uploadToOdoo(data.id), {
+                loading: "Memproses session...",
+                success: "Session berhasil diposting ke Odoo!",
+                error: (err) =>
+                    `Gagal memposting session: ${err.message || err}`,
+            });
+        } catch (error) {
+            console.error("Failed to post session:", error);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -136,8 +76,23 @@ export default function SessionDetail({ sessionId, onBack }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Package className="w-5 h-5" />
-                        {session.name || `Session #${session.id}`}
+                        <div className="w-full flex justify-between items-center gap-2">
+                            <div className="flex items-center gap-2">
+                                <Package className="w-5 h-5" />
+                                {data.name || `Session #${data.id}`}
+                            </div>
+                            <div>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    className={"hover:cursor-pointer"}
+                                    // disabled={data.state === "POST"}
+                                    onClick={onPost}
+                                >
+                                    Post
+                                </Button>
+                            </div>
+                        </div>
                     </CardTitle>
                     <CardDescription>
                         Informasi detail session scan
@@ -152,7 +107,7 @@ export default function SessionDetail({ sessionId, onBack }) {
                                     Tanggal Dibuat
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    {formatDate(session.created_at)}
+                                    {formatDate(data.created_at)}
                                 </p>
                             </div>
                         </div>
@@ -162,7 +117,7 @@ export default function SessionDetail({ sessionId, onBack }) {
                             <div>
                                 <p className="text-sm font-medium">User</p>
                                 <p className="text-sm text-muted-foreground">
-                                    {session.user?.name || "Unknown User"}
+                                    {data.user?.name || "Unknown User"}
                                 </p>
                             </div>
                         </div>
@@ -172,11 +127,20 @@ export default function SessionDetail({ sessionId, onBack }) {
                             <div>
                                 <p className="text-sm font-medium">Status</p>
                                 <Badge
-                                    variant={getStateBadgeVariant(
-                                        session.state
-                                    )}
+                                    variant={getStateBadgeVariant(data.state)}
                                 >
-                                    {session.state}
+                                    {data.state}
+                                </Badge>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-sm font-medium">Lokasi</p>
+                                <Badge
+                                    variant={getStateBadgeVariant(data.state)}
+                                >
+                                    {data.warehouse_name || "-"}
                                 </Badge>
                             </div>
                         </div>
@@ -189,11 +153,11 @@ export default function SessionDetail({ sessionId, onBack }) {
                 <CardHeader>
                     <CardTitle>Produk yang Discan</CardTitle>
                     <CardDescription>
-                        Total {session.products.length} produk dalam session ini
+                        Total {data.products.length} produk dalam session ini
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {session.products.length === 0 ? (
+                    {data.products.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">
                             Belum ada produk yang discan dalam session ini
                         </p>
@@ -211,7 +175,7 @@ export default function SessionDetail({ sessionId, onBack }) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {session.products.map((product, index) => (
+                                {data.products.map((product, index) => (
                                     <TableRow key={product.id}>
                                         <TableCell className="font-medium">
                                             {index + 1}
@@ -230,7 +194,7 @@ export default function SessionDetail({ sessionId, onBack }) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {product.uom_id || "-"}
+                                            {product.uom_name || "-"}
                                         </TableCell>
                                     </TableRow>
                                 ))}

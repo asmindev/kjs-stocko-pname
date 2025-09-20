@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
+import { OdooSessionManager } from "@/lib/sessionManager";
 
 const prisma = new PrismaClient();
 
@@ -26,13 +27,11 @@ export const authOptions = {
                         },
                     });
 
-                    console.log("Found user:", user);
-
                     if (!user) {
                         return null;
                     }
 
-                    // Verify password
+                    // Verify password lokal
                     const isPasswordValid = await bcrypt.compare(
                         credentials.password,
                         user.password
@@ -40,6 +39,22 @@ export const authOptions = {
 
                     if (!isPasswordValid) {
                         return null;
+                    }
+
+                    // Buat atau ambil Odoo session
+                    try {
+                        await OdooSessionManager.getClient(
+                            user.id.toString(),
+                            user.email,
+                            credentials.password // Password asli untuk Odoo
+                        );
+                        console.log(
+                            "Odoo session created/retrieved successfully"
+                        );
+                    } catch (error) {
+                        console.error("Odoo session failed:", error);
+                        // Bisa pilih: gagalkan login atau lanjutkan tanpa Odoo
+                        return null; // Uncomment untuk gagalkan login jika Odoo tidak tersedia
                     }
 
                     return {
@@ -56,23 +71,50 @@ export const authOptions = {
     ],
     session: {
         strategy: "jwt",
+        maxAge: 2 * 60 * 60, // 2 hours (sesuai dengan Odoo session)
     },
     pages: {
         signIn: "/auth/login",
         signUp: "/auth/register",
     },
     callbacks: {
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;
             }
+
+            // Extend Odoo session saat JWT di-refresh
+            if (trigger === "update" && token.id) {
+                await OdooSessionManager.extendSession(token.id);
+            }
+
             return token;
         },
         async session({ session, token }) {
             if (token) {
                 session.user.id = token.id;
+
+                // Tambahkan info session Odoo ke session
+                const odooSessionInfo = await OdooSessionManager.getSessionInfo(
+                    token.id
+                );
+                session.user.odooSession = odooSessionInfo;
             }
             return session;
+        },
+        async signOut({ token }) {
+            // Cleanup Odoo session saat logout
+            if (token?.id) {
+                await OdooSessionManager.clearUserSessions(token.id);
+            }
+        },
+    },
+    events: {
+        async signOut({ token }) {
+            // Event listener untuk logout
+            if (token?.id) {
+                await OdooSessionManager.clearUserSessions(token.id);
+            }
         },
     },
     secret: process.env.NEXTAUTH_SECRET,

@@ -7,26 +7,37 @@ import { toast } from "sonner";
 /**
  * Submit product data ke API
  * @param {Array} products - Array of product data
- * @param {number} userId - User ID (default: 1)
+ * @param {string} warehouseId - Warehouse ID
+ * @param {string} warehouseName - Warehouse Name
  * @returns {Promise<Object>} Result object dengan success count dan failed count
  */
-export const submitProducts = async (products, userId = 1) => {
+export const submitProducts = async (
+    products,
+    warehouseId,
+    warehouseName = null
+) => {
     const loadingToast = toast.loading("Menyimpan produk...");
 
     try {
-        // Submit all products in one request as array
+        // Format data according to the required structure
+        const requestData = {
+            warehouse: warehouseId,
+            warehouse_name: warehouseName,
+            products: products.map((product) => ({
+                product_id: product.product_id, // ID dari Odoo
+                barcode: product.barcode,
+                name: product.name,
+                uom_id: product.uom_id,
+                uom_name: product.uom_name,
+                quantity: product.quantity,
+            })),
+        };
+
+        // Submit all products in one request with warehouse
         const response = await fetch("/api/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                products: products.map((product) => ({
-                    barcode: product.barcode,
-                    name: product.name,
-                    uom_id: product.uom_id,
-                    quantity: product.quantity,
-                })),
-                userId: userId,
-            }),
+            body: JSON.stringify(requestData),
         });
 
         const result = await response.json();
@@ -47,8 +58,8 @@ export const submitProducts = async (products, userId = 1) => {
                 success: true,
                 successCount,
                 failedCount,
-                results: result.results || [],
-                response: result,
+                data: result.data,
+                message: result.message,
             };
         } else {
             toast.error("Gagal menyimpan produk", {

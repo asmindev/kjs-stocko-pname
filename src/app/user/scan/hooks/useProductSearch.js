@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import useProduct from "@/app/hooks/useProduct";
-import { getDefaultUomId } from "../utils/uom.utils";
+import { getDefaultUom } from "../utils/uom.utils";
 
 /**
  * Custom hook untuk menangani product search dan barcode handling
@@ -23,16 +23,9 @@ export const useProductSearch = (setValue) => {
     const performSearch = useCallback(
         async (barcode, index) => {
             const searchKey = `${index}-${barcode}`;
-            console.log(
-                "Performing search for barcode:",
-                barcode,
-                "at row:",
-                index
-            );
 
             // Skip if already searched
             if (searchedBarcodesRef.current.has(searchKey)) {
-                console.log("Skipping search, already searched:", searchKey);
                 return;
             }
 
@@ -47,12 +40,6 @@ export const useProductSearch = (setValue) => {
 
                 try {
                     const foundProduct = await searchProduct(barcode);
-                    console.log(
-                        "Search result for",
-                        barcode,
-                        ":",
-                        foundProduct
-                    );
 
                     if (foundProduct) {
                         // Store complete product data
@@ -61,6 +48,14 @@ export const useProductSearch = (setValue) => {
                             [index]: foundProduct,
                         }));
 
+                        // Set product ID from Odoo
+                        if (foundProduct.id) {
+                            setValue(
+                                `products.${index}.product_id`,
+                                foundProduct.id
+                            );
+                        }
+
                         // Set product name
                         setValue(
                             `products.${index}.name`,
@@ -68,9 +63,12 @@ export const useProductSearch = (setValue) => {
                         );
 
                         // Set default UoM
-                        const defaultUomId = getDefaultUomId(foundProduct);
-                        if (defaultUomId) {
-                            setValue(`products.${index}.uom_id`, defaultUomId);
+                        const { uom_id, uom_name } =
+                            getDefaultUom(foundProduct);
+
+                        if (uom_id) {
+                            setValue(`products.${index}.uom_id`, uom_id);
+                            setValue(`products.${index}.uom_name`, uom_name);
                         }
 
                         toast.success(`Produk ditemukan!`, {
@@ -216,6 +214,21 @@ export const useProductSearch = (setValue) => {
         }
     }, []);
 
+    /**
+     * Trigger immediate search for a specific barcode and index
+     * @param {string} barcode - Barcode to search
+     * @param {number} index - Row index
+     */
+    const triggerImmediateSearch = useCallback(
+        (barcode, index) => {
+            // Clear any previous search cache for this row
+            clearSearchCache(index);
+            // Perform search immediately
+            performSearch(barcode, index);
+        },
+        [clearSearchCache, performSearch]
+    );
+
     // Cleanup effect untuk timeouts
     const cleanup = useCallback(() => {
         timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
@@ -235,6 +248,7 @@ export const useProductSearch = (setValue) => {
         getProductData,
         isRowSearching,
         clearSearchCache,
+        triggerImmediateSearch,
         cleanup,
     };
 };

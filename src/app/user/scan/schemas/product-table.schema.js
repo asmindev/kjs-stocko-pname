@@ -11,6 +11,8 @@ export const productTableSchema = z.object({
                     .optional()
                     .transform((val) => val?.trim() || ""),
                 uom_id: z.string().optional().default(""),
+                uom_name: z.string().optional().default(""),
+                product_id: z.number().optional(), // ID dari Odoo (optional untuk backward compatibility)
                 quantity: z
                     .number({
                         required_error: "Quantity wajib diisi",
@@ -30,7 +32,7 @@ export const productItemSchema = z.object({
         .string()
         .optional()
         .transform((val) => val?.trim() || ""),
-    uom_id: z.string().optional().default(""),
+    uom_id: z.number(),
     quantity: z
         .number({
             required_error: "Quantity wajib diisi",
@@ -38,6 +40,14 @@ export const productItemSchema = z.object({
         })
         .min(1, "Quantity minimal 1")
         .int("Quantity harus berupa bilangan bulat"),
+    uom_name: z.string({
+        required_error: "UoM name wajib diisi",
+        invalid_type_error: "UoM name harus berupa string",
+    }),
+    product_id: z.number({
+        required_error: "Product ID wajib diisi",
+        invalid_type_error: "Product ID harus berupa angka",
+    }),
 });
 
 // Default values untuk form
@@ -45,6 +55,8 @@ export const defaultProductItem = {
     barcode: "",
     name: "",
     uom_id: "",
+    uom_name: "",
+    product_id: null, // ID dari Odoo akan diisi otomatis
     quantity: 1,
 };
 

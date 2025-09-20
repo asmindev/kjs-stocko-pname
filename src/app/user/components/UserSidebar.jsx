@@ -34,19 +34,14 @@ import { Button } from "@/components/ui/button";
 // Menu items.
 const items = [
     {
-        title: "Home",
-        url: "/home",
-        icon: Home,
+        title: "Dashboard",
+        url: "/user/dashboard",
+        icon: BarChart3,
     },
     {
         title: "Scanner",
         url: "/user/scan",
         icon: Scan,
-    },
-    {
-        title: "Dashboard",
-        url: "/user/dashboard",
-        icon: BarChart3,
     },
 ];
 
@@ -100,7 +95,7 @@ export default function UserSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
 
-                <SidebarSeparator />
+                {/* <SidebarSeparator /> */}
             </SidebarContent>
 
             <SidebarFooter>

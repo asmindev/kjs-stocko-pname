@@ -1,6 +1,12 @@
 import { OdooClient } from "@tapni/odoo-xmlrpc";
 
 class Client {
+    /**
+     * Initialize an Odoo client instance
+     * @param {Object} params - Email and password for authentication
+     * @param {string} params.email - Email for authentication
+     * @param {string} params.password - Password for authentication
+     */
     constructor({ email, password }) {
         console.log("Initializing Odoo client");
         this.email = email;
@@ -81,6 +87,30 @@ class Client {
             return { product: product[0] };
         } catch (error) {
             console.error("Error fetching product:", error);
+            return { error: error.message };
+        }
+    }
+
+    async getWarehouses() {
+        try {
+            const auth = await this.client.authenticate();
+            console.log("Authenticated user ID:", auth);
+
+            const domain = [];
+            const options = {
+                fields: ["id", "name", "code", "lot_stock_id"],
+            };
+
+            const warehouses = await this.client.searchRead(
+                "stock.warehouse",
+                domain,
+                options
+            );
+
+            console.log("Warehouses:", warehouses);
+            return { warehouses };
+        } catch (error) {
+            console.error("Error fetching warehouses:", error);
             return { error: error.message };
         }
     }

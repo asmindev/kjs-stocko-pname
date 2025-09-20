@@ -12,13 +12,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Trash2, Plus, Save, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,8 +23,8 @@ import {
     defaultProductItem,
 } from "../schemas/product-table.schema";
 import { useProductSearch } from "../hooks/useProductSearch";
-import { getUomOptions, isUomDisabled } from "../utils/uom.utils";
 import { submitProducts } from "../services/product.service";
+import UomSelect from "./UomSelect";
 
 /**
  * ProductTableForm Component
@@ -40,11 +33,15 @@ import { submitProducts } from "../services/product.service";
  * @param {Function} props.onSuccess - Callback when products are successfully submitted
  * @param {Function} props.onReset - Callback when form is reset
  * @param {Function} props.onRequestScan - Callback to request scan for specific row
+ * @param {string} props.selectedWarehouse - Selected warehouse ID
+ * @param {string} props.selectedWarehouseName - Selected warehouse name
  */
 export default function ProductTableForm({
     onSuccess,
     onReset,
     onRequestScan,
+    selectedWarehouse,
+    selectedWarehouseName,
 }) {
     const {
         control,
@@ -85,10 +82,6 @@ export default function ProductTableForm({
     // Auto-search products when barcode changes
     useEffect(() => {
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
-
-        console.log("useEffect triggered, current barcodes:", currentBarcodes);
-        console.log("previous barcodes:", prevBarcodesRef.current);
-
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
 
@@ -162,9 +155,24 @@ export default function ProductTableForm({
     const onSubmit = useCallback(
         async (data) => {
             try {
-                const result = await submitProducts(data.products);
+                // Validate warehouse selection
+                console.log("data.products:", data.products);
+                if (!selectedWarehouse) {
+                    toast.error("Pilih gudang terlebih dahulu");
+                    return;
+                }
+
+                console.log("Form submission data:", data);
+                console.log("Products being submitted:", data.products);
+
+                const result = await submitProducts(
+                    data.products,
+                    selectedWarehouse,
+                    selectedWarehouseName
+                );
 
                 if (result.success) {
+                    console.log("Products submitted successfully:", result);
                     // Reset form and search data
                     reset(defaultProductTableValues);
                     resetSearchData();
@@ -174,7 +182,7 @@ export default function ProductTableForm({
                 console.error("Submit error:", error);
             }
         },
-        [reset, resetSearchData, onSuccess]
+        [reset, resetSearchData, onSuccess, selectedWarehouse]
     );
 
     /**
@@ -185,25 +193,6 @@ export default function ProductTableForm({
         resetSearchData();
         onReset?.();
     }, [reset, resetSearchData, onReset]);
-
-    /**
-     * Get UoM helper functions for a specific row
-     */
-    const getRowUomOptions = useCallback(
-        (index) => {
-            const productData = getProductData(index);
-            return getUomOptions(productData);
-        },
-        [getProductData]
-    );
-
-    const isRowUomDisabled = useCallback(
-        (index) => {
-            const productData = getProductData(index);
-            return !productData || isUomDisabled(productData);
-        },
-        [getProductData]
-    );
 
     return (
         <div className="space-y-4 w-full">
@@ -257,6 +246,20 @@ export default function ProductTableForm({
                                     {/* Barcode Input */}
                                     <TableCell className="px-1">
                                         <div className="space-y-1 min-w-[160px] sm:min-w-[180px]">
+                                            {/* Hidden input for Product ID from Odoo */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.product_id`
+                                                )}
+                                            />
+                                            {/* Hidden input for UoM Name */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.uom_name`
+                                                )}
+                                            />
                                             <Input
                                                 {...register(
                                                     `products.${index}.barcode`
@@ -264,7 +267,7 @@ export default function ProductTableForm({
                                                 placeholder="Scan/masukkan barcode"
                                                 autoFocus={index === 0}
                                                 className={cn(
-                                                    "w-full text-sm border-none border-b-2 outline-none focus:ring-0 shadow-none focus:outline-none focus:border-none",
+                                                    "w-full text-sm",
                                                     errors.products?.[index]
                                                         ?.barcode &&
                                                         "border-red-500"
@@ -310,45 +313,26 @@ export default function ProductTableForm({
 
                                     {/* UoM Select */}
                                     <TableCell className="px-1">
-                                        <div className="space-y-1 min-w-[80px] sm:min-w-[100px]">
-                                            <Select
-                                                value={
-                                                    watch(
-                                                        `products.${index}.uom_id`
-                                                    ) || ""
-                                                }
-                                                onValueChange={(value) => {
-                                                    setValue(
-                                                        `products.${index}.uom_id`,
-                                                        value
-                                                    );
-                                                }}
-                                                disabled={isRowUomDisabled(
-                                                    index
-                                                )}
-                                            >
-                                                <SelectTrigger className="w-full h-9 text-sm">
-                                                    <SelectValue placeholder="UoM" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {getRowUomOptions(
-                                                        index
-                                                    ).map((uom) => (
-                                                        <SelectItem
-                                                            key={uom.id}
-                                                            value={uom.id.toString()}
-                                                        >
-                                                            {uom.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {!getProductData(index) && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Scan produk dulu
-                                                </p>
-                                            )}
-                                        </div>
+                                        <UomSelect
+                                            product={getProductData(index)}
+                                            value={
+                                                watch(
+                                                    `products.${index}.uom_id`
+                                                ) || ""
+                                            }
+                                            onValueChange={(value) => {
+                                                console.log(
+                                                    "UoM value changed for row",
+                                                    index,
+                                                    "to:",
+                                                    value
+                                                );
+                                                setValue(
+                                                    `products.${index}.uom_id`,
+                                                    value
+                                                );
+                                            }}
+                                        />
                                     </TableCell>
 
                                     {/* Quantity Input */}
@@ -420,6 +404,20 @@ export default function ProductTableForm({
                     >
                         <Plus className="h-4 w-4" />
                         Tambah Baris
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                            console.log("Current form values:", watch());
+                            console.log(
+                                "Current product search data:",
+                                getProductData
+                            );
+                        }}
+                        className="w-full sm:w-auto"
+                    >
+                        Debug Values
                     </Button>
                     <Button
                         type="submit"

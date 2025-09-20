@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
     Table,
     TableBody,
@@ -19,14 +18,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { redirect, RedirectType } from "next/navigation";
 
-export default function SessionTable({ sessions, onViewDetail }) {
+export default function SessionTable({ sessions }) {
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm");
         } catch (error) {
             return "Invalid Date";
         }
+    };
+
+    const onViewDetail = (session) => {
+        // Handle view detail session
+        // redirect ke halaman detail session
+        redirect(`/user/session/${session.id}`, RedirectType.push);
     };
 
     const getStateBadgeVariant = (state) => {
@@ -75,12 +81,15 @@ export default function SessionTable({ sessions, onViewDetail }) {
                             <TableHead>Status</TableHead>
                             <TableHead>Jumlah Produk</TableHead>
                             <TableHead>User</TableHead>
-                            <TableHead className="text-right">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {sessions.map((session) => (
-                            <TableRow key={session.id}>
+                            <TableRow
+                                key={session.id}
+                                onClick={() => onViewDetail(session)}
+                                className="cursor-pointer hover:bg-accent"
+                            >
                                 <TableCell className="font-medium">
                                     {session.name || `Session #${session.id}`}
                                 </TableCell>
@@ -103,15 +112,6 @@ export default function SessionTable({ sessions, onViewDetail }) {
                                 </TableCell>
                                 <TableCell>
                                     {session.user?.name || "Unknown User"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => onViewDetail(session.id)}
-                                    >
-                                        Detail
-                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))}
