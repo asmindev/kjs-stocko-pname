@@ -107,7 +107,7 @@ export class OdooSessionManager {
                 });
 
                 // Simpan ke database
-                const HOUR = process.env.SESSION_EXPIRATION_HOURS || 2; // 2 jam
+                const HOUR = process.env.SESSION_EXPIRATION_HOURS;
                 const expiry = new Date(Date.now() + HOUR * 60 * 60 * 1000);
                 await prisma.odooSession.create({
                     data: {

@@ -99,10 +99,7 @@ export const uploadToOdoo = async (sessionId) => {
             MODELS,
             FIELDS_INVENTORY_START
         );
-        return {
-            success: true,
-            inventoryId: inventory,
-        };
+        return inventory;
     } catch (error) {
         console.error("Failed to upload to Odoo:", error);
         throw error;

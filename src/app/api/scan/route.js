@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { uploadToOdoo } from "@/app/user/actions";
+import { uploadToOdoo } from "./actions";
 
 export async function POST(request) {
     try {
@@ -69,12 +69,12 @@ export async function POST(request) {
                     failedCount++;
                 }
             }
-            const opnameId = await uploadToOdoo(scanSession.id);
+            const inventory = await uploadToOdoo(scanSession.id);
+            await prisma.session.update({
+                where: { id: scanSession.id },
+                data: { inventory_id: inventory },
+            });
             return Response.json({
-                data: {
-                    sessionId: scanSession.id,
-                    opnameId: opnameId,
-                },
                 success: successCount > 0,
                 successCount,
                 failedCount,

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
-import { uploadToOdoo } from "../../actions";
+import { uploadToOdoo } from "./actions";
 import { toast } from "sonner";
 
 export default function SessionDetail({ data }) {
@@ -56,6 +56,7 @@ export default function SessionDetail({ data }) {
                 error: (err) =>
                     `Gagal memposting session: ${err.message || err}`,
             });
+            // Setelah berhasil, refresh halaman untuk melihat perubahan status
         } catch (error) {
             console.error("Failed to post session:", error);
         }
@@ -86,7 +87,7 @@ export default function SessionDetail({ data }) {
                                     variant="default"
                                     size="sm"
                                     className={"hover:cursor-pointer"}
-                                    // disabled={data.state === "POST"}
+                                    disabled={data.state === "POST"}
                                     onClick={onPost}
                                 >
                                     Post

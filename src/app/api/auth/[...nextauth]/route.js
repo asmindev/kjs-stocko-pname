@@ -71,7 +71,7 @@ export const authOptions = {
     ],
     session: {
         strategy: "jwt",
-        maxAge: 2 * 60 * 60, // 2 hours (sesuai dengan Odoo session)
+        maxAge: process.env.SESSION_EXPIRATION_HOURS * 60 * 60, // 2 hours (sesuai dengan Odoo session)
     },
     pages: {
         signIn: "/auth/login",
