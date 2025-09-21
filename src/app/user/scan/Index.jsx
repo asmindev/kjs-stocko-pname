@@ -12,7 +12,7 @@ import BarcodeScanner from "@/components/BarcodeScanner";
 import ProductTableForm from "./components/ProductTableForm";
 import SessionForm from "./components/SessionForm";
 
-export default function Scanner({ warehouses }) {
+export default function Scanner({ warehouses, inventoryLocations = [] }) {
     const [scanningForRow, setScanningForRow] = useState(null);
     const [scanResultCallback, setScanResultCallback] = useState(null);
     const [sessionData, setSessionData] = useState({
@@ -40,6 +40,12 @@ export default function Scanner({ warehouses }) {
         });
         setScanningForRow(null);
         setScanResultCallback(null);
+    };
+
+    const handleScanClose = () => {
+        setScanningForRow(null);
+        setScanResultCallback(null);
+        toast.dismiss(); // Dismiss any active toasts
     };
 
     const handleFormSuccess = () => {
@@ -91,6 +97,7 @@ export default function Scanner({ warehouses }) {
                             <BarcodeScanner
                                 onScan={handleScanSuccess}
                                 onError={handleScanError}
+                                onClose={handleScanClose}
                             />
                         </div>
                     )}
@@ -109,6 +116,7 @@ export default function Scanner({ warehouses }) {
                         onRequestScan={handleRequestScan}
                         selectedWarehouse={sessionData.warehouse}
                         selectedWarehouseName={sessionData.warehouseName}
+                        inventoryLocations={inventoryLocations}
                     />
                 </CardContent>
             </Card>

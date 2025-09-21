@@ -25,6 +25,7 @@ import {
 import { useProductSearch } from "../hooks/useProductSearch";
 import { submitProducts } from "../services/product.service";
 import UomSelect from "./UomSelect";
+import LocationSelect from "./LocationSelect";
 
 /**
  * ProductTableForm Component
@@ -35,6 +36,7 @@ import UomSelect from "./UomSelect";
  * @param {Function} props.onRequestScan - Callback to request scan for specific row
  * @param {string} props.selectedWarehouse - Selected warehouse ID
  * @param {string} props.selectedWarehouseName - Selected warehouse name
+ * @param {Array} props.inventoryLocations - Array of inventory locations
  */
 export default function ProductTableForm({
     onSuccess,
@@ -42,6 +44,7 @@ export default function ProductTableForm({
     onRequestScan,
     selectedWarehouse,
     selectedWarehouseName,
+    inventoryLocations = [],
 }) {
     const {
         control,
@@ -76,27 +79,18 @@ export default function ProductTableForm({
         cleanup,
     } = useProductSearch(setValue);
 
-    // Previous barcode values to detect changes
     const prevBarcodesRef = useRef([]);
-
-    // Auto-search products when barcode changes
     useEffect(() => {
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
 
-            // Only search if barcode changed and is not empty
             if (
                 barcode !== prevBarcode &&
                 barcode &&
                 barcode.length > 0 &&
                 !isRowSearching(index)
             ) {
-                console.log(
-                    `Barcode changed at row ${index}: "${prevBarcode}" -> "${barcode}"`
-                );
-
-                // Clear cache for old barcode if it existed
                 if (prevBarcode) {
                     clearSearchCache(index, prevBarcode);
                 }
@@ -155,15 +149,10 @@ export default function ProductTableForm({
     const onSubmit = useCallback(
         async (data) => {
             try {
-                // Validate warehouse selection
-                console.log("data.products:", data.products);
                 if (!selectedWarehouse) {
                     toast.error("Pilih gudang terlebih dahulu");
                     return;
                 }
-
-                console.log("Form submission data:", data);
-                console.log("Products being submitted:", data.products);
 
                 const result = await submitProducts(
                     data.products,
@@ -172,7 +161,6 @@ export default function ProductTableForm({
                 );
 
                 if (result.success) {
-                    console.log("Products submitted successfully:", result);
                     // Reset form and search data
                     reset(defaultProductTableValues);
                     resetSearchData();
@@ -204,15 +192,17 @@ export default function ProductTableForm({
                                 <TableHead className="w-16 text-center whitespace-nowrap">
                                     Scan
                                 </TableHead>
-                                <TableHead className="min-w-[180px] sm:min-w-[200px] whitespace-nowrap">
-                                    Barcode{" "}
-                                    <span className="text-red-500">*</span>
+                                <TableHead className="min-w-[180px] sm:min-w-[200px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
+                                    Barcode
                                 </TableHead>
                                 <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap">
                                     Nama Produk
                                 </TableHead>
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                     UoM
+                                </TableHead>
+                                <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
+                                    Lokasi Produk
                                 </TableHead>
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                     Qty <span className="text-red-500">*</span>
@@ -260,6 +250,20 @@ export default function ProductTableForm({
                                                     `products.${index}.uom_name`
                                                 )}
                                             />
+                                            {/* Hidden input for Location ID */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.location_id`
+                                                )}
+                                            />
+                                            {/* Hidden input for Location Name */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.location_name`
+                                                )}
+                                            />
                                             <Input
                                                 {...register(
                                                     `products.${index}.barcode`
@@ -289,6 +293,7 @@ export default function ProductTableForm({
                                     <TableCell className="px-1">
                                         <div className="space-y-1 min-w-[180px] sm:min-w-[220px]">
                                             <Input
+                                                disabled={true}
                                                 {...register(
                                                     `products.${index}.name`
                                                 )}
@@ -321,18 +326,50 @@ export default function ProductTableForm({
                                                 ) || ""
                                             }
                                             onValueChange={(value) => {
-                                                console.log(
-                                                    "UoM value changed for row",
-                                                    index,
-                                                    "to:",
-                                                    value
-                                                );
                                                 setValue(
                                                     `products.${index}.uom_id`,
                                                     value
                                                 );
                                             }}
                                         />
+                                    </TableCell>
+
+                                    {/* Location Select */}
+                                    <TableCell className="px-1">
+                                        <div className="space-y-1 min-w-[200px] sm:min-w-[250px]">
+                                            <LocationSelect
+                                                value={watch(
+                                                    `products.${index}.location_id`
+                                                )}
+                                                selectedWarehouse={
+                                                    selectedWarehouse
+                                                }
+                                                inventoryLocations={
+                                                    inventoryLocations
+                                                }
+                                                onValueChange={(
+                                                    locationData
+                                                ) => {
+                                                    setValue(
+                                                        `products.${index}.location_id`,
+                                                        locationData.location_id
+                                                    );
+                                                    setValue(
+                                                        `products.${index}.location_name`,
+                                                        locationData.location_name
+                                                    );
+                                                }}
+                                            />
+                                            {errors.products?.[index]
+                                                ?.location_id && (
+                                                <p className="text-red-500 text-xs">
+                                                    {
+                                                        errors.products[index]
+                                                            .location_id.message
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
                                     </TableCell>
 
                                     {/* Quantity Input */}
@@ -406,20 +443,6 @@ export default function ProductTableForm({
                         Tambah Baris
                     </Button>
                     <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                            console.log("Current form values:", watch());
-                            console.log(
-                                "Current product search data:",
-                                getProductData
-                            );
-                        }}
-                        className="w-full sm:w-auto"
-                    >
-                        Debug Values
-                    </Button>
-                    <Button
                         type="submit"
                         className="flex items-center gap-2 flex-1"
                         disabled={isSubmitting}
@@ -431,7 +454,7 @@ export default function ProductTableForm({
                     </Button>
                     <Button
                         type="button"
-                        variant="outline"
+                        variant="destructive"
                         onClick={handleReset}
                         disabled={isSubmitting}
                         className="w-full sm:w-auto"

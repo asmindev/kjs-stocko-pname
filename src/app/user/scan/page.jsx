@@ -20,8 +20,14 @@ export default async function Page() {
         );
 
         const warehouses = await client.getWarehouses();
+        const inventoryLocations = await client.getInventoryLocations();
 
-        return <Scanner warehouses={warehouses.warehouses} />;
+        return (
+            <Scanner
+                warehouses={warehouses.warehouses}
+                inventoryLocations={inventoryLocations.locations}
+            />
+        );
     } catch (error) {
         console.error("Error loading Odoo client or warehouses:", error);
     }

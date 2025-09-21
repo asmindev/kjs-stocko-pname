@@ -29,6 +29,8 @@ export const submitProducts = async (
                 name: product.name,
                 uom_id: product.uom_id,
                 uom_name: product.uom_name,
+                location_id: product.location_id, // ID lokasi inventori
+                location_name: product.location_name, // Nama lokasi inventori
                 quantity: product.quantity,
             })),
         };
@@ -63,7 +65,10 @@ export const submitProducts = async (
             };
         } else {
             toast.error("Gagal menyimpan produk", {
-                description: result.error || "Terjadi kesalahan pada server",
+                description:
+                    result.details ||
+                    result.error ||
+                    "Terjadi kesalahan pada server",
             });
 
             return {

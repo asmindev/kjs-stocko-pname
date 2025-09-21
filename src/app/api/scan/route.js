@@ -16,7 +16,6 @@ export async function POST(request) {
         }
 
         const data = await request.json();
-        console.log("Received scan data:", data);
 
         const userId = parseInt(session.user.id);
 
@@ -24,8 +23,6 @@ export async function POST(request) {
         if (data.warehouse && data.products && Array.isArray(data.products)) {
             // New format with warehouse - create session and multiple products
             const { warehouse, warehouse_name, products } = data;
-
-            console.log("Received scan data with warehouse:", data);
 
             // Create session with authenticated user ID and warehouse
             const scanSession = await prisma.session.create({
@@ -55,6 +52,10 @@ export async function POST(request) {
                         quantity: product.quantity || 1,
                         session_id: scanSession.id,
                         userId: userId,
+                        location_id: product.location_id
+                            ? parseInt(product.location_id)
+                            : null,
+                        location_name: product.location_name || null,
                     };
 
                     await prisma.product.create({

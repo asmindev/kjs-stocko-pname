@@ -23,7 +23,6 @@ import { uploadToOdoo } from "./actions";
 import { toast } from "sonner";
 
 export default function SessionDetail({ data }) {
-    console.log("SessionDetail data:", data);
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
@@ -53,12 +52,12 @@ export default function SessionDetail({ data }) {
             toast.promise(uploadToOdoo(data.id), {
                 loading: "Memproses session...",
                 success: "Session berhasil diposting ke Odoo!",
-                error: (err) =>
-                    `Gagal memposting session: ${err.message || err}`,
+                error: (err) => `Gagal memposting sesi: ${err.message || err}`,
             });
             // Setelah berhasil, refresh halaman untuk melihat perubahan status
         } catch (error) {
-            console.error("Failed to post session:", error);
+            console.error("Error posting session:", error);
+            toast.error("Gagal memposting sesi. Silakan coba lagi.");
         }
     };
 
@@ -173,6 +172,7 @@ export default function SessionDetail({ data }) {
                                     </TableHead>
                                     <TableHead>Quantity</TableHead>
                                     <TableHead>UOM</TableHead>
+                                    <TableHead>Lokasi</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -196,6 +196,9 @@ export default function SessionDetail({ data }) {
                                         </TableCell>
                                         <TableCell>
                                             {product.uom_name || "-"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {product.location_name || "-"}
                                         </TableCell>
                                     </TableRow>
                                 ))}

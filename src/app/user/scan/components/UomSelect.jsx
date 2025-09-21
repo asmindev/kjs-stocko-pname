@@ -117,18 +117,6 @@ export default function UomSelect({
                     ))}
                 </SelectContent>
             </Select>
-
-            {/* Show helpful text based on state */}
-            {!product && (
-                <p className="text-xs text-muted-foreground">
-                    Scan produk dulu
-                </p>
-            )}
-            {product && selectDisabled && uomOptions.length === 1 && (
-                <p className="text-xs text-muted-foreground">
-                    UoM: {uomOptions[0].name}
-                </p>
-            )}
         </div>
     );
 }

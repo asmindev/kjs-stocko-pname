@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import DashboardClient from "./components/DashboardClient";
 import { getSessions } from "./services/actions";

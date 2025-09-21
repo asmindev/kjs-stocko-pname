@@ -106,11 +106,35 @@ class Client {
                 domain,
                 options
             );
-
-            console.log("Warehouses:", warehouses);
             return { warehouses };
         } catch (error) {
             console.error("Error fetching warehouses:", error);
+            return { error: error.message };
+        }
+    }
+    /**
+     * Get inventory locations by stock location ID
+     * @param {number} stock_location_id - Stock location ID
+     * @returns {Promise<Object>} Object with locations or error message
+     */
+    async getInventoryLocations() {
+        try {
+            const auth = await this.client.authenticate();
+            console.log("Authenticated user ID:", auth);
+            let domain = [];
+            const options = {
+                fields: ["display_name", "id", "stock_location_id"],
+            };
+
+            const locations = await this.client.searchRead(
+                "inventory.product.locations",
+                domain,
+                options
+            );
+
+            return { locations };
+        } catch (error) {
+            console.error("Error fetching inventory locations:", error);
             return { error: error.message };
         }
     }

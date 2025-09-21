@@ -85,7 +85,6 @@ export const useProductSearch = (setValue) => {
                     });
                     console.error("Search error:", error);
                 } finally {
-                    console.log("Finalizing search for row:", index);
                     setSearchingRows((prev) => {
                         const newSet = new Set(prev);
                         newSet.delete(index);

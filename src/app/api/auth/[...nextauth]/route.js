@@ -71,7 +71,7 @@ export const authOptions = {
     ],
     session: {
         strategy: "jwt",
-        maxAge: process.env.SESSION_EXPIRATION_HOURS * 60 * 60, // 2 hours (sesuai dengan Odoo session)
+        maxAge: process.env.SESSION_EXPIRATION_HOURS * 60 * 60,
     },
     pages: {
         signIn: "/auth/login",
@@ -83,9 +83,8 @@ export const authOptions = {
                 token.id = user.id;
             }
 
-            // Extend Odoo session saat JWT di-refresh
-            if (trigger === "update" && token.id) {
-                await OdooSessionManager.extendSession(token.id);
+            if (token.id) {
+                await OdooSessionManager.updateLastUsed(token.id);
             }
 
             return token;
@@ -98,7 +97,15 @@ export const authOptions = {
                 const odooSessionInfo = await OdooSessionManager.getSessionInfo(
                     token.id
                 );
-                session.user.odooSession = odooSessionInfo;
+                if (odooSessionInfo) {
+                    session.user.odooSession = {
+                        id: odooSessionInfo.id,
+                        email: odooSessionInfo.email,
+                        expiresAt: odooSessionInfo.expires_at, // Bisa null
+                        createdAt: odooSessionInfo.created_at,
+                        updatedAt: odooSessionInfo.updated_at,
+                    };
+                }
             }
             return session;
         },

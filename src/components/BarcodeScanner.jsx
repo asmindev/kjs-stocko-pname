@@ -36,7 +36,7 @@ const useTorch = dynamic(
     { ssr: false }
 );
 
-export default function BarcodeScannerComponent({ onScan, onError }) {
+export default function BarcodeScannerComponent({ onScan, onError, onClose }) {
     const [scannedData, setScannedData] = useState("");
     const [isScanning, setIsScanning] = useState(true); // Langsung mulai scanning
 
@@ -62,6 +62,10 @@ export default function BarcodeScannerComponent({ onScan, onError }) {
 
     const stopScanning = () => {
         setIsScanning(false);
+        // Call parent onClose callback when scanner is closed
+        if (onClose) {
+            onClose();
+        }
     };
 
     return (
@@ -173,7 +177,7 @@ export default function BarcodeScannerComponent({ onScan, onError }) {
 }
 
 // Enhanced component with torch support
-export function BarcodeScannerWithTorch({ onScan, onError }) {
+export function BarcodeScannerWithTorch({ onScan, onError, onClose }) {
     const [scannedData, setScannedData] = useState("");
     const [isScanning, setIsScanning] = useState(true); // Langsung mulai scanning
 
@@ -231,6 +235,10 @@ export function BarcodeScannerWithTorch({ onScan, onError }) {
 
     const stopScanning = () => {
         setIsScanning(false);
+        // Call parent onClose callback when scanner is closed
+        if (onClose) {
+            onClose();
+        }
     };
 
     return (
