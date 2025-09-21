@@ -5,5 +5,6 @@ import { getSessionById } from "@/app/user/dashboard/services/actions";
 export default async function Detail({ params }) {
     const { id } = await params;
     const result = await getSessionById(id);
+
     return <SessionDetail data={result.data} />;
 }

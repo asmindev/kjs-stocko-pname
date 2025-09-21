@@ -3,6 +3,14 @@ import { withAuth } from "next-auth/middleware";
 export default withAuth(
     function middleware(req) {
         // Middleware berjalan setelah user terautentikasi
+        const token = req.nextauth.token;
+        const pathname = req.nextUrl.pathname;
+        const is_admin = token?.is_admin || false;
+        if (pathname.startsWith("/user") && is_admin) {
+            return Response.redirect(new URL("/admin/dashboard", req.url));
+        }
+
+        console.log("User token:", token);
         console.log("Middleware executed for:", req.nextUrl.pathname);
     },
     {
@@ -32,5 +40,5 @@ export default withAuth(
 );
 
 export const config = {
-    matcher: ["/user/:path*", "/home/:path*", "/auth/:path*"],
+    matcher: ["/user/:path*", "/home/:path*", "/auth/:path*", "/admin/:path*"],
 };

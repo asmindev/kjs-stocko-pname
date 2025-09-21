@@ -5,7 +5,7 @@ export default function AdminLayout({ children }) {
     return (
         <SidebarProvider>
             <AdminSidebar />
-            <main>
+            <main className="w-full p-2">
                 <SidebarTrigger />
                 {children}
             </main>

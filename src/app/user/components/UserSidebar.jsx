@@ -2,18 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import {
-    Calendar,
-    Home,
-    Inbox,
-    Search,
-    Settings,
-    User,
-    LogOut,
-    Package,
-    BarChart3,
-    Scan,
-} from "lucide-react";
+import { User, LogOut, Package, BarChart3, Scan } from "lucide-react";
 
 import {
     Sidebar,

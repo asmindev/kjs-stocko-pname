@@ -70,11 +70,11 @@ export async function POST(request) {
                     failedCount++;
                 }
             }
-            const inventory = await uploadToOdoo(scanSession.id);
-            await prisma.session.update({
-                where: { id: scanSession.id },
-                data: { inventory_id: inventory },
-            });
+            // const inventory = await uploadToOdoo(scanSession.id);
+            // await prisma.session.update({
+            //     where: { id: scanSession.id },
+            //     data: { inventory_id: inventory },
+            // });
             return Response.json({
                 success: successCount > 0,
                 successCount,

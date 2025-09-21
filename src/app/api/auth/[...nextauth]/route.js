@@ -48,11 +48,7 @@ export const authOptions = {
                             user.email,
                             credentials.password // Password asli untuk Odoo
                         );
-                        console.log(
-                            "Odoo session created/retrieved successfully"
-                        );
                     } catch (error) {
-                        console.error("Odoo session failed:", error);
                         // Bisa pilih: gagalkan login atau lanjutkan tanpa Odoo
                         return null; // Uncomment untuk gagalkan login jika Odoo tidak tersedia
                     }
@@ -61,6 +57,7 @@ export const authOptions = {
                         id: user.id.toString(),
                         email: user.email,
                         name: user.name,
+                        is_admin: user.is_admin,
                     };
                 } catch (error) {
                     console.error("Authentication error:", error);
@@ -81,6 +78,7 @@ export const authOptions = {
         async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;
+                token.is_admin = user.is_admin;
             }
 
             if (token.id) {
@@ -92,6 +90,7 @@ export const authOptions = {
         async session({ session, token }) {
             if (token) {
                 session.user.id = token.id;
+                session.user.is_admin = token.is_admin;
 
                 // Tambahkan info session Odoo ke session
                 const odooSessionInfo = await OdooSessionManager.getSessionInfo(

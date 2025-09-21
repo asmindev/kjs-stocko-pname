@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
     Table,
     TableBody,
@@ -17,12 +18,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Calendar, User } from "lucide-react";
+import { ArrowLeft, Package, Calendar, User, Edit } from "lucide-react";
 import { format } from "date-fns";
-import { uploadToOdoo } from "./actions";
+import { postInventoryAdjustment, uploadToOdoo } from "./actions";
 import { toast } from "sonner";
 
 export default function SessionDetail({ data }) {
+    const router = useRouter();
+    console.log("Session Detail Data:", data);
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
@@ -49,16 +52,35 @@ export default function SessionDetail({ data }) {
     const onPost = async () => {
         // Implementasi logika untuk posting session
         try {
-            toast.promise(uploadToOdoo(data.id), {
-                loading: "Memproses session...",
-                success: "Session berhasil diposting ke Odoo!",
-                error: (err) => `Gagal memposting sesi: ${err.message || err}`,
-            });
+            // Cek kondisi state dan inventory_id
+            if (data.state === "DRAFT" && !data.inventory_id) {
+                toast.promise(uploadToOdoo(data.id), {
+                    loading: "Memproses dokumen...",
+                    success: "Dokumen berhasil diposting ke Odoo!",
+                    error: (err) =>
+                        `Gagal memposting dokumen: ${err.message || err}`,
+                });
+                return;
+            }
+
+            if (data.state === "DRAFT" && data.inventory_id) {
+                toast.promise(postInventoryAdjustment(data.id), {
+                    loading: "Memproses dokumen...",
+                    success: "Dokumen berhasil diposting ke Odoo!",
+                    error: (err) =>
+                        `Gagal memposting dokumen: ${err.message || err}`,
+                });
+                return;
+            }
             // Setelah berhasil, refresh halaman untuk melihat perubahan status
         } catch (error) {
             console.error("Error posting session:", error);
-            toast.error("Gagal memposting sesi. Silakan coba lagi.");
+            toast.error("Gagal memposting dokumen. Silakan coba lagi.");
         }
+    };
+
+    const handleEdit = () => {
+        router.push(`/user/session/${data.id}/edit`);
     };
 
     return (
@@ -81,7 +103,17 @@ export default function SessionDetail({ data }) {
                                 <Package className="w-5 h-5" />
                                 {data.name || `Session #${data.id}`}
                             </div>
-                            <div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="hover:cursor-pointer"
+                                    disabled={data.state === "POST"}
+                                    onClick={handleEdit}
+                                >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit
+                                </Button>
                                 <Button
                                     variant="default"
                                     size="sm"
@@ -89,7 +121,9 @@ export default function SessionDetail({ data }) {
                                     disabled={data.state === "POST"}
                                     onClick={onPost}
                                 >
-                                    Post
+                                    {data.inventory_id
+                                        ? "Post"
+                                        : "Post to Odoo"}
                                 </Button>
                             </div>
                         </div>
