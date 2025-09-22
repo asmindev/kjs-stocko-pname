@@ -44,7 +44,7 @@ export default function DashboardClient({ sessions }) {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                 <p className="text-muted-foreground">
-                    Kelola dan lihat riwayat session scan produk Anda
+                    Kelola dan lihat riwayat checker Anda
                 </p>
                 {session?.user && (
                     <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
@@ -59,7 +59,7 @@ export default function DashboardClient({ sessions }) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
                         <CardTitle className="text-sm font-medium">
-                            Total Sesi
+                            Total Checker
                         </CardTitle>
                         <User2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -68,7 +68,7 @@ export default function DashboardClient({ sessions }) {
                             {sessions.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            session scan tersimpan
+                            Checker tersimpan
                         </p>
                     </CardContent>
                 </Card>

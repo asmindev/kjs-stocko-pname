@@ -1,5 +1,11 @@
 "use client";
-import React, { useEffect, useCallback, useRef } from "react";
+import React, {
+    useEffect,
+    useCallback,
+    useRef,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -38,14 +44,18 @@ import LocationSelect from "./LocationSelect";
  * @param {string} props.selectedWarehouseName - Selected warehouse name
  * @param {Array} props.inventoryLocations - Array of inventory locations
  */
-export default function ProductTableForm({
-    onSuccess,
-    onReset,
-    onRequestScan,
-    selectedWarehouse,
-    selectedWarehouseName,
-    inventoryLocations = [],
-}) {
+const ProductTableForm = forwardRef(function ProductTableForm(
+    {
+        onSuccess,
+        onReset,
+        onRequestScan,
+        selectedWarehouse,
+        selectedWarehouseName,
+        inventoryLocations = [],
+        onFormStateChange,
+    },
+    ref
+) {
     const {
         control,
         register,
@@ -150,7 +160,7 @@ export default function ProductTableForm({
         async (data) => {
             try {
                 if (!selectedWarehouse) {
-                    toast.error("Pilih gudang terlebih dahulu");
+                    toast.error("Pilih Lokasi terlebih dahulu");
                     return;
                 }
 
@@ -182,9 +192,32 @@ export default function ProductTableForm({
         onReset?.();
     }, [reset, resetSearchData, onReset]);
 
+    // Expose form functions to parent component
+    useImperativeHandle(
+        ref,
+        () => ({
+            submit: handleSubmit(onSubmit),
+            reset: handleReset,
+            isSubmitting,
+            fieldsLength: fields.length,
+        }),
+        [handleSubmit, onSubmit, handleReset, isSubmitting, fields.length]
+    );
+
+    // Notify parent of form state changes
+    useEffect(() => {
+        onFormStateChange?.({
+            isSubmitting,
+            fieldsLength: fields.length,
+        });
+    }, [isSubmitting, fields.length, onFormStateChange]);
+
     return (
         <div className="space-y-4 w-full">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="w-full space-y-4"
+            >
                 <div className="w-full overflow-x-auto rounded-md border">
                     <Table>
                         <TableHeader>
@@ -201,7 +234,7 @@ export default function ProductTableForm({
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                     UoM
                                 </TableHead>
-                                <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
+                                <TableHead className="min-w-[200px] sm:min-w-[250px] max-w-fit whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
                                     Lokasi Produk
                                 </TableHead>
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
@@ -336,7 +369,7 @@ export default function ProductTableForm({
 
                                     {/* Location Select */}
                                     <TableCell className="px-1">
-                                        <div className="space-y-1 min-w-[200px] sm:min-w-[250px]">
+                                        <div className="space-y-1 min-w-[200px] sm:min-w-[250px] max-w-fit">
                                             <LocationSelect
                                                 value={watch(
                                                     `products.${index}.location_id`
@@ -442,27 +475,10 @@ export default function ProductTableForm({
                         <Plus className="h-4 w-4" />
                         Tambah Baris
                     </Button>
-                    <Button
-                        type="submit"
-                        className="flex items-center gap-2 flex-1"
-                        disabled={isSubmitting}
-                    >
-                        <Save className="h-4 w-4" />
-                        {isSubmitting
-                            ? "Menyimpan..."
-                            : `Simpan ${fields.length} Produk`}
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleReset}
-                        disabled={isSubmitting}
-                        className="w-full sm:w-auto"
-                    >
-                        Reset
-                    </Button>
                 </div>
             </form>
         </div>
     );
-}
+});
+
+export default ProductTableForm;

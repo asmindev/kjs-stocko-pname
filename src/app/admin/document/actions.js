@@ -1,0 +1,72 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { OdooSessionManager } from "@/lib/sessionManager";
+export async function getDocuments() {
+    try {
+        // Get user session
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            return {
+                success: false,
+                error: "Unauthorized. Please login first.",
+            };
+        }
+
+        const userId = parseInt(session.user.id);
+
+        const sessions = await prisma.session.findMany({
+            where: {
+                inventory_id: { not: null },
+            },
+            include: {
+                products: true,
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+            orderBy: {
+                created_at: "desc",
+            },
+        });
+
+        // Transform data untuk menambahkan informasi jumlah produk
+        const sessionsWithProductCount = sessions.map((session) => ({
+            ...session,
+            productCount: session.products.length,
+            created_at: session.created_at.toISOString(),
+        }));
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        // get documents from odoo
+        const MODEL = "custom.stock.inventory";
+        const domain = [["id", "in", sessions.map((s) => s.inventory_id)]];
+        const fields = [
+            "location_id",
+            "state",
+            "name",
+            "date",
+            "name",
+            "approval_desc",
+            "line_ids",
+            "create_uid",
+        ];
+        const documents = await odoo.client.searchRead(MODEL, domain, {});
+        console.log("Documents:", documents);
+
+        return { success: true, documents };
+    } catch (error) {
+        console.error("Error fetching sessions:", error);
+        return { success: false, error: "Failed to fetch sessions" };
+    }
+}

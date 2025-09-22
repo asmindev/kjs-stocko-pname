@@ -32,7 +32,7 @@ export default function SessionTable({ sessions }) {
     const onViewDetail = (session) => {
         // Handle view detail session
         // redirect ke halaman detail session
-        redirect(`/user/session/${session.id}`, RedirectType.push);
+        redirect(`/admin/session/${session.id}`, RedirectType.push);
     };
 
     const getStateBadgeVariant = (state) => {
@@ -55,11 +55,6 @@ export default function SessionTable({ sessions }) {
                         Belum ada session scan yang tersimpan
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground text-center py-8">
-                        Mulai scan barcode untuk membuat session baru
-                    </p>
-                </CardContent>
             </Card>
         );
     }

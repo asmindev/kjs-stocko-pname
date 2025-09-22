@@ -27,6 +27,11 @@ export function AdminSidebar() {
             url: "/admin/dashboard",
             icon: Home,
         },
+        {
+            title: "Documents",
+            url: "/admin/document",
+            icon: Package,
+        },
     ];
 
     const router = useRouter();

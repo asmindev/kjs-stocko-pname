@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { uploadToOdoo } from "./actions";
+import { OdooSessionManager } from "@/lib/sessionManager";
 
 export async function POST(request) {
     try {
@@ -25,9 +26,30 @@ export async function POST(request) {
             const { warehouse, warehouse_name, products } = data;
 
             // Create session with authenticated user ID and warehouse
+
+            const odoo = await OdooSessionManager.getClient(
+                session.user.id,
+                session.user.email
+            );
+            // get stock.location from odoo
+            const [location] = await odoo.client.read(
+                "stock.location",
+                [parseInt(warehouse)],
+                ["location_id"]
+            );
+
+            // sequence format: LOCATION/YY/MM/DD HH/MM
+            const date = new Date();
+            const location_code = location.location_id[1];
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            const year = String(date.getFullYear()).slice(-2);
+            const hours = String(date.getHours()).padStart(2, "0");
+            const minutes = String(date.getMinutes()).padStart(2, "0");
+            const sequence = `${location_code}/${year}/${month}/${day} ${hours}/${minutes}`;
             const scanSession = await prisma.session.create({
                 data: {
-                    name: `Session ${new Date().toISOString()}`,
+                    name: sequence,
                     user_id: userId,
                     warehouse_id: parseInt(warehouse),
                     warehouse_name: warehouse_name || null,

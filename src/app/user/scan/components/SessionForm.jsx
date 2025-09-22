@@ -31,7 +31,7 @@ export default function SessionForm({
             {/* Warehouse Selection */}
             <div>
                 <label className="block text-sm font-medium mb-1 after:content-['*'] after:ml-0.5 after:text-red-500">
-                    Pilih Gudang
+                    Pilih Lokasi
                 </label>
                 <Select
                     value={sessionData.warehouse || ""}
@@ -48,7 +48,7 @@ export default function SessionForm({
                     disabled={disabled}
                 >
                     <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Pilih Gudang" />
+                        <SelectValue placeholder="Pilih Lokasi" />
                     </SelectTrigger>
                     <SelectContent>
                         {warehouses.length > 0 ? (
@@ -78,7 +78,7 @@ export default function SessionForm({
                 {/* Show current selection info */}
                 {sessionData.warehouse && warehouses.length > 0 && (
                     <p className="text-xs text-green-600 mt-1">
-                        Gudang:{" "}
+                        Lokasi:{" "}
                         {warehouses.find(
                             (w) =>
                                 w.lot_stock_id[0].toString() ===

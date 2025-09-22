@@ -24,8 +24,10 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import SessionTable from "./SessionTable";
 
-export default function Dashboard({ warehouses, sessions }) {
+export default function Dashboard({ warehouses, sessions, locations }) {
+    // State untuk menyimpan warehouse yang dipilih
     const [selectedWarehouse, setSelectedWarehouse] = useState("all");
 
     // Filter sessions berdasarkan warehouse yang dipilih
@@ -37,25 +39,67 @@ export default function Dashboard({ warehouses, sessions }) {
             return session.warehouse_id.toString() === selectedWarehouse;
         });
     }, [sessions, selectedWarehouse]);
+    // Mendapatkan warehouse yang dipilih
+    const selectedWarehouseData = warehouses.find(
+        (w) => w.lot_stock_id[0].toString() === selectedWarehouse
+    );
 
     // Menghitung data untuk donut chart
+    // Menghitung data untuk donut chart
+    // pastikan selectedWarehouseData dideklarasikan sebelum useMemo ini
     const chartData = useMemo(() => {
+        // hitung jumlah sessions per status
         const statusCount = filteredSessions.reduce((acc, session) => {
             acc[session.state] = (acc[session.state] || 0) + 1;
             return acc;
         }, {});
 
-        return Object.entries(statusCount).map(([status, count]) => ({
+        // buat array awal hanya dengan value (jangan hitung persen dulu)
+        let baseData = Object.entries(statusCount).map(([status, count]) => ({
             name: status,
             value: count,
-            percentage: ((count / filteredSessions.length) * 100).toFixed(1),
         }));
-    }, [filteredSessions]);
+
+        // hitung unchecked locations hanya kalau memilih warehouse tertentu
+        if (selectedWarehouse !== "all" && selectedWarehouseData) {
+            const warehouseLocations = locations.filter(
+                (loc) =>
+                    String(loc.stock_location_id?.[0]) ===
+                    String(selectedWarehouseData.lot_stock_id?.[0])
+            );
+
+            const usedLocationIds = filteredSessions.flatMap((s) =>
+                s.products.map((p) => String(p.location_id))
+            );
+
+            const uncheckedLocations = warehouseLocations.filter(
+                (loc) => !usedLocationIds.includes(String(loc.id))
+            );
+
+            if (uncheckedLocations.length > 0) {
+                baseData.push({
+                    name: "BELUM DI CEK",
+                    value: uncheckedLocations.length,
+                });
+            }
+        }
+
+        // hitung total lalu pasang percentage yang konsisten untuk semua item
+        const total =
+            baseData.reduce((sum, it) => sum + (it.value || 0), 0) || 1;
+        const final = baseData.map((it) => ({
+            ...it,
+            percentage: ((it.value / total) * 100).toFixed(1),
+        }));
+
+        return final;
+    }, [filteredSessions, selectedWarehouse, selectedWarehouseData, locations]);
 
     // Fallback colors jika CSS variables tidak tersedia
     const FALLBACK_COLORS = {
-        DRAFT: "#374151", // dark gray
-        POST: "#3b82f6", // blue
+        DRAFT: "#374151",
+        POST: "#3b82f6",
+        "BELUM DI CEK": "#ef4444", // merah biar jelas
     };
 
     // Custom tooltip untuk chart
@@ -69,7 +113,7 @@ export default function Dashboard({ warehouses, sessions }) {
                         <p className="text-sm text-muted-foreground">
                             Jumlah:{" "}
                             <span className="font-medium">{data.value}</span>{" "}
-                            Inventory Adjustments
+                            Lokasi
                         </p>
                         {/* <p className="text-sm text-muted-foreground">
                             Persentase:{" "}
@@ -83,11 +127,6 @@ export default function Dashboard({ warehouses, sessions }) {
         }
         return null;
     };
-
-    // Mendapatkan warehouse yang dipilih
-    const selectedWarehouseData = warehouses.find(
-        (w) => w.lot_stock_id[0].toString() === selectedWarehouse
-    );
 
     return (
         <div className="w-full mx-auto space-y-8">
@@ -106,7 +145,7 @@ export default function Dashboard({ warehouses, sessions }) {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Total Sessions
+                            Total Dokumen
                         </CardTitle>
                         <BarChart3 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -243,10 +282,18 @@ export default function Dashboard({ warehouses, sessions }) {
                                                 data={chartData}
                                                 cx="50%"
                                                 cy="50%"
-                                                innerRadius={80}
+                                                innerRadius={40}
                                                 outerRadius={140}
                                                 paddingAngle={3}
                                                 dataKey="value"
+                                                labelLine={false}
+                                                label={({ percent }) => {
+                                                    return percent > 0.05
+                                                        ? `${(
+                                                              percent * 100
+                                                          ).toFixed(0)}%`
+                                                        : "";
+                                                }}
                                             >
                                                 {chartData.map(
                                                     (entry, index) => (
@@ -272,6 +319,40 @@ export default function Dashboard({ warehouses, sessions }) {
                             {/* Legend */}
                             <div className="space-y-4">
                                 <h4 className="font-semibold">Detail Status</h4>
+                                {/* Total Lokasi (hanya tampil kalau warehouse tertentu dipilih) */}
+                                {selectedWarehouse !== "all" &&
+                                    selectedWarehouseData && (
+                                        <Card className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-3 w-3 rounded-full bg-primary" />
+                                                    <span className="font-medium">
+                                                        Total Lokasi
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-semibold">
+                                                        {
+                                                            locations.filter(
+                                                                (loc) =>
+                                                                    String(
+                                                                        loc
+                                                                            .stock_location_id?.[0]
+                                                                    ) ===
+                                                                    String(
+                                                                        selectedWarehouseData
+                                                                            .lot_stock_id?.[0]
+                                                                    )
+                                                            ).length
+                                                        }
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        semua lokasi
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    )}
                                 <div className="space-y-3">
                                     {chartData.map((entry) => (
                                         <Card key={entry.name} className="p-4">
@@ -316,6 +397,15 @@ export default function Dashboard({ warehouses, sessions }) {
                                     : `Belum ada session untuk warehouse ${selectedWarehouseData?.name}`}
                             </p>
                         </div>
+                    )}
+                    {selectedWarehouse !== "all" && (
+                        <SessionTable
+                            sessions={sessions.filter(
+                                (s) =>
+                                    String(s.warehouse_id) ===
+                                    String(selectedWarehouse)
+                            )}
+                        />
                     )}
                 </CardContent>
             </Card>

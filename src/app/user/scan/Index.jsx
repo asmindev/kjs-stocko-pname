@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     Card,
     CardContent,
@@ -7,6 +7,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 import { toast } from "sonner";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import ProductTableForm from "./components/ProductTableForm";
@@ -23,6 +25,13 @@ export default function Scanner({ warehouses, inventoryLocations = [] }) {
         // operator: "",
         // shift: "",
         // notes: "",
+    });
+
+    // Ref untuk mengakses ProductTableForm
+    const productFormRef = useRef(null);
+    const [formState, setFormState] = useState({
+        isSubmitting: false,
+        fieldsLength: 0,
     });
 
     const handleScanSuccess = async (barcode) => {
@@ -69,6 +78,25 @@ export default function Scanner({ warehouses, inventoryLocations = [] }) {
         });
     };
 
+    // Handler untuk submit form dari button eksternal
+    const handleSubmitForm = () => {
+        if (productFormRef.current) {
+            productFormRef.current.submit();
+        }
+    };
+
+    // Handler untuk reset form dari button eksternal
+    const handleResetForm = () => {
+        if (productFormRef.current) {
+            productFormRef.current.reset();
+        }
+    };
+
+    // Handler untuk menerima perubahan state form
+    const handleFormStateChange = useCallback((newState) => {
+        setFormState(newState);
+    }, []);
+
     return (
         <div className="w-full">
             <Card className="h-full border-0 shadow-none">
@@ -102,18 +130,46 @@ export default function Scanner({ warehouses, inventoryLocations = [] }) {
                         </div>
                     )}
 
-                    {/* Session Form */}
-                    <SessionForm
-                        warehouses={warehouses}
-                        sessionData={sessionData}
-                        onSessionChange={setSessionData}
-                    />
+                    <div className="grid grid-cols-2 gap-4 items-center">
+                        {/* Session Form */}
+                        <SessionForm
+                            warehouses={warehouses}
+                            sessionData={sessionData}
+                            onSessionChange={setSessionData}
+                        />
+                        <div>
+                            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                                <Button
+                                    type="button"
+                                    className="flex items-center gap-2 flex-1"
+                                    disabled={formState.isSubmitting}
+                                    onClick={handleSubmitForm}
+                                >
+                                    <Save className="h-4 w-4" />
+                                    {formState.isSubmitting
+                                        ? "Menyimpan..."
+                                        : `Simpan ${formState.fieldsLength} Produk`}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={handleResetForm}
+                                    disabled={formState.isSubmitting}
+                                    className="w-full sm:w-auto"
+                                >
+                                    Reset
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Table Form */}
                     <ProductTableForm
+                        ref={productFormRef}
                         onSuccess={handleFormSuccess}
                         onReset={handleFormReset}
                         onRequestScan={handleRequestScan}
+                        onFormStateChange={handleFormStateChange}
                         selectedWarehouse={sessionData.warehouse}
                         selectedWarehouseName={sessionData.warehouseName}
                         inventoryLocations={inventoryLocations}

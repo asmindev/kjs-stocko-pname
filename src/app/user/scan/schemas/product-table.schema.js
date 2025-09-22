@@ -11,7 +11,9 @@ export const productTableSchema = z.object({
                     .optional()
                     .transform((val) => val?.trim() || ""),
                 uom_id: z.string().optional().default(""),
-                uom_name: z.string().optional().default(""),
+                uom_name: z.string().refine((val) => val && val.trim() !== "", {
+                    message: "UoM tidak valid",
+                }),
                 product_id: z.number().optional(), // ID dari Odoo (optional untuk backward compatibility)
                 location_id: z
                     .union([z.number(), z.string(), z.null()])

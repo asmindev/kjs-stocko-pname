@@ -37,7 +37,7 @@ export default function LocationSelect({
     inventoryLocations = [],
     disabled = false,
     placeholder = "Pilih lokasi...",
-    clearable = false,
+    clearable = true,
 }) {
     const [open, setOpen] = useState(false);
     const [searchValue, setSearchValue] = useState("");
@@ -143,7 +143,7 @@ export default function LocationSelect({
             >
                 <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    <span>Pilih gudang terlebih dahulu</span>
+                    <span>Pilih Lokasi terlebih dahulu</span>
                 </div>
                 <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -189,19 +189,16 @@ export default function LocationSelect({
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+            <PopoverContent className="p-0">
                 <Command shouldFilter={false}>
-                    <div className="flex items-center border-b px-3">
-                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                        <CommandInput
-                            placeholder="Cari lokasi..."
-                            value={searchValue}
-                            onValueChange={setSearchValue}
-                            className="border-0 focus:ring-0"
-                        />
-                    </div>
+                    <CommandInput
+                        placeholder="Cari lokasi..."
+                        value={searchValue}
+                        onValueChange={setSearchValue}
+                        className="border-0 focus:ring-0"
+                    />
 
-                    <CommandList>
+                    <CommandList className={"overflow-hidden"}>
                         {filteredLocations.length === 0 ? (
                             <CommandEmpty className="py-6 text-center text-sm">
                                 {searchValue
@@ -247,48 +244,11 @@ export default function LocationSelect({
                                                         location.id
                                                     )
                                                 }
-                                                className={cn(
-                                                    "cursor-pointer transition-colors",
-                                                    isSelected &&
-                                                        "bg-accent/50 border-l-2 border-l-primary"
-                                                )}
+                                                className="cursor-pointer transition-colors w-full"
                                             >
-                                                <div className="flex items-center gap-3 w-full">
-                                                    {/* Check icon */}
-                                                    <div className="flex items-center justify-center w-4 h-4">
-                                                        <Check
-                                                            className={cn(
-                                                                "h-4 w-4 transition-all",
-                                                                isSelected
-                                                                    ? "opacity-100 text-primary scale-100"
-                                                                    : "opacity-0 scale-75"
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                    {/* Location info */}
-                                                    <div className="flex flex-col gap-1 min-w-0 flex-1">
-                                                        <span
-                                                            className={cn(
-                                                                "transition-colors",
-                                                                isSelected
-                                                                    ? "font-semibold text-primary"
-                                                                    : "font-medium"
-                                                            )}
-                                                        >
-                                                            {
-                                                                location.display_name
-                                                            }
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Selected badge */}
-                                                    {isSelected && (
-                                                        <div className="flex items-center">
-                                                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <p className="text-sm">
+                                                    {location.display_name}
+                                                </p>
                                             </CommandItem>
                                         );
                                     })}

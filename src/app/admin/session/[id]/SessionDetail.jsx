@@ -20,12 +20,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Calendar, User, Edit } from "lucide-react";
 import { format } from "date-fns";
-import { postInventoryAdjustment, uploadToOdoo } from "./actions";
-import { toast } from "sonner";
 
 export default function SessionDetail({ data }) {
     const router = useRouter();
-    console.log("Session Detail Data:", data);
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
@@ -49,40 +46,6 @@ export default function SessionDetail({ data }) {
         }
     };
 
-    const onPost = async () => {
-        // Implementasi logika untuk posting session
-        try {
-            // Cek kondisi state dan inventory_id
-            if (data.state === "DRAFT" && !data.inventory_id) {
-                toast.promise(uploadToOdoo(data.id), {
-                    loading: "Memproses dokumen...",
-                    success: "Dokumen berhasil diposting ke Odoo!",
-                    error: (err) =>
-                        `Gagal memposting dokumen: ${err.message || err}`,
-                });
-                return;
-            }
-
-            if (data.state === "DRAFT" && data.inventory_id) {
-                toast.promise(postInventoryAdjustment(data.id), {
-                    loading: "Memproses dokumen...",
-                    success: "Dokumen berhasil diposting ke Odoo!",
-                    error: (err) =>
-                        `Gagal memposting dokumen: ${err.message || err}`,
-                });
-                return;
-            }
-            // Setelah berhasil, refresh halaman untuk melihat perubahan status
-        } catch (error) {
-            console.error("Error posting session:", error);
-            toast.error("Gagal memposting dokumen. Silakan coba lagi.");
-        }
-    };
-
-    const handleEdit = () => {
-        router.push(`/user/session/${data.id}/edit`);
-    };
-
     return (
         <div className="space-y-6">
             {/* Header dengan tombol kembali */}
@@ -94,7 +57,7 @@ export default function SessionDetail({ data }) {
                 <h1 className="text-2xl font-bold">Detail Checker</h1>
             </div>
 
-            {/* Info Checker */}
+            {/* Info Session */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -102,29 +65,6 @@ export default function SessionDetail({ data }) {
                             <div className="flex items-center gap-2">
                                 <Package className="w-5 h-5" />
                                 {data.name || `Session #${data.id}`}
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="hover:cursor-pointer"
-                                    disabled={data.state === "POST"}
-                                    onClick={handleEdit}
-                                >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                </Button>
-                                <Button
-                                    variant="default"
-                                    size="sm"
-                                    className={"hover:cursor-pointer"}
-                                    disabled={data.state === "POST"}
-                                    onClick={onPost}
-                                >
-                                    {data.inventory_id
-                                        ? "Post"
-                                        : "Post to Odoo"}
-                                </Button>
                             </div>
                         </div>
                     </CardTitle>
