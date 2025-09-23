@@ -1,5 +1,11 @@
 import { OdooClient } from "@tapni/odoo-xmlrpc";
 
+// ODOO_URL="http://localhost:8001"
+// ODOO_DB="kjsdev"
+
+const ODOO_URL = process.env.ODOO_URL;
+const ODOO_DB = process.env.ODOO_DB;
+
 class Client {
     /**
      * Initialize an Odoo client instance
@@ -12,8 +18,8 @@ class Client {
         this.email = email;
         this.password = password;
         const ODOO = {
-            url: "http://localhost:8001",
-            db: "kjsdev",
+            url: ODOO_URL,
+            db: ODOO_DB,
             username: email,
             password: password,
         };
