@@ -99,7 +99,7 @@ export default function Dashboard({ warehouses, sessions, locations }) {
     const FALLBACK_COLORS = {
         DRAFT: "#374151",
         POST: "#3b82f6",
-        "BELUM DI CEK": "#ef4444", // merah biar jelas
+        UNREVIEWED: "#ef4444", // merah biar jelas
     };
 
     // Custom tooltip untuk chart
