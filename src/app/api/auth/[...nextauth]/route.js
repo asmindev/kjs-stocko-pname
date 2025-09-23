@@ -43,11 +43,23 @@ export const authOptions = {
 
                     // Buat atau ambil Odoo session
                     try {
-                        await OdooSessionManager.getClient(
+                        const odooClient = await OdooSessionManager.getClient(
                             user.id.toString(),
                             user.email,
                             credentials.password // Password asli untuk Odoo
                         );
+                        const odooUser = await odooClient.getUserInfo();
+                        console.log("Odoo user info:", odooUser);
+                        if (!odooUser) {
+                            return null;
+                        }
+
+                        user.is_admin = odooUser.is_admin || false;
+                        console.log("User is admin:", user.is_admin);
+                        await prisma.user.update({
+                            where: { id: user.id },
+                            data: { is_admin: user.is_admin },
+                        });
                     } catch (error) {
                         // Bisa pilih: gagalkan login atau lanjutkan tanpa Odoo
                         return null; // Uncomment untuk gagalkan login jika Odoo tidak tersedia

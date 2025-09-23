@@ -49,7 +49,7 @@ class Client {
                 "res.users",
                 [["id", "=", userId]],
                 {
-                    fields: ["name", "email", "login"],
+                    fields: ["name", "email", "login", "is_opname_react_admin"],
                     limit: 1,
                 }
             );
@@ -62,6 +62,7 @@ class Client {
                 id: userId,
                 name: userInfo[0].name,
                 email: userInfo[0].email || userInfo[0].login,
+                is_admin: userInfo[0].is_opname_react_admin || false,
             };
         } catch (error) {
             console.error("Error getting user info:", error);
