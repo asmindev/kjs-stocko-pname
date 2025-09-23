@@ -46,7 +46,7 @@ export async function POST(request) {
             const year = String(date.getFullYear()).slice(-2);
             const hours = String(date.getHours()).padStart(2, "0");
             const minutes = String(date.getMinutes()).padStart(2, "0");
-            const sequence = `${location_code}/${year}/${month}/${day} ${hours}/${minutes}`;
+            const sequence = `${location_code}/${year}${month}${day}-${hours}${minutes}`;
             const scanSession = await prisma.session.create({
                 data: {
                     name: sequence,

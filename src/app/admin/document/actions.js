@@ -21,6 +21,7 @@ export async function getDocuments() {
         const sessions = await prisma.session.findMany({
             where: {
                 inventory_id: { not: null },
+                state: { notIn: ["DRAFT"] },
             },
             include: {
                 products: true,
@@ -35,6 +36,8 @@ export async function getDocuments() {
                 created_at: "desc",
             },
         });
+
+        console.log({ sessions });
 
         // Transform data untuk menambahkan informasi jumlah produk
         const sessionsWithProductCount = sessions.map((session) => ({
@@ -62,7 +65,6 @@ export async function getDocuments() {
             "create_uid",
         ];
         const documents = await odoo.client.searchRead(MODEL, domain, {});
-        console.log("Documents:", documents);
 
         return { success: true, documents };
     } catch (error) {

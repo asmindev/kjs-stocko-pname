@@ -124,6 +124,15 @@ export default function LocationSelect({
         [warehouseLocations, onValueChange]
     );
 
+    const formatLocationLabel = (location) => {
+        const name = location.display_name;
+        if (!name) return "";
+        //    remove "/Stock/" from the end of the name
+        const formattedName = name.split("/Stock/")[1]?.trim();
+        console.log(formattedName);
+        return formattedName;
+    };
+
     // Handle popover state
     const handleOpenChange = useCallback((newOpen) => {
         setOpen(newOpen);
@@ -181,7 +190,7 @@ export default function LocationSelect({
                         <MapPin className="h-4 w-4 shrink-0" />
                         <span className="truncate text-left">
                             {selectedLocation
-                                ? selectedLocation.display_name
+                                ? formatLocationLabel(selectedLocation)
                                 : placeholder}
                         </span>
                     </div>
@@ -247,7 +256,9 @@ export default function LocationSelect({
                                                 className="cursor-pointer transition-colors w-full"
                                             >
                                                 <p className="text-sm">
-                                                    {location.display_name}
+                                                    {formatLocationLabel(
+                                                        location
+                                                    )}
                                                 </p>
                                             </CommandItem>
                                         );

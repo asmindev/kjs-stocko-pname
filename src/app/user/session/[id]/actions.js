@@ -28,8 +28,6 @@ export const postInventoryAdjustment = async (sessionId) => {
             where: { id: parseInt(sessionId) },
             data: { state: "POST" },
         });
-        revalidatePath(`/user/session/${sessionId}`);
-        revalidatePath("/user/dashboard");
         return { success: true };
     } catch (error) {
         console.error("Failed to upload to Odoo:", error);
@@ -139,6 +137,9 @@ export const uploadToOdoo = async (sessionId) => {
             where: { id: parseInt(sessionId) },
             data: { inventory_id: inventory },
         });
+        // START INVENTORY
+        await postInventoryAdjustment(sessionId);
+
         revalidatePath(`/user/session/${sessionId}`);
         revalidatePath("/user/dashboard");
         return inventory;
