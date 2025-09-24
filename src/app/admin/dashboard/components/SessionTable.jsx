@@ -50,9 +50,9 @@ export default function SessionTable({ sessions }) {
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle>Riwayat Checker</CardTitle>
+                    <CardTitle>Riwayat Perhitungan</CardTitle>
                     <CardDescription>
-                        Belum ada session scan yang tersimpan
+                        Belum ada Dokumen yang tersimpan
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -62,7 +62,7 @@ export default function SessionTable({ sessions }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Riwayat Checker</CardTitle>
+                <CardTitle>Riwayat Perhitungan</CardTitle>
                 <CardDescription>
                     Daftar semua checker yang telah dibuat
                 </CardDescription>
@@ -71,7 +71,7 @@ export default function SessionTable({ sessions }) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Nama Session</TableHead>
+                            <TableHead>Nama Dokumen</TableHead>
                             <TableHead>Tanggal Dibuat</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Jumlah Produk</TableHead>

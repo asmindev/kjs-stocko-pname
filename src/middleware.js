@@ -15,6 +15,10 @@ export default withAuth(
         if (pathname.startsWith("/user") && is_admin) {
             return Response.redirect(new URL("/admin/dashboard", req.url));
         }
+
+        if (pathname.startsWith("/admin") && !is_admin) {
+            return Response.redirect(new URL("/user/dashboard", req.url));
+        }
     },
     {
         callbacks: {

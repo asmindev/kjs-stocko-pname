@@ -8,8 +8,10 @@ const prisma = new PrismaClient();
 // --- Encryption untuk session data ---
 const ENCRYPTION_KEY = crypto
     .createHash("sha256")
-    .update(String(process.env.SESSION_ENCRYPTION_KEY || "default_secret"))
+    .update(String(process.env.SESSION_ENCRYPTION_KEY))
     .digest(); // hasilnya 32 bytes
+
+console.log("ENCRYPTION_KEY:", ENCRYPTION_KEY.toString("hex"));
 const ALGORITHM = "aes-256-gcm";
 
 class SessionEncryption {

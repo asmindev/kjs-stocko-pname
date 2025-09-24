@@ -40,6 +40,14 @@ export async function POST(request) {
             );
         }
 
+        // check if user can access the app
+        if (!userInfo.can_access_opname_react) {
+            return NextResponse.json(
+                { error: "Anda tidak memiliki akses ke aplikasi ini" },
+                { status: 403 }
+            );
+        }
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
 

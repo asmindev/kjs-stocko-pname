@@ -49,13 +49,16 @@ export const authOptions = {
                             credentials.password // Password asli untuk Odoo
                         );
                         const odooUser = await odooClient.getUserInfo();
-                        console.log("Odoo user info:", odooUser);
                         if (!odooUser) {
                             return null;
                         }
 
+                        // check if user can access the app
+                        if (!odooUser.can_access_opname_react) {
+                            return null;
+                        }
+
                         user.is_admin = odooUser.is_admin || false;
-                        console.log("User is admin:", user.is_admin);
                         await prisma.user.update({
                             where: { id: user.id },
                             data: { is_admin: user.is_admin },

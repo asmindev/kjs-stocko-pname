@@ -54,7 +54,7 @@ export default function SessionDetail({ data }) {
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Kembali
                 </Button>
-                <h1 className="text-2xl font-bold">Detail Checker</h1>
+                <h1 className="text-2xl font-bold">Detail Dokumen</h1>
             </div>
 
             {/* Info Session */}
@@ -68,7 +68,7 @@ export default function SessionDetail({ data }) {
                             </div>
                         </div>
                     </CardTitle>
-                    <CardDescription>Informasi detail checker</CardDescription>
+                    <CardDescription>Informasi Detail Dokumen</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -125,7 +125,7 @@ export default function SessionDetail({ data }) {
                 <CardHeader>
                     <CardTitle>Produk yang Discan</CardTitle>
                     <CardDescription>
-                        Total {data.products.length} produk dalam riwayat ini
+                        Total {data.products.length} produk dalam dokumen ini
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

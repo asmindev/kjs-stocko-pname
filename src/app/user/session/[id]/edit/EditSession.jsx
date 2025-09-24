@@ -266,11 +266,11 @@ export default function EditSession({
                         </Button>
                         <div>
                             <CardTitle className="text-3xl font-bold">
-                                Edit Session:{" "}
+                                Edit Dokumen:{" "}
                                 {sessionData.name || `#${sessionData.id}`}
                             </CardTitle>
                             <CardDescription>
-                                Edit produk dalam riwayat ini - tambah, ubah,
+                                Edit produk dalam dokumen ini - tambah, ubah,
                                 atau hapus produk menggunakan kamera atau input
                                 manual
                             </CardDescription>

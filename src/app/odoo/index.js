@@ -14,7 +14,7 @@ class Client {
      * @param {string} params.password - Password for authentication
      */
     constructor({ email, password }) {
-        console.log("Initializing Odoo client");
+        // console.log("Initializing Odoo client");
         this.email = email;
         this.password = password;
         const ODOO = {
@@ -49,7 +49,13 @@ class Client {
                 "res.users",
                 [["id", "=", userId]],
                 {
-                    fields: ["name", "email", "login", "is_opname_react_admin"],
+                    fields: [
+                        "name",
+                        "email",
+                        "login",
+                        "can_access_opname_react",
+                        "role_opname_react",
+                    ],
                     limit: 1,
                 }
             );
@@ -62,7 +68,10 @@ class Client {
                 id: userId,
                 name: userInfo[0].name,
                 email: userInfo[0].email || userInfo[0].login,
-                is_admin: userInfo[0].is_opname_react_admin || false,
+                role: userInfo[0].role_opname_react,
+                can_access_opname_react:
+                    userInfo[0].can_access_opname_react || false,
+                is_admin: userInfo[0].role_opname_react === "admin" || false,
             };
         } catch (error) {
             console.error("Error getting user info:", error);
