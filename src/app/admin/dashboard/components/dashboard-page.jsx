@@ -137,7 +137,7 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                     Dashboard Inventory
                 </h1>
                 <p className="text-muted-foreground">
-                    Overview status Inventory Adjustments berdasarkan warehouse
+                    Overview status Dokumen berdasarkan Lokasi
                 </p>
             </div>
             {/* Statistics Cards */}
@@ -155,7 +155,7 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                         </div>
                         <p className="text-xs text-muted-foreground">
                             {selectedWarehouse === "all"
-                                ? "Semua warehouse"
+                                ? "Semua Dokumen"
                                 : selectedWarehouseData?.name}
                         </p>
                     </CardContent>
@@ -198,7 +198,7 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                     <CardTitle>
                         <div className="w-full flex flex-col md:flex-row md:justify-between md:items-center  gap-2">
                             <div className="w-full flex justify-between items-center gap-2">
-                                <span>Distribusi Status Session</span>
+                                <span>Distribusi Status Dokumen</span>
                                 {selectedWarehouse !== "all" && (
                                     <Badge variant="outline">
                                         {selectedWarehouseData?.code}
@@ -263,8 +263,8 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                     </CardTitle>
                     <CardDescription>
                         {selectedWarehouse === "all"
-                            ? "Menampilkan semua Inventory Adjustments dari seluruh warehouse"
-                            : `Data Inventory Adjustments untuk ${selectedWarehouseData?.name}`}
+                            ? "Menampilkan semua Dokumen dari seluruh lokasi"
+                            : `Dokumen   untuk ${selectedWarehouseData?.name}`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
