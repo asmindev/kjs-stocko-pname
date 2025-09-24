@@ -31,10 +31,10 @@ import {
     productTableSchema,
     defaultProductTableValues,
     defaultProductItem,
-} from "../../../scan/schemas/product-table.schema";
-import { useProductSearch } from "../../../scan/hooks/useProductSearch";
-import UomSelect from "../../../scan/components/UomSelect";
-import LocationSelect from "../../../scan/components/LocationSelect";
+} from "@/app/user/scan/schemas/product-table.schema";
+import { useProductSearch } from "@/app/user/scan/hooks/useProductSearch";
+import UomSelect from "@/app/user/scan/components/UomSelect";
+import LocationSelect from "@/app/user/scan/components/LocationSelect";
 
 export default function EditSession({
     sessionData,

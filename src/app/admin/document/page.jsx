@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import React from "react";
 import { getDocuments } from "./actions";
 import DocumentsTable from "./components/TableColumn";
