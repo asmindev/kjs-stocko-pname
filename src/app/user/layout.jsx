@@ -10,7 +10,7 @@ import {
 import UserSidebar from "./components/UserSidebar";
 
 // Routes that should not have sidebar
-const NO_SIDEBAR_ROUTES = ["/auth/login", "/auth/register", "/"];
+const NO_SIDEBAR_ROUTES = ["/auth/login", "/"];
 
 export default function UserLayout({ children }) {
     const { data: session, status } = useSession();

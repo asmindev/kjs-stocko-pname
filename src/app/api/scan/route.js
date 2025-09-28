@@ -92,11 +92,6 @@ export async function POST(request) {
                     failedCount++;
                 }
             }
-            // const inventory = await uploadToOdoo(scanSession.id);
-            // await prisma.session.update({
-            //     where: { id: scanSession.id },
-            //     data: { inventory_id: inventory },
-            // });
             return Response.json({
                 success: successCount > 0,
                 successCount,
@@ -166,36 +161,6 @@ export async function POST(request) {
                 sessionId: scanSession.id,
                 results,
                 message: `${successCount} produk berhasil disimpan, ${failedCount} gagal`,
-            });
-        } else {
-            // Single product submission (legacy support)
-            const { barcode, name, uomId, quantity } = data;
-
-            // Create session first
-            const scanSession = await prisma.session.create({
-                data: {
-                    name: `Session ${new Date().toISOString()}`,
-                    user_id: userId,
-                },
-            });
-
-            // Create product
-            const product = await prisma.product.create({
-                data: {
-                    barcode,
-                    name: name || "",
-                    uom_id: uomId ? parseInt(uomId) : null,
-                    quantity: quantity || 1,
-                    session_id: scanSession.id,
-                    userId: userId,
-                },
-            });
-
-            return Response.json({
-                success: true,
-                product,
-                sessionId: scanSession.id,
-                message: "Produk berhasil disimpan",
             });
         }
     } catch (error) {

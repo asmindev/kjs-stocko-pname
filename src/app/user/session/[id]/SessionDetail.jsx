@@ -18,14 +18,35 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Calendar, User, Edit } from "lucide-react";
+import { ArrowLeft, Package, Calendar, User, Edit, MapPin } from "lucide-react";
 import { format } from "date-fns";
-import { postInventoryAdjustment, uploadToOdoo } from "./actions";
 import { toast } from "sonner";
+import { confirmSession } from "./actions";
+import { useSession } from "next-auth/react";
 
+const STATE_MAP = {
+    DRAFT: {
+        label: "DRAFT",
+        color: "bg-foreground",
+    },
+    CONFIRMED: {
+        label: "CONFIRMED",
+        color: "bg-blue-500",
+    },
+    POST: {
+        label: "POST",
+        color: "bg-green-500",
+    },
+    DONE: {
+        label: "DONE",
+        color: "bg-green-500",
+    },
+};
+
+const DISABLE_ON_STATE = ["CONFIRMED", "POST", "DONE"];
 export default function SessionDetail({ data }) {
+    const { data: session, status } = useSession();
     const router = useRouter();
-    console.log("Session Detail Data:", data);
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
@@ -39,48 +60,18 @@ export default function SessionDetail({ data }) {
     };
 
     const getStateBadgeVariant = (state) => {
-        switch (state) {
-            case "DRAFT":
-                return "secondary";
-            case "POST":
-                return "default";
-            default:
-                return "outline";
-        }
-    };
-
-    const onPost = async () => {
-        // Implementasi logika untuk posting session
-        try {
-            // Cek kondisi state dan inventory_id
-            if (data.state === "DRAFT" && !data.inventory_id) {
-                toast.promise(uploadToOdoo(data.id), {
-                    loading: "Memproses dokumen...",
-                    success: "Dokumen berhasil diposting ke Odoo!",
-                    error: (err) =>
-                        `Gagal memposting dokumen: ${err.message || err}`,
-                });
-                return;
-            }
-
-            if (data.state === "DRAFT" && data.inventory_id) {
-                toast.promise(postInventoryAdjustment(data.id), {
-                    loading: "Memproses dokumen...",
-                    success: "Dokumen berhasil diposting ke Odoo!",
-                    error: (err) =>
-                        `Gagal memposting dokumen: ${err.message || err}`,
-                });
-                return;
-            }
-            // Setelah berhasil, refresh halaman untuk melihat perubahan status
-        } catch (error) {
-            console.error("Error posting session:", error);
-            toast.error("Gagal memposting dokumen. Silakan coba lagi.");
-        }
+        return STATE_MAP[state].color;
     };
 
     const handleEdit = () => {
         router.push(`/user/session/${data.id}/edit`);
+    };
+
+    const onConfirm = async () => {
+        toast.promise(confirmSession(data.id), {
+            loading: "Memproses dokumen...",
+            success: "Dokumen berhasil dikonfirmasi!",
+        });
     };
 
     return (
@@ -108,22 +99,28 @@ export default function SessionDetail({ data }) {
                                     variant="outline"
                                     size="sm"
                                     className="hover:cursor-pointer"
-                                    disabled={data.state === "POST"}
+                                    disabled={DISABLE_ON_STATE.includes(
+                                        data.state
+                                    )}
                                     onClick={handleEdit}
                                 >
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                 </Button>
+                                {/* CONFIRM BUTTON */}
                                 <Button
                                     variant="default"
                                     size="sm"
-                                    className={"hover:cursor-pointer"}
-                                    disabled={data.state === "POST"}
-                                    onClick={onPost}
+                                    className={`hover:cursor-pointer ${
+                                        session?.user?.role !== "leader" &&
+                                        "hidden"
+                                    }`}
+                                    disabled={DISABLE_ON_STATE.includes(
+                                        data.state
+                                    )}
+                                    onClick={onConfirm}
                                 >
-                                    {data.inventory_id
-                                        ? "Post"
-                                        : "Post to Odoo"}
+                                    Konfirmasi
                                 </Button>
                             </div>
                         </div>
@@ -159,19 +156,17 @@ export default function SessionDetail({ data }) {
                             <div>
                                 <p className="text-sm font-medium">Status</p>
                                 <Badge
-                                    variant={getStateBadgeVariant(data.state)}
+                                    className={getStateBadgeVariant(data.state)}
                                 >
                                     {data.state}
                                 </Badge>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Package className="w-4 h-4 text-muted-foreground" />
+                            <MapPin className="w-4 h-4 text-muted-foreground" />
                             <div>
                                 <p className="text-sm font-medium">Lokasi</p>
-                                <Badge
-                                    variant={getStateBadgeVariant(data.state)}
-                                >
+                                <Badge variant={"outline"}>
                                     {data.warehouse_name || "-"}
                                 </Badge>
                             </div>

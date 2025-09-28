@@ -417,8 +417,8 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                 )}
                                                 type="number"
                                                 min="1"
-                                                step="1"
-                                                placeholder="1"
+                                                step="0.01"
+                                                placeholder="1.00"
                                                 className={cn(
                                                     "w-full text-sm text-center",
                                                     errors.products?.[index]

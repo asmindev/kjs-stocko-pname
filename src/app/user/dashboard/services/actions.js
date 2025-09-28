@@ -62,13 +62,20 @@ export async function getSessionById(sessionId) {
             };
         }
 
-        const userId = parseInt(session.user.id);
+        const userId =
+            session?.user?.role === "leader" ? null : parseInt(session.user.id);
+
+        const whereClause = userId
+            ? {
+                  id: parseInt(sessionId),
+                  user_id: userId, // Only get session for logged-in user unless leader
+              }
+            : {
+                  id: parseInt(sessionId),
+              };
 
         const sessionData = await prisma.session.findUnique({
-            where: {
-                id: parseInt(sessionId),
-                user_id: userId, // Only get session for logged-in user
-            },
+            where: whereClause,
             include: {
                 products: {
                     orderBy: {

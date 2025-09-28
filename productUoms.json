@@ -1,0 +1,1938 @@
+[
+    {
+        "name": "14",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "bigger",
+        "category_id": [
+            7,
+            "Roll"
+        ],
+        "id": 158
+    },
+    {
+        "name": "1490000",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 189
+    },
+    {
+        "name": "1Kaleng",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 197
+    },
+    {
+        "name": "2261700",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 176
+    },
+    {
+        "name": "2800",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 179
+    },
+    {
+        "name": "3167",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 188
+    },
+    {
+        "name": "369",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 190
+    },
+    {
+        "name": "65000",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 185
+    },
+    {
+        "name": "6867",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 177
+    },
+    {
+        "name": "686700",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 178
+    },
+    {
+        "name": "95",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 181
+    },
+    {
+        "name": "Batang",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 60
+    },
+    {
+        "name": "BKS",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 187
+    },
+    {
+        "name": "Botol",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 76
+    },
+    {
+        "name": "Box",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 66
+    },
+    {
+        "name": "cm",
+        "factor_inv": 0.01,
+        "factor": 100,
+        "uom_type": "smaller",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 10
+    },
+    {
+        "name": "Day(s)",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            3,
+            "Working Time"
+        ],
+        "id": 6
+    },
+    {
+        "name": "Drum 220",
+        "factor_inv": 220,
+        "factor": 0.004545454545454545,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 84
+    },
+    {
+        "name": "Dus",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 61
+    },
+    {
+        "name": "Dus 10",
+        "factor_inv": 10,
+        "factor": 0.1,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 24
+    },
+    {
+        "name": "Dus 100",
+        "factor_inv": 100,
+        "factor": 0.01,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 29
+    },
+    {
+        "name": "Dus 1000",
+        "factor_inv": 1000,
+        "factor": 0.001,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 63
+    },
+    {
+        "name": "Dus 105",
+        "factor_inv": 104.99999999999999,
+        "factor": 0.009523809523809525,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 143
+    },
+    {
+        "name": "Dus 110",
+        "factor_inv": 110,
+        "factor": 0.00909090909090909,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 50
+    },
+    {
+        "name": "Dus 1100",
+        "factor_inv": 1100,
+        "factor": 0.0009090909090909091,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 141
+    },
+    {
+        "name": "Dus 1150",
+        "factor_inv": 1150,
+        "factor": 0.0008695652173913044,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 30
+    },
+    {
+        "name": "Dus 12",
+        "factor_inv": 12,
+        "factor": 0.08333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 160
+    },
+    {
+        "name": "Dus 1200",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 163
+    },
+    {
+        "name": "Dus 125",
+        "factor_inv": 125,
+        "factor": 0.008,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 38
+    },
+    {
+        "name": "Dus 130",
+        "factor_inv": 130,
+        "factor": 0.007692307692307693,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 57
+    },
+    {
+        "name": "Dus 135",
+        "factor_inv": 135,
+        "factor": 0.007407407407407408,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 145
+    },
+    {
+        "name": "Dus 140",
+        "factor_inv": 140,
+        "factor": 0.007142857142857143,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 112
+    },
+    {
+        "name": "Dus 144",
+        "factor_inv": 144,
+        "factor": 0.006944444444444444,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 101
+    },
+    {
+        "name": "Dus 145",
+        "factor_inv": 145,
+        "factor": 0.006896551724137931,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 142
+    },
+    {
+        "name": "Dus 15",
+        "factor_inv": 15,
+        "factor": 0.06666666666666667,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 110
+    },
+    {
+        "name": "Dus 150",
+        "factor_inv": 150,
+        "factor": 0.006666666666666667,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 48
+    },
+    {
+        "name": "Dus 1500",
+        "factor_inv": 1500,
+        "factor": 0.0006666666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 115
+    },
+    {
+        "name": "Dus 16",
+        "factor_inv": 16,
+        "factor": 0.0625,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 93
+    },
+    {
+        "name": "Dus 160",
+        "factor_inv": 160,
+        "factor": 0.00625,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 49
+    },
+    {
+        "name": "Dus 16kg",
+        "factor_inv": 16,
+        "factor": 0.0625,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 98
+    },
+    {
+        "name": "Dus 175",
+        "factor_inv": 175,
+        "factor": 0.005714285714285714,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 58
+    },
+    {
+        "name": "Dus 180",
+        "factor_inv": 180,
+        "factor": 0.005555555555555556,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 55
+    },
+    {
+        "name": "Dus 185",
+        "factor_inv": 185,
+        "factor": 0.005405405405405406,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 131
+    },
+    {
+        "name": "Dus 190",
+        "factor_inv": 190,
+        "factor": 0.005263157894736842,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 150
+    },
+    {
+        "name": "Dus 20",
+        "factor_inv": 20,
+        "factor": 0.05,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 85
+    },
+    {
+        "name": "Dus 200",
+        "factor_inv": 200,
+        "factor": 0.005,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 33
+    },
+    {
+        "name": "Dus 2000",
+        "factor_inv": 2000,
+        "factor": 0.0005,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 140
+    },
+    {
+        "name": "Dus 20kg",
+        "factor_inv": 20,
+        "factor": 0.05,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 97
+    },
+    {
+        "name": "Dus 220",
+        "factor_inv": 220,
+        "factor": 0.004545454545454545,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 133
+    },
+    {
+        "name": "Dus222",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 184
+    },
+    {
+        "name": "Dus 225",
+        "factor_inv": 225,
+        "factor": 0.0044444444444444444,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 42
+    },
+    {
+        "name": "Dus 230",
+        "factor_inv": 230,
+        "factor": 0.004347826086956522,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 156
+    },
+    {
+        "name": "Dus 24",
+        "factor_inv": 24,
+        "factor": 0.041666666666666664,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 83
+    },
+    {
+        "name": "Dus 240",
+        "factor_inv": 240,
+        "factor": 0.004166666666666667,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 137
+    },
+    {
+        "name": "Dus 25",
+        "factor_inv": 25,
+        "factor": 0.04,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 113
+    },
+    {
+        "name": "Dus 250",
+        "factor_inv": 250,
+        "factor": 0.004,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 28
+    },
+    {
+        "name": "Dus 26",
+        "factor_inv": 26,
+        "factor": 0.038461538461538464,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 56
+    },
+    {
+        "name": "Dus 260",
+        "factor_inv": 260,
+        "factor": 0.0038461538461538464,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 172
+    },
+    {
+        "name": "Dus 270",
+        "factor_inv": 270,
+        "factor": 0.003703703703703704,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 45
+    },
+    {
+        "name": "Dus 275",
+        "factor_inv": 275,
+        "factor": 0.0036363636363636364,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 46
+    },
+    {
+        "name": "Dus 280",
+        "factor_inv": 280,
+        "factor": 0.0035714285714285713,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 139
+    },
+    {
+        "name": "Dus 285",
+        "factor_inv": 285,
+        "factor": 0.0035087719298245615,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 36
+    },
+    {
+        "name": "Dus 290",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 173
+    },
+    {
+        "name": "Dus 3",
+        "factor_inv": 3,
+        "factor": 0.3333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 82
+    },
+    {
+        "name": "Dus 30",
+        "factor_inv": 30,
+        "factor": 0.03333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 81
+    },
+    {
+        "name": "Dus 300",
+        "factor_inv": 300,
+        "factor": 0.0033333333333333335,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 47
+    },
+    {
+        "name": "Dus 30kg",
+        "factor_inv": 30,
+        "factor": 0.03333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 96
+    },
+    {
+        "name": "Dus 320",
+        "factor_inv": 320,
+        "factor": 0.003125,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 155
+    },
+    {
+        "name": "Dus 325",
+        "factor_inv": 325,
+        "factor": 0.003076923076923077,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 109
+    },
+    {
+        "name": "Dus 330",
+        "factor_inv": 330,
+        "factor": 0.0030303030303030303,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 203
+    },
+    {
+        "name": "Dus 330",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            6,
+            "Dus"
+        ],
+        "id": 202
+    },
+    {
+        "name": "Dus 35",
+        "factor_inv": 35,
+        "factor": 0.02857142857142857,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 136
+    },
+    {
+        "name": "Dus 350",
+        "factor_inv": 350,
+        "factor": 0.002857142857142857,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 43
+    },
+    {
+        "name": "Dus 36",
+        "factor_inv": 36,
+        "factor": 0.027777777777777776,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 73
+    },
+    {
+        "name": "Dus 360",
+        "factor_inv": 360,
+        "factor": 0.002777777777777778,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 132
+    },
+    {
+        "name": "Dus 375",
+        "factor_inv": 375,
+        "factor": 0.0026666666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 34
+    },
+    {
+        "name": "Dus 385",
+        "factor_inv": 385,
+        "factor": 0.0025974025974025974,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 144
+    },
+    {
+        "name": "Dus 390",
+        "factor_inv": 390,
+        "factor": 0.002564102564102564,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 37
+    },
+    {
+        "name": "Dus 40",
+        "factor_inv": 40,
+        "factor": 0.025,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 40
+    },
+    {
+        "name": "Dus 400",
+        "factor_inv": 400,
+        "factor": 0.0025,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 35
+    },
+    {
+        "name": "Dus 425",
+        "factor_inv": 425.00000000000006,
+        "factor": 0.002352941176470588,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 151
+    },
+    {
+        "name": "Dus 450",
+        "factor_inv": 450,
+        "factor": 0.0022222222222222222,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 27
+    },
+    {
+        "name": "Dus 465",
+        "factor_inv": 465,
+        "factor": 0.002150537634408602,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 138
+    },
+    {
+        "name": "Dus 475",
+        "factor_inv": 475,
+        "factor": 0.002105263157894737,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 54
+    },
+    {
+        "name": "Dus 48",
+        "factor_inv": 48,
+        "factor": 0.020833333333333332,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 77
+    },
+    {
+        "name": "Dus 5",
+        "factor_inv": 5,
+        "factor": 0.2,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 72
+    },
+    {
+        "name": "Dus 50",
+        "factor_inv": 50,
+        "factor": 0.02,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 23
+    },
+    {
+        "name": "Dus 500",
+        "factor_inv": 500,
+        "factor": 0.002,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 32
+    },
+    {
+        "name": "Dus 55",
+        "factor_inv": 55,
+        "factor": 0.01818181818181818,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 128
+    },
+    {
+        "name": "Dus 550",
+        "factor_inv": 550,
+        "factor": 0.0018181818181818182,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 44
+    },
+    {
+        "name": "Dus 570",
+        "factor_inv": 570,
+        "factor": 0.0017543859649122807,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 154
+    },
+    {
+        "name": "Dus 6",
+        "factor_inv": 6,
+        "factor": 0.16666666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 80
+    },
+    {
+        "name": "Dus 60",
+        "factor_inv": 60,
+        "factor": 0.016666666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 53
+    },
+    {
+        "name": "Dus 600",
+        "factor_inv": 600,
+        "factor": 0.0016666666666666668,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 59
+    },
+    {
+        "name": "Dus 65",
+        "factor_inv": 65,
+        "factor": 0.015384615384615385,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 135
+    },
+    {
+        "name": "Dus 70",
+        "factor_inv": 70,
+        "factor": 0.014285714285714285,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 51
+    },
+    {
+        "name": "Dus 700",
+        "factor_inv": 700,
+        "factor": 0.0014285714285714286,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 26
+    },
+    {
+        "name": "Dus 72",
+        "factor_inv": 72,
+        "factor": 0.013888888888888888,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 70
+    },
+    {
+        "name": "Dus 75",
+        "factor_inv": 75,
+        "factor": 0.013333333333333334,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 134
+    },
+    {
+        "name": "Dus 750",
+        "factor_inv": 750,
+        "factor": 0.0013333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 31
+    },
+    {
+        "name": "Dus 76",
+        "factor_inv": 76,
+        "factor": 0.013157894736842105,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 52
+    },
+    {
+        "name": "Dus 78",
+        "factor_inv": 78,
+        "factor": 0.01282051282051282,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 162
+    },
+    {
+        "name": "Dus 80",
+        "factor_inv": 80,
+        "factor": 0.0125,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 39
+    },
+    {
+        "name": "Dus 880",
+        "factor_inv": 880,
+        "factor": 0.0011363636363636363,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 153
+    },
+    {
+        "name": "Dus 90",
+        "factor_inv": 90,
+        "factor": 0.011111111111111112,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 41
+    },
+    {
+        "name": "Dus 96",
+        "factor_inv": 96,
+        "factor": 0.010416666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 78
+    },
+    {
+        "name": "duys ",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 198
+    },
+    {
+        "name": "fl oz",
+        "factor_inv": 0.029573549417401077,
+        "factor": 33.814,
+        "uom_type": "smaller",
+        "category_id": [
+            5,
+            "Volume"
+        ],
+        "id": 17
+    },
+    {
+        "name": "foot(ft)",
+        "factor_inv": 0.3047999902464003,
+        "factor": 3.28084,
+        "uom_type": "smaller",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 15
+    },
+    {
+        "name": "g",
+        "factor_inv": 0.001,
+        "factor": 1000,
+        "uom_type": "smaller",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 4
+    },
+    {
+        "name": "Galon",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 64
+    },
+    {
+        "name": "gal(s)",
+        "factor_inv": 3.78541,
+        "factor": 0.26417217685798894,
+        "uom_type": "bigger",
+        "category_id": [
+            5,
+            "Volume"
+        ],
+        "id": 19
+    },
+    {
+        "name": "Hour(s)",
+        "factor_inv": 0.125,
+        "factor": 8,
+        "uom_type": "smaller",
+        "category_id": [
+            3,
+            "Working Time"
+        ],
+        "id": 5
+    },
+    {
+        "name": "inch(es)",
+        "factor_inv": 0.025399986284007407,
+        "factor": 39.3701,
+        "uom_type": "smaller",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 14
+    },
+    {
+        "name": "Kaleng",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 21
+    },
+    {
+        "name": "Karung 50",
+        "factor_inv": 50,
+        "factor": 0.02,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 87
+    },
+    {
+        "name": "Karung 50kg",
+        "factor_inv": 50,
+        "factor": 0.02,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 100
+    },
+    {
+        "name": "Karung RBB",
+        "factor_inv": 5000,
+        "factor": 0.0002,
+        "uom_type": "bigger",
+        "category_id": [
+            10,
+            "UoM Ring Baut"
+        ],
+        "id": 107
+    },
+    {
+        "name": "kg",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 3
+    },
+    {
+        "name": "KG",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 191
+    },
+    {
+        "name": "KG",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 192
+    },
+    {
+        "name": "Kg RBB",
+        "factor_inv": 100,
+        "factor": 0.01,
+        "uom_type": "bigger",
+        "category_id": [
+            10,
+            "UoM Ring Baut"
+        ],
+        "id": 106
+    },
+    {
+        "name": "KL",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 201
+    },
+    {
+        "name": "km",
+        "factor_inv": 1000,
+        "factor": 0.001,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 9
+    },
+    {
+        "name": "Kotak",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 62
+    },
+    {
+        "name": "Kotak 1500",
+        "factor_inv": 1500,
+        "factor": 0.0006666666666666666,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 102
+    },
+    {
+        "name": "Kotak 200",
+        "factor_inv": 200,
+        "factor": 0.005,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 122
+    },
+    {
+        "name": "Kotak 40",
+        "factor_inv": 40,
+        "factor": 0.025,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 103
+    },
+    {
+        "name": "Kotak 400",
+        "factor_inv": 400,
+        "factor": 0.0025,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 123
+    },
+    {
+        "name": "Kotak 500",
+        "factor_inv": 500,
+        "factor": 0.002,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 71
+    },
+    {
+        "name": "lb(s)",
+        "factor_inv": 0.45359290943563974,
+        "factor": 2.20462,
+        "uom_type": "smaller",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 12
+    },
+    {
+        "name": "Lembar",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 20
+    },
+    {
+        "name": "Liter(s)",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            5,
+            "Volume"
+        ],
+        "id": 11
+    },
+    {
+        "name": "LSN",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 193
+    },
+    {
+        "name": "lud",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 195
+    },
+    {
+        "name": "Lusin",
+        "factor_inv": 12,
+        "factor": 0.08333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 2
+    },
+    {
+        "name": "m",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 8
+    },
+    {
+        "name": "m2",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 196
+    },
+    {
+        "name": "mile(s)",
+        "factor_inv": 1609.34,
+        "factor": 0.0006213727366498068,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 16
+    },
+    {
+        "name": "oz(s)",
+        "factor_inv": 0.02834949254408346,
+        "factor": 35.274,
+        "uom_type": "smaller",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 13
+    },
+    {
+        "name": "Pack",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 67
+    },
+    {
+        "name": "Pack 180",
+        "factor_inv": 180,
+        "factor": 0.005555555555555556,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 88
+    },
+    {
+        "name": "Pack 180",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 194
+    },
+    {
+        "name": "Pail",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 199
+    },
+    {
+        "name": "Pasang",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 65
+    },
+    {
+        "name": "pcs",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 167
+    },
+    {
+        "name": "pcs",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 166
+    },
+    {
+        "name": "pcs",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 168
+    },
+    {
+        "name": "Pcs",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 22
+    },
+    {
+        "name": "pcs4",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 182
+    },
+    {
+        "name": "pcs 48",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 180
+    },
+    {
+        "name": "pcs9",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            11,
+            "Unsorted/Imported Units"
+        ],
+        "id": 183
+    },
+    {
+        "name": "Pcs RBB",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            10,
+            "UoM Ring Baut"
+        ],
+        "id": 105
+    },
+    {
+        "name": "qt",
+        "factor_inv": 0.9463513423993792,
+        "factor": 1.05669,
+        "uom_type": "smaller",
+        "category_id": [
+            5,
+            "Volume"
+        ],
+        "id": 18
+    },
+    {
+        "name": "Ret ",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            14,
+            "Ret"
+        ],
+        "id": 175
+    },
+    {
+        "name": "Roll",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 68
+    },
+    {
+        "name": "Roll 10",
+        "factor_inv": 10,
+        "factor": 0.1,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 89
+    },
+    {
+        "name": "Roll 100",
+        "factor_inv": 100,
+        "factor": 0.01,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 75
+    },
+    {
+        "name": "Roll 14",
+        "factor_inv": 14,
+        "factor": 0.07142857142857142,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 159
+    },
+    {
+        "name": "Roll 20",
+        "factor_inv": 20,
+        "factor": 0.05,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 94
+    },
+    {
+        "name": "Roll 20kg",
+        "factor_inv": 20,
+        "factor": 0.05,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 99
+    },
+    {
+        "name": "Roll29",
+        "factor_inv": 29,
+        "factor": 0.034482758620689655,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 157
+    },
+    {
+        "name": "Roll 30",
+        "factor_inv": 30,
+        "factor": 0.03333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 90
+    },
+    {
+        "name": "Roll 300",
+        "factor_inv": 300,
+        "factor": 0.0033333333333333335,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 104
+    },
+    {
+        "name": "Roll 39",
+        "factor_inv": 39,
+        "factor": 0.02564102564102564,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 79
+    },
+    {
+        "name": "Roll 40",
+        "factor_inv": 40,
+        "factor": 0.025,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 95
+    },
+    {
+        "name": "Roll 45",
+        "factor_inv": 45,
+        "factor": 0.022222222222222223,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 92
+    },
+    {
+        "name": "Roll 46",
+        "factor_inv": 46,
+        "factor": 0.021739130434782608,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 91
+    },
+    {
+        "name": "Roll 48",
+        "factor_inv": 48,
+        "factor": 0.020833333333333332,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 69
+    },
+    {
+        "name": "Roll 50",
+        "factor_inv": 50,
+        "factor": 0.02,
+        "uom_type": "bigger",
+        "category_id": [
+            4,
+            "Length / Distance"
+        ],
+        "id": 86
+    },
+    {
+        "name": "Sak",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 74
+    },
+    {
+        "name": "Sak 50kg",
+        "factor_inv": 50,
+        "factor": 0.02,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 119
+    },
+    {
+        "name": "Set",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 25
+    },
+    {
+        "name": "t",
+        "factor_inv": 1000,
+        "factor": 0.001,
+        "uom_type": "bigger",
+        "category_id": [
+            2,
+            "Weight"
+        ],
+        "id": 7
+    },
+    {
+        "name": "Unit",
+        "factor_inv": 1,
+        "factor": 1,
+        "uom_type": "reference",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 1
+    },
+    {
+        "name": "xLusin",
+        "factor_inv": 12,
+        "factor": 0.08333333333333333,
+        "uom_type": "bigger",
+        "category_id": [
+            1,
+            "Unit"
+        ],
+        "id": 114
+    }
+]

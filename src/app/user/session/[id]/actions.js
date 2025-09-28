@@ -148,3 +148,33 @@ export const uploadToOdoo = async (sessionId) => {
         throw error;
     }
 };
+
+export const confirmSession = async (sessionId) => {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            throw new Error("Unauthorized");
+        }
+        if (session.user.role !== "leader") {
+            throw new Error("Forbidden: Insufficient permissions");
+        }
+
+        // update all products and session state to CONFIRMED
+        await prisma.product.updateMany({
+            where: { session_id: parseInt(sessionId) },
+            data: { state: "CONFIRMED" },
+        });
+        await prisma.session.update({
+            where: { id: parseInt(sessionId) },
+            data: { state: "CONFIRMED" },
+        });
+        revalidatePath(`/user/session/${sessionId}`);
+        revalidatePath("/user/dashboard");
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to confirm session:", error);
+        revalidatePath(`/user/session/${sessionId}`);
+        revalidatePath("/user/dashboard");
+        throw error;
+    }
+};

@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import SessionWrapper from "@/components/SessionWrapper";
 import "./static/globals.css";
+import ProgressProviders from "./providers/progress";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -27,10 +28,12 @@ export default function RootLayout({ children }) {
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased w-full`}
             >
-                <SessionWrapper>
-                    {children}
-                    <Toaster position="top-right" duration={2000} />
-                </SessionWrapper>
+                <ProgressProviders>
+                    <SessionWrapper>
+                        {children}
+                        <Toaster position="top-right" duration={2000} />
+                    </SessionWrapper>
+                </ProgressProviders>
             </body>
         </html>
     );

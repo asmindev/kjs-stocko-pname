@@ -39,24 +39,35 @@ export default function DocumentsTable({ documents }) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {documents.map((doc) => (
-                        <TableRow key={doc.id}>
-                            <TableCell className="font-medium">
-                                {doc.create_uid?.[1] || "Unknown User"}
-                            </TableCell>
-                            <TableCell>{doc.name}</TableCell>
-                            <TableCell>
-                                <State state={doc.state} />
-                            </TableCell>
-                            <TableCell>{doc.date}</TableCell>
-                            <TableCell>{doc.location_id?.[1]}</TableCell>
-                            <TableCell>
-                                <Badge variant={"outline"}>
-                                    {doc.line_ids.length}
-                                </Badge>
+                    {!documents || documents.length === 0 ? (
+                        <TableRow>
+                            <TableCell
+                                colSpan={6}
+                                className="h-24 text-center text-muted-foreground"
+                            >
+                                Tidak ada dokumen untuk ditampilkan.
                             </TableCell>
                         </TableRow>
-                    ))}
+                    ) : (
+                        documents.map((doc) => (
+                            <TableRow key={doc.id}>
+                                <TableCell className="font-medium">
+                                    {doc.create_uid?.[1] || "Unknown User"}
+                                </TableCell>
+                                <TableCell>{doc.name}</TableCell>
+                                <TableCell>
+                                    <State state={doc.state} />
+                                </TableCell>
+                                <TableCell>{doc.date}</TableCell>
+                                <TableCell>{doc.location_id?.[1]}</TableCell>
+                                <TableCell>
+                                    <Badge variant={"outline"}>
+                                        {doc.line_ids.length}
+                                    </Badge>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    )}
                 </TableBody>
             </Table>
         </div>

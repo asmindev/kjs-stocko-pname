@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Sidebar,
@@ -12,14 +13,24 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, LogOut, Package, User } from "lucide-react";
+import { Check, Home, LogOut, Package, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
+} from "@/components/ui/dialog";
 
 export function AdminSidebar() {
     const { data: session } = useSession();
 
     const pathname = usePathname();
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
     const items = [
         {
@@ -31,6 +42,11 @@ export function AdminSidebar() {
             title: "Documents",
             url: "/admin/document",
             icon: Package,
+        },
+        {
+            title: "Unposted",
+            url: "/admin/unposted",
+            icon: Check,
         },
     ];
 
@@ -99,12 +115,35 @@ export function AdminSidebar() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleLogout}
+                            onClick={() => setConfirmOpen(true)}
                             className="w-full justify-start"
                         >
                             <LogOut className="h-4 w-4 mr-2" />
                             Logout
                         </Button>
+                        <Dialog
+                            open={confirmOpen}
+                            onOpenChange={setConfirmOpen}
+                        >
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Konfirmasi Logout</DialogTitle>
+                                    <DialogDescription>
+                                        Anda yakin ingin keluar dari aplikasi?
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline" size="sm">
+                                            Batal
+                                        </Button>
+                                    </DialogClose>
+                                    <Button size="sm" onClick={handleLogout}>
+                                        Ya, Logout
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 )}
             </SidebarFooter>

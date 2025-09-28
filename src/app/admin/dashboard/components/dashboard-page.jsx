@@ -26,6 +26,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import SessionTable from "./SessionTable";
 
+const AVAILABLE_STATES = [
+    "DRAFT",
+    "CONFIRMED",
+    "POST",
+    "DONE",
+    "BELUM_DIHITUNG", // additional state for unchecked locations
+];
+
 export default function Dashboard({ warehouses, sessions, locations }) {
     // State untuk menyimpan warehouse yang dipilih
     const [selectedWarehouse, setSelectedWarehouse] = useState("all");
@@ -44,23 +52,26 @@ export default function Dashboard({ warehouses, sessions, locations }) {
         (w) => w.lot_stock_id[0].toString() === selectedWarehouse
     );
 
-    // Menghitung data untuk donut chart
-    // Menghitung data untuk donut chart
-    // pastikan selectedWarehouseData dideklarasikan sebelum useMemo ini
     const chartData = useMemo(() => {
-        // hitung jumlah sessions per status
+        // hitung jumlah sessions per status (hanya untuk states yang tersedia)
         const statusCount = filteredSessions.reduce((acc, session) => {
-            acc[session.state] = (acc[session.state] || 0) + 1;
+            const state = session.state;
+            if (AVAILABLE_STATES.includes(state)) {
+                acc[state] = (acc[state] || 0) + 1;
+            }
             return acc;
         }, {});
 
-        // buat array awal hanya dengan value (jangan hitung persen dulu)
-        let baseData = Object.entries(statusCount).map(([status, count]) => ({
-            name: status,
-            value: count,
+        // siapkan data dasar untuk semua AVAILABLE_STATES kecuali BELUM_DIHITUNG
+        let baseData = AVAILABLE_STATES.filter(
+            (s) => s !== "BELUM_DIHITUNG"
+        ).map((state) => ({
+            name: state,
+            value: statusCount[state] || 0,
         }));
 
         // hitung unchecked locations hanya kalau memilih warehouse tertentu
+        let belumDihitungCount = 0;
         if (selectedWarehouse !== "all" && selectedWarehouseData) {
             const warehouseLocations = locations.filter(
                 (loc) =>
@@ -76,13 +87,11 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                 (loc) => !usedLocationIds.includes(String(loc.id))
             );
 
-            if (uncheckedLocations.length > 0) {
-                baseData.push({
-                    name: "BELUM DI CEK",
-                    value: uncheckedLocations.length,
-                });
-            }
+            belumDihitungCount = uncheckedLocations.length;
         }
+
+        // pastikan BELUM_DIHITUNG selalu ada di data
+        baseData.push({ name: "BELUM_DIHITUNG", value: belumDihitungCount });
 
         // hitung total lalu pasang percentage yang konsisten untuk semua item
         const total =
@@ -99,7 +108,9 @@ export default function Dashboard({ warehouses, sessions, locations }) {
     const FALLBACK_COLORS = {
         DRAFT: "#374151",
         POST: "#3b82f6",
-        UNREVIEWED: "#ef4444", // merah biar jelas
+        CONFIRMED: "#10b981",
+        DONE: "#10b981",
+        BELUM_DIHITUNG: "#ef4444", // merah biar jelas
     };
 
     // Custom tooltip untuk chart
@@ -140,57 +151,62 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                     Overview status Dokumen berdasarkan Lokasi
                 </p>
             </div>
-            {/* Statistics Cards */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Total Dokumen
-                        </CardTitle>
-                        <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {filteredSessions.length}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {selectedWarehouse === "all"
-                                ? "Semua Dokumen"
-                                : selectedWarehouseData?.name}
-                        </p>
-                    </CardContent>
-                </Card>
-
-                {chartData.map((item) => (
-                    <Card key={item.name}>
+            {/* Statistics Cards (hidden when all warehouses) */}
+            {/* Statistics Cards (hidden when all warehouses) */}
+            {selectedWarehouse !== "all" && (
+                <div className="w-full grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-6">
+                    <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
-                                {item.name}
+                                Total Dokumen
                             </CardTitle>
-                            <div
-                                className="h-4 w-4 rounded-full"
-                                style={{
-                                    backgroundColor:
-                                        FALLBACK_COLORS[item.name] || "#6b7280",
-                                }}
-                            />
+                            <BarChart3 className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {item.value}
+                                {filteredSessions.length}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <p className="text-xs text-muted-foreground">
-                                    {item.percentage}%
-                                </p>
-                                <Badge variant="secondary" className="text-xs">
-                                    {item.name}
-                                </Badge>
-                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {selectedWarehouseData?.name}
+                            </p>
                         </CardContent>
                     </Card>
-                ))}
-            </div>
+
+                    {chartData.map((item) => (
+                        <Card key={item.name}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">
+                                    {item.name}
+                                </CardTitle>
+                                <div
+                                    className="h-4 w-4 rounded-full"
+                                    style={{
+                                        backgroundColor:
+                                            FALLBACK_COLORS[item.name] ||
+                                            "#6b7280",
+                                    }}
+                                />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {item.value}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs text-muted-foreground">
+                                        {item.percentage}%
+                                    </p>
+                                    <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                    >
+                                        {item.name}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
             {/* Donut Chart */}
             <Card>
@@ -263,12 +279,23 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                     </CardTitle>
                     <CardDescription>
                         {selectedWarehouse === "all"
-                            ? "Menampilkan semua Dokumen dari seluruh lokasi"
-                            : `Dokumen   untuk ${selectedWarehouseData?.name}`}
+                            ? "Pilih warehouse untuk melihat data"
+                            : `Dokumen untuk ${selectedWarehouseData?.name}`}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {filteredSessions.length > 0 ? (
+                    {selectedWarehouse === "all" ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">
+                                Tidak ada data
+                            </h3>
+                            <p className="text-muted-foreground max-w-md">
+                                Pilih salah satu warehouse untuk menampilkan
+                                detail.
+                            </p>
+                        </div>
+                    ) : filteredSessions.length > 0 ? (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             {/* Chart */}
                             <div className="lg:col-span-2">
@@ -398,15 +425,17 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                             </p>
                         </div>
                     )}
-                    {selectedWarehouse !== "all" && (
-                        <SessionTable
-                            sessions={sessions.filter(
-                                (s) =>
-                                    String(s.warehouse_id) ===
-                                    String(selectedWarehouse)
-                            )}
-                        />
-                    )}
+                    <div className="mt-4">
+                        {selectedWarehouse !== "all" && (
+                            <SessionTable
+                                sessions={sessions.filter(
+                                    (s) =>
+                                        String(s.warehouse_id) ===
+                                        String(selectedWarehouse)
+                                )}
+                            />
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>

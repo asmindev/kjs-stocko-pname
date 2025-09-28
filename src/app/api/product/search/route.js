@@ -1,5 +1,7 @@
-import { OdooAuthenticationError, OdooClient } from "@tapni/odoo-xmlrpc";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { OdooSessionManager } from "@/lib/sessionManager";
 
 /**
  * GET /api/product/search?barcode={barcode}
@@ -7,6 +9,12 @@ import { NextResponse } from "next/server";
  * @returns {Promise<Response>} A JSON response containing the product data
  */
 export const GET = async (request) => {
+    const session = await getServerSession(authOptions);
+    const odoo = await OdooSessionManager.getClient(
+        session.user.id,
+        session.user.email
+    );
+
     const { searchParams } = new URL(request.url);
     const barcode = searchParams.get("barcode");
 
@@ -16,20 +24,11 @@ export const GET = async (request) => {
             { status: 400 }
         );
     }
-
-    const ODOO = {
-        url: process.env.ODOO_URL,
-        db: process.env.ODOO_DB,
-        username: "fachmi.maasy@technoindo.com",
-        password: "Aldev@r08919",
-    };
-
-    const client = new OdooClient(ODOO);
+    const client = odoo.client;
 
     try {
         const auth = await client.authenticate();
-        console.log("Authenticated user ID:", auth);
-        const DOMAIN = [["barcode", "=", barcode]];
+        const DOMAIN = [["barcode", "ilike", barcode]];
         const MODEL = "product.template";
         const OPTIONS = {
             fields: [
@@ -53,14 +52,13 @@ export const GET = async (request) => {
                 { status: 404 }
             );
         }
-        console.log("Product found:", product[0]);
 
         return NextResponse.json({
             message: "Product found",
             product: product[0],
         });
     } catch (error) {
-        if (error instanceof OdooAuthenticationError) {
+        if (error) {
             return NextResponse.json(
                 { message: "Odoo Authentication Failed", error: error.message },
                 { status: 401 }

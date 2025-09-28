@@ -20,9 +20,11 @@ model User {
     created_at  DateTime      @default(now())
     updated_at  DateTime      @default(now()) @updatedAt
     is_admin    Boolean       @default(false)
+    role        String        @default("checker") // "checker" or "admin" or "leader"
     Session     Session[] // One-to-many relation with sessions
     Product     Product[]
     OdooSession OdooSession[]
+    Document    Document[]
 }
 
 model OdooSession {
@@ -61,28 +63,90 @@ model Session {
     user     User?     @relation(fields: [user_id], references: [id])
 }
 
+// model untuk menyimpan dokumen hasil post ke Odoo (inventory adjustment)
+model Document {
+    id             Int           @id @default(autoincrement())
+    inventory_id   Int? // ID dari Odoo
+    name           String?
+    created_at     DateTime      @default(now())
+    warehouse_id   Int?
+    warehouse_name String?
+    state          DocumentState @default(POST)
+    // Foreign key to user
+    userId         Int?
+    products       Product[] // One-to-many relation with products
+
+    // Relationships
+    user User? @relation(fields: [userId], references: [id])
+}
+
 model Product {
     id            Int      @id @default(autoincrement())
     product_id    Int? // ID dari Odoo
     barcode       String
     name          String?
     created_at    DateTime @default(now())
-    quantity      Int      @default(1)
+    quantity      Float    @default(1)
     uom_id        Int? // Unit of Measure ID
-    uom_name      String? // Unit of Measure Name
+    uom_name      String? // Unit of Measure Name (backup)
     location_id   Int? // ID lokasi inventori dari Odoo
     location_name String? // Nama lokasi inventori dari Odoo
+
+    state ProductState @default(DRAFT)
 
     // Foreign key to session
     session_id Int?
     userId     Int?
 
     // Relationship
-    session Session? @relation(fields: [session_id], references: [id])
-    User    User?    @relation(fields: [userId], references: [id])
+    session     Session?  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+    User        User?     @relation(fields: [userId], references: [id])
+    uom         Uom?      @relation(fields: [uom_id], references: [id])
+    Document    Document? @relation(fields: [document_id], references: [id])
+    document_id Int?
 }
 
 enum SessionState {
-    DRAFT
-    POST
+    DRAFT // draft for checker Session
+    CONFIRMED // checker confirmed Session and will process by admin to post to odoo
+    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
+    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
+}
+
+model UomCategory {
+    id   Int    @id // ID dari Odoo
+    name String
+
+    // Relationships
+    uoms Uom[]
+
+    @@map("uom_categories")
+}
+
+model Uom {
+    id          Int    @id // ID dari Odoo
+    name        String
+    category_id Int
+    uom_type    String // "reference", "bigger", "smaller"
+    factor_inv  Float? // untuk uom_type "bigger"
+    factor      Float? // untuk uom_type "smaller"
+
+    // Relationships
+    category UomCategory @relation(fields: [category_id], references: [id])
+    products Product[]
+
+    @@index([category_id])
+    @@map("uoms")
+}
+
+enum ProductState {
+    DRAFT // draft for checker products
+    CONFIRMED // checker confirmed products and will process by admin to post to odoo
+    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
+    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
+}
+
+enum DocumentState {
+    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
+    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
 }

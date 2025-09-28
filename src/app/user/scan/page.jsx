@@ -21,7 +21,6 @@ export default async function Page() {
 
         const warehouses = await client.getWarehouses();
         const inventoryLocations = await client.getInventoryLocations();
-        console.log("Loaded locations:", inventoryLocations);
 
         return (
             <Scanner

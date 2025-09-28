@@ -27,12 +27,22 @@ export const productTableSchema = z.object({
                     }), // ID lokasi inventori (required)
                 location_name: z.string().default(""), // Nama lokasi inventori
                 quantity: z
-                    .number({
+                    .float64({
                         required_error: "Quantity wajib diisi",
                         invalid_type_error: "Quantity harus berupa angka",
                     })
                     .min(1, "Quantity minimal 1")
-                    .int("Quantity harus berupa bilangan bulat"),
+                    // .int("Quantity harus berupa bilangan bulat"),
+                    // Modified to allow 1 or 2 decimal places
+                    .refine(
+                        (val) =>
+                            Number.isInteger(val) ||
+                            /^\d+(\.\d{1,2})?$/.test(val.toString()),
+                        {
+                            message:
+                                "Quantity harus berupa bilangan bulat atau 2 desimal",
+                        }
+                    ),
             })
         )
         .min(1, "Minimal harus ada 1 produk"),

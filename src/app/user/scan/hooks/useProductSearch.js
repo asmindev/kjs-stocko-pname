@@ -22,6 +22,14 @@ export const useProductSearch = (setValue) => {
      */
     const performSearch = useCallback(
         async (barcode, index) => {
+            barcode = barcode?.trim();
+            if (!barcode) return;
+            // if barcode length < 5, ignore
+            if (barcode.length < 6) {
+                return;
+            }
+
+            // Create a unique key for this index-barcode combination
             const searchKey = `${index}-${barcode}`;
 
             // Skip if already searched
@@ -56,6 +64,14 @@ export const useProductSearch = (setValue) => {
                             );
                         }
 
+                        // Set product barcode from database (actual barcode)
+                        if (foundProduct.barcode) {
+                            setValue(
+                                `products.${index}.barcode`,
+                                foundProduct.barcode
+                            );
+                        }
+
                         // Set product name
                         setValue(
                             `products.${index}.name`,
@@ -72,7 +88,9 @@ export const useProductSearch = (setValue) => {
                         }
 
                         toast.success(`Produk ditemukan!`, {
-                            description: `${foundProduct.name} (${barcode})`,
+                            description: `${foundProduct.name} (${
+                                foundProduct.barcode || barcode
+                            })`,
                         });
                     } else {
                         toast.error("Produk tidak ditemukan di Odoo", {
@@ -114,8 +132,9 @@ export const useProductSearch = (setValue) => {
                 searchedBarcodesRef.current.delete(key)
             );
 
+            // Temporarily set the scanned barcode
             setValue(`products.${targetIndex}.barcode`, barcode);
-            // Trigger search for this specific barcode
+            // Trigger search for this specific barcode - this will update the barcode field with the actual product barcode if found
             performSearch(barcode, targetIndex);
             toast.success("Barcode berhasil discan!", {
                 description: `Baris ${targetIndex + 1}: ${barcode}`,

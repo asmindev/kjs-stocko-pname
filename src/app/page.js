@@ -67,13 +67,7 @@ export default function Home() {
                                 Login
                             </Button>
 
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => router.push("/auth/register")}
-                            >
-                                Daftar Akun Baru
-                            </Button>
+                            {/* Registration removed */}
                         </div>
 
                         <div className="text-center">

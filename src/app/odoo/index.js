@@ -29,7 +29,6 @@ class Client {
     async authenticate() {
         try {
             const auth = await this.client.authenticate();
-            console.log("Authenticated user ID:", auth);
             return auth; // Return user ID on successful authentication
         } catch (error) {
             console.error("Error authenticating:", error);
@@ -82,7 +81,6 @@ class Client {
     async product(barcode) {
         try {
             const auth = await this.client.authenticate();
-            console.log("Authenticated user ID:", auth);
 
             const domain = [["barcode", "=", barcode]];
             const options = {
@@ -110,7 +108,6 @@ class Client {
     async getWarehouses() {
         try {
             const auth = await this.client.authenticate();
-            console.log("Authenticated user ID:", auth);
 
             const domain = [];
             const options = {
@@ -136,7 +133,6 @@ class Client {
     async getInventoryLocations() {
         try {
             const auth = await this.client.authenticate();
-            console.log("Authenticated user ID:", auth);
             let domain = [];
             const options = {
                 fields: ["display_name", "id", "stock_location_id"],

@@ -11,7 +11,6 @@ const ENCRYPTION_KEY = crypto
     .update(String(process.env.SESSION_ENCRYPTION_KEY))
     .digest(); // hasilnya 32 bytes
 
-console.log("ENCRYPTION_KEY:", ENCRYPTION_KEY.toString("hex"));
 const ALGORITHM = "aes-256-gcm";
 
 class SessionEncryption {
@@ -70,10 +69,6 @@ export class OdooSessionManager {
 
                 try {
                     await client.authenticate();
-                    console.log(
-                        "Reused existing Odoo session for user:",
-                        userId
-                    );
                     return client;
                 } catch (authError) {
                     console.log("Existing session invalid, creating new one");

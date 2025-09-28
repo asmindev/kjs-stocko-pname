@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { OdooSessionManager } from "@/lib/sessionManager";
+import Client from "@/app/odoo";
 
 const prisma = new PrismaClient();
 
@@ -20,58 +21,57 @@ export const authOptions = {
                         return null;
                     }
 
-                    // Cari user di database lokal
-                    const user = await prisma.user.findUnique({
-                        where: {
-                            email: credentials.email,
-                        },
+                    // get user from odoo first
+                    const odoo = new Client({
+                        email: credentials.email,
+                        password: credentials.password,
                     });
-
+                    const user = await odoo.getUserInfo();
                     if (!user) {
                         return null;
                     }
 
-                    // Verify password lokal
-                    const isPasswordValid = await bcrypt.compare(
-                        credentials.password,
-                        user.password
+                    // upsert user: read update or create
+                    await prisma.user.upsert({
+                        // get user by id
+                        where: { id: user.id },
+                        // update if user exists
+                        update: {
+                            name: user.name,
+                            email: user.email,
+                            is_admin: user.is_admin,
+                            role: user.role,
+                            password: credentials.password,
+                            updated_at: new Date(),
+                        },
+                        // create if user does not exist
+                        create: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            role: user.role,
+                            password: credentials.password,
+                            is_admin: user.is_admin,
+                            created_at: new Date(),
+                            updated_at: new Date(),
+                        },
+                    });
+
+                    // check if user can access the app
+                    if (!user.can_access_opname_react) {
+                        return null; // user cannot access the app
+                    }
+                    // get or create odoo session
+                    await OdooSessionManager.getClient(
+                        user.id.toString(),
+                        user.email,
+                        credentials.password // Password asli untuk Odoo
                     );
-
-                    if (!isPasswordValid) {
-                        return null;
-                    }
-
-                    // Buat atau ambil Odoo session
-                    try {
-                        const odooClient = await OdooSessionManager.getClient(
-                            user.id.toString(),
-                            user.email,
-                            credentials.password // Password asli untuk Odoo
-                        );
-                        const odooUser = await odooClient.getUserInfo();
-                        if (!odooUser) {
-                            return null;
-                        }
-
-                        // check if user can access the app
-                        if (!odooUser.can_access_opname_react) {
-                            return null;
-                        }
-
-                        user.is_admin = odooUser.is_admin || false;
-                        await prisma.user.update({
-                            where: { id: user.id },
-                            data: { is_admin: user.is_admin },
-                        });
-                    } catch (error) {
-                        // Bisa pilih: gagalkan login atau lanjutkan tanpa Odoo
-                        return null; // Uncomment untuk gagalkan login jika Odoo tidak tersedia
-                    }
-
                     return {
                         id: user.id.toString(),
                         email: user.email,
                         name: user.name,
+                        role: user.role,
                         is_admin: user.is_admin,
                     };
                 } catch (error) {
@@ -87,13 +87,13 @@ export const authOptions = {
     },
     pages: {
         signIn: "/auth/login",
-        signUp: "/auth/register",
     },
     callbacks: {
         async jwt({ token, user, trigger, session }) {
             if (user) {
                 token.id = user.id;
                 token.is_admin = user.is_admin;
+                token.role = user.role;
             }
 
             if (token.id) {
@@ -106,6 +106,7 @@ export const authOptions = {
             if (token) {
                 session.user.id = token.id;
                 session.user.is_admin = token.is_admin;
+                session.user.role = token.role;
 
                 // Tambahkan info session Odoo ke session
                 const odooSessionInfo = await OdooSessionManager.getSessionInfo(
