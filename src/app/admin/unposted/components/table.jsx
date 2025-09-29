@@ -118,7 +118,9 @@ export default function UnpostedGroupedTable({ data }) {
         // Implement the logic to post data to Odoo
         toast.promise(actionPostToOdoo({ data: dataToPost }), {
             loading: "Memproses data...",
-            success: "Data berhasil diposting ke Odoo!",
+            success: (e) => {
+                return e.message || "Data berhasil diposting ke Odoo!";
+            },
             error: "Gagal memposting data ke Odoo.",
         });
     };

@@ -394,7 +394,7 @@ export const actionPostToOdoo = async ({ data }) => {
     const MODELS = "custom.stock.inventory";
     const METHOD = "prepare_inventory";
     const LINE_IDS = [];
-    const MAX_LINES = 300;
+    const MAX_LINES = 5;
 
     if (!Array.isArray(data)) {
         return {
@@ -418,13 +418,13 @@ export const actionPostToOdoo = async ({ data }) => {
     );
 
     const warehouseId = data[0].warehouseId;
-    const [warehouse] = await odoo.client.read(
+    const [warehouse] = await odoo.client.searchRead(
         "stock.warehouse",
-        [warehouseId],
-        ["code", "name", "lot_stock_id"]
+        [["lot_stock_id", "=", warehouseId]],
+        { fields: ["code", "name", "lot_stock_id"] }
     );
 
-    const stockLocationId = warehouse.lot_stock_id[0];
+    const stockLocationId = warehouseId;
 
     // NAME format like this: "TKJS/DDMMYY-HHMM"
     const now = new Date();
@@ -529,5 +529,8 @@ export const actionPostToOdoo = async ({ data }) => {
         },
     });
     revalidatePath("/admin/unposted");
-    return { success: true };
+    return {
+        success: true,
+        message: `Berhasil posting ${document.name} dengan ${productIds.length} produk`,
+    };
 };

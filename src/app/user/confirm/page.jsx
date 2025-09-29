@@ -64,10 +64,10 @@ export default function ConfirmPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
-                        Konfirmasi Session
+                        Konfirmasi Dokumen
                     </h1>
                     <p className="text-muted-foreground">
-                        Kelola dan konfirmasi session yang dibuat oleh checker
+                        Kelola dan konfirmasi dokumen yang dibuat oleh checker
                     </p>
                 </div>
                 <RefreshButton
@@ -81,7 +81,7 @@ export default function ConfirmPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Total Sessions
+                            Total Dokumen
                         </CardTitle>
                         <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
@@ -94,7 +94,7 @@ export default function ConfirmPage() {
                             </div>
                         )}
                         <p className="text-xs text-muted-foreground">
-                            Session dalam status draft
+                            Dokumen dalam status draft
                         </p>
                     </CardContent>
                 </Card>
@@ -146,9 +146,9 @@ export default function ConfirmPage() {
             <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                    <strong>Informasi:</strong> Hanya session dengan status
+                    <strong>Informasi:</strong> Hanya dokumen dengan status
                     "DRAFT" yang dibuat oleh checker yang dapat dikonfirmasi.
-                    Setelah dikonfirmasi, session akan berubah menjadi status
+                    Setelah dikonfirmasi, Dokumen akan berubah menjadi status
                     "CONFIRMED" dan siap untuk diproses lebih lanjut oleh admin.
                 </AlertDescription>
             </Alert>

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Check, Home, LogOut, Package, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
     Dialog,
     DialogContent,
@@ -25,6 +25,7 @@ import {
     DialogFooter,
     DialogClose,
 } from "@/components/ui/dialog";
+import Link from "next/link";
 
 export function AdminSidebar() {
     const { data: session } = useSession();
@@ -50,15 +51,10 @@ export function AdminSidebar() {
         },
     ];
 
-    const router = useRouter();
-
     const handleLogout = async () => {
         await signOut({ callbackUrl: "/auth/login" });
     };
 
-    const navigateTo = (url) => {
-        router.push(url);
-    };
     return (
         <Sidebar>
             <SidebarHeader>
@@ -81,14 +77,15 @@ export function AdminSidebar() {
                         <SidebarMenu>
                             {items.map((item) => (
                                 <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        onClick={() => navigateTo(item.url)}
-                                        isActive={pathname === item.url}
-                                        tooltip={item.title}
-                                    >
-                                        <item.icon />
-                                        <span>{item.title}</span>
-                                    </SidebarMenuButton>
+                                    <Link href={item.url}>
+                                        <SidebarMenuButton
+                                            isActive={pathname === item.url}
+                                            tooltip={item.title}
+                                        >
+                                            <item.icon />
+                                            <span>{item.title}</span>
+                                        </SidebarMenuButton>
+                                    </Link>
                                 </SidebarMenuItem>
                             ))}
                         </SidebarMenu>

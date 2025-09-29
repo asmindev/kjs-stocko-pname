@@ -18,10 +18,10 @@ export async function getDocuments() {
 
         const userId = parseInt(session.user.id);
 
-        const sessions = await prisma.session.findMany({
+        const documents = await prisma.document.findMany({
             where: {
                 inventory_id: { not: null },
-                state: { notIn: ["DRAFT"] },
+                // state: { notIn: ["DRAFT"] },
             },
             include: {
                 products: true,
@@ -37,14 +37,14 @@ export async function getDocuments() {
             },
         });
 
-        console.log({ sessions });
+        // console.log({ documents });
 
         // Transform data untuk menambahkan informasi jumlah produk
-        const sessionsWithProductCount = sessions.map((session) => ({
-            ...session,
-            productCount: session.products.length,
-            created_at: session.created_at.toISOString(),
-        }));
+        // const sessionsWithProductCount = documents.map((session) => ({
+        //     ...session,
+        //     productCount: session.products.length,
+        //     created_at: session.created_at.toISOString(),
+        // }));
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
@@ -53,7 +53,7 @@ export async function getDocuments() {
 
         // get documents from odoo
         const MODEL = "custom.stock.inventory";
-        const domain = [["id", "in", sessions.map((s) => s.inventory_id)]];
+        const domain = [["id", "in", documents.map((s) => s.inventory_id)]];
         const fields = [
             "location_id",
             "state",
@@ -64,9 +64,9 @@ export async function getDocuments() {
             "line_ids",
             "create_uid",
         ];
-        const documents = await odoo.client.searchRead(MODEL, domain, {});
+        const inventory = await odoo.client.searchRead(MODEL, domain, {});
 
-        return { success: true, documents };
+        return { success: true, documents: inventory };
     } catch (error) {
         console.error("Error fetching sessions:", error);
         return { success: false, error: "Failed to fetch sessions" };

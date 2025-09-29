@@ -61,7 +61,7 @@ const SessionsTable = ({ sessions, onRefresh }) => {
     // Handle confirm selected sessions
     const handleConfirmSessions = async () => {
         if (selectedSessions.size === 0) {
-            toast.error("Pilih minimal satu session untuk dikonfirmasi");
+            toast.error("Pilih minimal satu dokumen untuk dikonfirmasi");
             return;
         }
 
@@ -71,15 +71,15 @@ const SessionsTable = ({ sessions, onRefresh }) => {
 
             if (result.success) {
                 toast.success(
-                    `Berhasil mengkonfirmasi ${result.confirmedCount} session`
+                    `Berhasil mengkonfirmasi ${result.confirmedCount} dokumen`
                 );
                 setSelectedSessions(new Set());
                 onRefresh();
             } else {
-                toast.error(result.error || "Gagal mengkonfirmasi session");
+                toast.error(result.error || "Gagal mengkonfirmasi dokumen");
             }
         } catch (error) {
-            toast.error("Terjadi kesalahan saat mengkonfirmasi session");
+            toast.error("Terjadi kesalahan saat mengkonfirmasi dokumen");
         } finally {
             setIsConfirming(false);
         }
@@ -98,10 +98,10 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                 <CardContent className="flex flex-col items-center justify-center py-16">
                     <Package className="h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">
-                        Tidak Ada Session
+                        Tidak Ada Dokumen
                     </h3>
                     <p className="text-muted-foreground text-center">
-                        Belum ada session dalam status draft yang dapat
+                        Belum ada dokumen dalam status draft yang dapat
                         dikonfirmasi.
                     </p>
                 </CardContent>
@@ -115,7 +115,7 @@ const SessionsTable = ({ sessions, onRefresh }) => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                     <p className="text-sm text-muted-foreground">
-                        {selectedSessions.size} dari {sessions.length} session
+                        {selectedSessions.size} dari {sessions.length} dokumen
                         dipilih
                     </p>
                 </div>
@@ -134,9 +134,9 @@ const SessionsTable = ({ sessions, onRefresh }) => {
             {/* Sessions table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Daftar Session - Status Draft</CardTitle>
+                    <CardTitle>Daftar Dokumen - Status Draft</CardTitle>
                     <CardDescription>
-                        Session yang dibuat oleh checker dan siap untuk
+                        Dokumen yang dibuat oleh checker dan siap untuk
                         dikonfirmasi
                     </CardDescription>
                 </CardHeader>
@@ -148,13 +148,13 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                     <Checkbox
                                         checked={allSelected}
                                         onCheckedChange={handleSelectAll}
-                                        aria-label="Pilih semua session"
+                                        aria-label="Pilih semua dokumen"
                                         {...(someSelected && {
                                             "data-state": "indeterminate",
                                         })}
                                     />
                                 </TableHead>
-                                <TableHead>Session</TableHead>
+                                <TableHead>Dokumen</TableHead>
                                 <TableHead>Checker</TableHead>
                                 <TableHead>Warehouse</TableHead>
                                 <TableHead>Products</TableHead>
@@ -178,7 +178,7 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                     checked
                                                 )
                                             }
-                                            aria-label={`Pilih session ${session.name}`}
+                                            aria-label={`Pilih dokumen ${session.name}`}
                                         />
                                     </TableCell>
                                     <TableCell>

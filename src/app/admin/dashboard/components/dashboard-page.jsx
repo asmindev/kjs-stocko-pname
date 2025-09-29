@@ -8,7 +8,7 @@ import {
     Legend,
     Tooltip,
 } from "recharts";
-import { ChevronDown, Package, BarChart3, Check } from "lucide-react";
+import { ChevronDown, Package, BarChart3, Check, Filter } from "lucide-react";
 import {
     Card,
     CardContent,
@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import SessionTable from "./SessionTable";
+import { exportToExcel } from "../services/actions";
+import { toast } from "sonner";
 
 const AVAILABLE_STATES = [
     "DRAFT",
@@ -111,6 +113,34 @@ export default function Dashboard({ warehouses, sessions, locations }) {
         CONFIRMED: "#10b981",
         DONE: "#10b981",
         BELUM_DIHITUNG: "#ef4444", // merah biar jelas
+    };
+
+    const actionExportToExcel = async () => {
+        toast.promise(
+            fetch("/api/export/excel")
+                .then((res) => {
+                    if (!res.ok) throw new Error("Export failed");
+                    return res.blob();
+                })
+                .then((blob) => {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `products_${
+                        new Date().toISOString().split("T")[0]
+                    }.xlsx`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    return "File berhasil diunduh!";
+                }),
+            {
+                loading: "Mempersiapkan data...",
+                success: (message) => message,
+                error: "Gagal mengekspor data ke Excel.",
+            }
+        );
     };
 
     // Custom tooltip untuk chart
@@ -221,60 +251,70 @@ export default function Dashboard({ warehouses, sessions, locations }) {
                                     </Badge>
                                 )}
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full md:w-fit max-w-md justify-between mt-4 md:mt-0"
-                                    >
-                                        <span>
-                                            {selectedWarehouse === "all"
-                                                ? "Semua Warehouse"
-                                                : `${selectedWarehouseData?.name} (${selectedWarehouseData?.code})`}
-                                        </span>
-                                        <ChevronDown className="h-4 w-4 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-80">
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            setSelectedWarehouse("all")
-                                        }
-                                        className="flex items-center justify-between"
-                                    >
-                                        <span>Semua Warehouse</span>
-                                        {selectedWarehouse === "all" && (
-                                            <Check className="h-4 w-4" />
-                                        )}
-                                    </DropdownMenuItem>
-                                    {warehouses.map((warehouse) => (
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={actionExportToExcel}
+                                >
+                                    Export Excel
+                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full md:w-fit max-w-md justify-between mt-4 md:mt-0"
+                                        >
+                                            <span>
+                                                {selectedWarehouse === "all"
+                                                    ? "Semua Warehouse"
+                                                    : `${selectedWarehouseData?.name} (${selectedWarehouseData?.code})`}
+                                            </span>
+                                            <ChevronDown className="h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent className="w-80">
                                         <DropdownMenuItem
-                                            key={warehouse.id}
                                             onClick={() =>
-                                                console.log(
-                                                    "Selected warehouse:",
-                                                    warehouse
-                                                ) ||
-                                                setSelectedWarehouse(
-                                                    warehouse.lot_stock_id[0].toString()
-                                                )
+                                                setSelectedWarehouse("all")
                                             }
                                             className="flex items-center justify-between"
                                         >
-                                            <div className="flex flex-col">
-                                                <span>{warehouse.name}</span>
-                                                <span className="text-xs text-muted-foreground font-mono">
-                                                    {warehouse.code}
-                                                </span>
-                                            </div>
-                                            {selectedWarehouse ===
-                                                warehouse.id.toString() && (
+                                            <span>Semua Warehouse</span>
+                                            {selectedWarehouse === "all" && (
                                                 <Check className="h-4 w-4" />
                                             )}
                                         </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                        {warehouses.map((warehouse) => (
+                                            <DropdownMenuItem
+                                                key={warehouse.id}
+                                                onClick={() =>
+                                                    console.log(
+                                                        "Selected warehouse:",
+                                                        warehouse
+                                                    ) ||
+                                                    setSelectedWarehouse(
+                                                        warehouse.lot_stock_id[0].toString()
+                                                    )
+                                                }
+                                                className="flex items-center justify-between"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span>
+                                                        {warehouse.name}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground font-mono">
+                                                        {warehouse.code}
+                                                    </span>
+                                                </div>
+                                                {selectedWarehouse ===
+                                                    warehouse.id.toString() && (
+                                                    <Check className="h-4 w-4" />
+                                                )}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </CardTitle>
                     <CardDescription>

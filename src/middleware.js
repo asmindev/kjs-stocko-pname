@@ -1,10 +1,10 @@
 export const runtime = "nodejs";
 
 import { withAuth } from "next-auth/middleware";
-import { OdooSessionManager } from "@/lib/sessionManager";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { OdooSessionManager } from "./lib/sessionManager";
 
 export default withAuth(
     async function middleware(req) {
