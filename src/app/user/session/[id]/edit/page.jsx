@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 export default async function EditSessionPage({ params }) {
     const { id } = await params;
     const result = await getSessionById(id);
+    console.log({ result });
 
     // Redirect if session not found or already posted
     if (!result.success || result.data.state === "POST") {

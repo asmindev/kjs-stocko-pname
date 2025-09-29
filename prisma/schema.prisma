@@ -38,7 +38,7 @@ model OdooSession {
     updated_at   DateTime  @updatedAt
 
     // Relasi ke User
-    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    user User @relation(fields: [user_id], references: [id])
 
     @@index([user_id])
     @@index([expires_at])
@@ -99,7 +99,7 @@ model Product {
     userId     Int?
 
     // Relationship
-    session     Session?  @relation(fields: [session_id], references: [id], onDelete: Cascade)
+    session     Session?  @relation(fields: [session_id], references: [id])
     User        User?     @relation(fields: [userId], references: [id])
     uom         Uom?      @relation(fields: [uom_id], references: [id])
     Document    Document? @relation(fields: [document_id], references: [id])

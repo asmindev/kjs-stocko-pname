@@ -48,10 +48,24 @@ export default function LocationSelect({
             return [];
         }
 
-        return inventoryLocations.filter(
-            (location) =>
-                location.stock_location_id?.[0] === parseInt(selectedWarehouse)
-        );
+        const filtered = inventoryLocations.filter((location) => {
+            // Handle different data structures for stock_location_id
+            const stockLocationId = location.stock_location_id;
+
+            if (Array.isArray(stockLocationId)) {
+                // If it's an array [id, name], compare with first element
+                const match =
+                    stockLocationId[0] === parseInt(selectedWarehouse);
+                return match;
+            } else {
+                // If it's a direct ID, compare directly
+                const match = stockLocationId === parseInt(selectedWarehouse);
+
+                return match;
+            }
+        });
+
+        return filtered;
     }, [selectedWarehouse, inventoryLocations]);
 
     // Memoized filtered locations berdasarkan pencarian
@@ -83,10 +97,11 @@ export default function LocationSelect({
         });
     }, [warehouseLocations, searchValue]);
 
-    // Get selected location for display
+    // Get selected location for display (use all locations, not just filtered ones)
     const selectedLocation = useMemo(() => {
-        return warehouseLocations.find((loc) => loc.id === parseInt(value));
-    }, [warehouseLocations, value]);
+        if (!value) return null;
+        return inventoryLocations.find((loc) => loc.id === parseInt(value));
+    }, [inventoryLocations, value]);
 
     // Reset search when warehouse changes or component closes
     useEffect(() => {
@@ -129,7 +144,6 @@ export default function LocationSelect({
         if (!name) return "";
         //    remove "/Stock/" from the end of the name
         const formattedName = name.split("/Stock/")[1]?.trim();
-        console.log(formattedName);
         return formattedName;
     };
 

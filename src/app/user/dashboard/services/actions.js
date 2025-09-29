@@ -62,8 +62,13 @@ export async function getSessionById(sessionId) {
             };
         }
 
-        const userId =
-            session?.user?.role === "leader" ? null : parseInt(session.user.id);
+        const is_allowed_role = ["leader", "admin"];
+        const userRole = session?.user?.role;
+
+        const isAllowed = is_allowed_role.includes(userRole);
+
+        const userId = isAllowed ? null : parseInt(session.user.id);
+        console.log("Fetching session for userId:", userId); // --- IGNORE ---
 
         const whereClause = userId
             ? {

@@ -267,6 +267,7 @@ export const useProductSearch = (setValue) => {
         isRowSearching,
         clearSearchCache,
         triggerImmediateSearch,
+        setProductData, // Add this for external initialization
         cleanup,
     };
 };

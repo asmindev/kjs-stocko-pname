@@ -21,7 +21,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Trash2, Plus, Save, QrCode, ArrowLeft } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import BarcodeScanner from "@/components/BarcodeScanner";
@@ -35,6 +41,7 @@ import {
 import { useProductSearch } from "@/app/user/scan/hooks/useProductSearch";
 import UomSelect from "@/app/user/scan/components/UomSelect";
 import LocationSelect from "@/app/user/scan/components/LocationSelect";
+import { ArrowLeft, Plus, QrCode, Save, Trash2 } from "lucide-react";
 
 export default function EditSession({
     sessionData,
@@ -45,6 +52,19 @@ export default function EditSession({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [scanningForRow, setScanningForRow] = useState(null);
     const [scanResultCallback, setScanResultCallback] = useState(null);
+    // Find the warehouse that matches the session's warehouse_id
+    const currentWarehouse = warehouses.find(
+        (wh) => wh.lot_stock_id[0] === sessionData?.warehouse_id
+    );
+
+    const [selectedWarehouse, setSelectedWarehouse] = useState(
+        currentWarehouse?.lot_stock_id?.[0] || null
+    );
+
+    // Store initial warehouse to avoid clearing locations on initial load
+    const initialWarehouseRef = useRef(
+        currentWarehouse?.lot_stock_id?.[0] || null
+    );
 
     // Transform existing products to form format
     const getInitialFormValues = () => {
@@ -64,6 +84,27 @@ export default function EditSession({
         }
         return defaultProductTableValues;
     };
+
+    // Initialize product data for existing products (for UoM selection)
+    const initializeProductData = useCallback(() => {
+        if (sessionData.products && sessionData.products.length > 0) {
+            const initialProductData = {};
+            sessionData.products.forEach((product, index) => {
+                if (product.product_id && product.uom_id && product.uom_name) {
+                    // Create product data object for UomSelect
+                    initialProductData[index] = {
+                        id: product.product_id,
+                        name: product.name,
+                        barcode: product.barcode,
+                        uom_id: product.uom_id,
+                        uom_name: product.uom_name,
+                    };
+                }
+            });
+            return initialProductData;
+        }
+        return {};
+    }, [sessionData.products]);
 
     const {
         control,
@@ -85,6 +126,20 @@ export default function EditSession({
 
     const watchedProducts = watch("products");
 
+    // Clear location selections when warehouse changes (but not on initial load)
+    useEffect(() => {
+        if (
+            selectedWarehouse &&
+            selectedWarehouse !== initialWarehouseRef.current
+        ) {
+            // Clear all location selections when warehouse changes
+            fields.forEach((_, index) => {
+                setValue(`products.${index}.location_id`, null);
+                setValue(`products.${index}.location_name`, "");
+            });
+        }
+    }, [selectedWarehouse, fields.length, setValue]);
+
     // Use the custom hook for product search
     const {
         searchingRows,
@@ -96,7 +151,26 @@ export default function EditSession({
         isRowSearching,
         clearSearchCache,
         cleanup,
+        setProductData, // We need this to initialize existing product data
     } = useProductSearch(setValue);
+
+    // Initialize product data for existing products
+    useEffect(() => {
+        const initialProductData = initializeProductData();
+        if (Object.keys(initialProductData).length > 0) {
+            // Set initial product data for existing products
+            Object.entries(initialProductData).forEach(
+                ([index, productData]) => {
+                    setProductData((prev) => ({
+                        ...prev,
+                        [parseInt(index)]: productData,
+                    }));
+                }
+            );
+        }
+        // Mark that we've initialized existing products
+        prevBarcodesRef.current = watchedProducts.map((p) => p.barcode || "");
+    }, [initializeProductData, setProductData, watchedProducts]);
 
     const prevBarcodesRef = useRef([]);
     useEffect(() => {
@@ -190,12 +264,20 @@ export default function EditSession({
             try {
                 setIsSubmitting(true);
 
+                // Find the warehouse ID from the selected lot_stock_id
+                const selectedWh = warehouses.find(
+                    (wh) => wh.lot_stock_id[0] === selectedWarehouse
+                );
+
+                const warehouseId = selectedWh?.lot_stock_id?.[0] || null;
+
                 const response = await fetch(
                     `/api/session/${sessionData.id}/products`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
+                            warehouse_id: warehouseId, // Include warehouse update
                             products: data.products.map((product) => ({
                                 product_id: product.product_id,
                                 barcode: product.barcode,
@@ -223,8 +305,8 @@ export default function EditSession({
                                 : undefined,
                     });
 
-                    // Navigate back to session detail and refresh
-                    router.push(`/user/session/${sessionData.id}`);
+                    // Navigate back to admin session detail and refresh
+                    router.push(`/admin/session/${sessionData.id}`);
                     router.refresh();
                 } else {
                     toast.error("Gagal menyimpan produk", {
@@ -242,6 +324,7 @@ export default function EditSession({
             }
         },
         [sessionData.id, router]
+        // revalidatePath(`/admin/session/${sessionData.id}`
     );
 
     // Handle form reset - reset to original session data
@@ -252,13 +335,13 @@ export default function EditSession({
 
     // Handle back navigation
     const handleBack = () => {
-        router.push(`/user/session/${sessionData.id}`);
+        router.push(`/admin/session/${sessionData.id}`);
     };
 
     return (
         <div className="w-full">
             <Card className="h-full border-0 shadow-none">
-                <CardHeader>
+                <CardHeader className="p-0">
                     <div className="flex items-center gap-4">
                         <Button variant="outline" onClick={handleBack}>
                             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -275,6 +358,44 @@ export default function EditSession({
                                 manual
                             </CardDescription>
                         </div>
+                    </div>
+
+                    {/* Warehouse Selection for Admin */}
+                    <div className=" items-center gap-2 mt-4">
+                        <label className="text-sm font-medium">Lokasi</label>
+                        <Select
+                            value={selectedWarehouse?.toString() || ""}
+                            onValueChange={(value) => {
+                                console.log("Warehouse value selected:", value);
+                                setSelectedWarehouse(parseInt(value));
+                            }}
+                        >
+                            <SelectTrigger className="w-[300px]">
+                                <SelectValue>
+                                    {selectedWarehouse
+                                        ? warehouses.find(
+                                              (wh) =>
+                                                  wh.lot_stock_id[0] ===
+                                                  selectedWarehouse
+                                          )?.name || "Pilih warehouse"
+                                        : "Pilih warehouse"}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {warehouses.map((wh) => {
+                                    const itemValue =
+                                        wh.lot_stock_id[0].toString();
+                                    return (
+                                        <SelectItem
+                                            key={wh.id}
+                                            value={itemValue}
+                                        >
+                                            {wh.name}
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardHeader>
 
@@ -451,11 +572,20 @@ export default function EditSession({
                                                             `products.${index}.uom_id`
                                                         ) || ""
                                                     }
-                                                    onValueChange={(value) => {
+                                                    onValueChange={(
+                                                        value,
+                                                        uomName
+                                                    ) => {
                                                         setValue(
                                                             `products.${index}.uom_id`,
                                                             value
                                                         );
+                                                        if (uomName) {
+                                                            setValue(
+                                                                `products.${index}.uom_name`,
+                                                                uomName
+                                                            );
+                                                        }
                                                     }}
                                                 />
                                             </TableCell>
@@ -468,7 +598,7 @@ export default function EditSession({
                                                             `products.${index}.location_id`
                                                         )}
                                                         selectedWarehouse={
-                                                            sessionData?.warehouse_id
+                                                            selectedWarehouse
                                                         }
                                                         inventoryLocations={
                                                             inventoryLocations
@@ -512,8 +642,8 @@ export default function EditSession({
                                                         )}
                                                         type="number"
                                                         min="1"
-                                                        step="1"
-                                                        placeholder="1"
+                                                        step="0.01"
+                                                        placeholder="1.00"
                                                         className={cn(
                                                             "w-full text-sm text-center",
                                                             errors.products?.[

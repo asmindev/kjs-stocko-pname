@@ -26,61 +26,86 @@ export default function UomSelect({
 }) {
     /**
      * Get available UoM options from product data
-     * Based on API response format:
-     * "uom_id": [25, "Set"]
-     * "uom_po_id": [25, "Set"]
+     * Supports both API format and session data format:
+     * API format: "uom_id": [25, "Set"], "uom_po_id": [25, "Set"]
+     * Session format: "uom_id": 25, "uom_name": "Set"
      */
     const getUomOptions = () => {
-        if (!product || !product.uom_id || !product.uom_po_id) {
+        if (!product) {
             return [];
         }
 
-        const uomId = product.uom_id[0];
-        const uomName = product.uom_id[1];
-        const uomPoId = product.uom_po_id[0];
-        const uomPoName = product.uom_po_id[1];
+        // Check if product has API format (arrays)
+        if (
+            product.uom_id &&
+            Array.isArray(product.uom_id) &&
+            product.uom_po_id &&
+            Array.isArray(product.uom_po_id)
+        ) {
+            const uomId = product.uom_id[0];
+            const uomName = product.uom_id[1];
+            const uomPoId = product.uom_po_id[0];
+            const uomPoName = product.uom_po_id[1];
 
-        // If uom_id and uom_po_id are the same, return single option
-        if (uomId === uomPoId) {
-            return [{ id: uomId, name: uomName }];
-        } else {
-            // If different, return both options
-            return [
-                { id: uomId, name: uomName },
-                { id: uomPoId, name: uomPoName },
-            ];
+            // If uom_id and uom_po_id are the same, return single option
+            if (uomId === uomPoId) {
+                return [{ id: uomId, name: uomName }];
+            } else {
+                // If different, return both options
+                return [
+                    { id: uomId, name: uomName },
+                    { id: uomPoId, name: uomPoName },
+                ];
+            }
         }
+
+        // Check if product has session format (direct values)
+        if (product.uom_id && product.uom_name) {
+            return [{ id: product.uom_id, name: product.uom_name }];
+        }
+
+        return [];
     };
 
     /**
      * Check if UoM select should be disabled
      * Disabled when:
      * 1. No product data available
-     * 2. uom_id and uom_po_id are the same (single option)
-     * 3. Explicitly disabled via props
+     * 2. uom_id and uom_po_id are the same (single option) - for API format
+     * 3. Only one UoM option available - for session format
+     * 4. Explicitly disabled via props
      */
     const isDisabled = () => {
         if (disabled) return true;
-        if (!product || !product.uom_id || !product.uom_po_id) {
-            return true;
-        }
+        if (!product) return true;
 
-        const uomId = product.uom_id[0];
-        const uomPoId = product.uom_po_id[0];
+        const uomOptions = getUomOptions();
 
         // Disable if only one UoM option available
-        return uomId === uomPoId;
+        return uomOptions.length <= 1;
     };
 
     /**
      * Get default UoM value
-     * Always use uom_id as default
+     * For API format: use uom_id[0]
+     * For session format: use uom_id directly
      */
     const getDefaultValue = () => {
-        if (!product || !product.uom_id) {
+        if (!product) {
             return "";
         }
-        return product.uom_id[0].toString();
+
+        // API format
+        if (product.uom_id && Array.isArray(product.uom_id)) {
+            return product.uom_id[0].toString();
+        }
+
+        // Session format
+        if (product.uom_id) {
+            return product.uom_id.toString();
+        }
+
+        return "";
     };
 
     const uomOptions = getUomOptions();
@@ -93,17 +118,30 @@ export default function UomSelect({
     useEffect(() => {
         if (product && !value && onValueChange) {
             const defaultValue = getDefaultValue();
+            const defaultUom = uomOptions.find(
+                (uom) => uom.id.toString() === defaultValue
+            );
+            const uomName = defaultUom ? defaultUom.name : "";
             if (defaultValue) {
-                onValueChange(defaultValue);
+                onValueChange(defaultValue, uomName);
             }
         }
-    }, [product, value, onValueChange]);
+    }, [product, value, onValueChange, uomOptions]);
+
+    // Handle value change with UoM name
+    const handleValueChange = (selectedValue) => {
+        const selectedUom = uomOptions.find(
+            (uom) => uom.id.toString() === selectedValue
+        );
+        const uomName = selectedUom ? selectedUom.name : "";
+        onValueChange(selectedValue, uomName);
+    };
 
     return (
         <div className="space-y-1 min-w-[80px] sm:min-w-[100px]">
             <Select
                 value={currentValue}
-                onValueChange={onValueChange}
+                onValueChange={handleValueChange}
                 disabled={selectDisabled}
             >
                 <SelectTrigger className="w-full h-9 text-sm">

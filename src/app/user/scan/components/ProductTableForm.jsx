@@ -358,11 +358,17 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     `products.${index}.uom_id`
                                                 ) || ""
                                             }
-                                            onValueChange={(value) => {
+                                            onValueChange={(value, uomName) => {
                                                 setValue(
                                                     `products.${index}.uom_id`,
                                                     value
                                                 );
+                                                if (uomName) {
+                                                    setValue(
+                                                        `products.${index}.uom_name`,
+                                                        uomName
+                                                    );
+                                                }
                                             }}
                                         />
                                     </TableCell>

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Package, Calendar, User, Edit } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 export default function SessionDetail({ data }) {
     const router = useRouter();
@@ -66,6 +67,16 @@ export default function SessionDetail({ data }) {
                                 <Package className="w-5 h-5" />
                                 {data.name || `Session #${data.id}`}
                             </div>
+                            <Link href={`/admin/session/${data.id}/edit`}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    Edit
+                                </Button>
+                            </Link>
                         </div>
                     </CardTitle>
                     <CardDescription>Informasi Detail Dokumen</CardDescription>

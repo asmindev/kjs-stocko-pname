@@ -85,6 +85,39 @@ export default function EditSession({
 
     const watchedProducts = watch("products");
 
+    // Get product data for UoM select, combining search results with session data
+    const getProductDataForUom = (index) => {
+        const searchData = getProductData(index);
+        const sessionProduct = watchedProducts[index];
+
+        // If we have search data, use it
+        if (searchData && (searchData.uom_id || searchData.uom_po_id)) {
+            return searchData;
+        }
+
+        // Otherwise, create UoM data from session product
+        if (
+            sessionProduct &&
+            sessionProduct.uom_id &&
+            sessionProduct.uom_name
+        ) {
+            return {
+                uom_id: sessionProduct.uom_id,
+                uom_name: sessionProduct.uom_name,
+            };
+        }
+
+        return null;
+    };
+    useEffect(() => {
+        if (sessionData.products && sessionData.products.length > 0) {
+            const existingBarcodes = sessionData.products
+                .map((p) => p.barcode)
+                .filter(Boolean);
+            searchedBarcodesRef.current = new Set(existingBarcodes);
+        }
+    }, [sessionData.products]);
+
     // Use the custom hook for product search
     const {
         searchingRows,
@@ -99,22 +132,38 @@ export default function EditSession({
     } = useProductSearch(setValue);
 
     const prevBarcodesRef = useRef([]);
+    const searchedBarcodesRef = useRef(new Set()); // Track barcodes that have been searched
+
     useEffect(() => {
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
+
+        // Only search for barcodes that are new or changed and haven't been searched before
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
 
+            // Only perform search if:
+            // 1. Barcode is different from previous
+            // 2. Barcode is not empty
+            // 3. Not currently searching for this row
+            // 4. Barcode hasn't been searched before (unless it's a change)
             if (
                 barcode !== prevBarcode &&
                 barcode &&
                 barcode.length > 0 &&
                 !isRowSearching(index)
             ) {
+                // Clear cache for previous barcode if it exists
                 if (prevBarcode) {
                     clearSearchCache(index, prevBarcode);
+                    // Remove from searched set if we're changing it
+                    searchedBarcodesRef.current.delete(prevBarcode);
                 }
 
-                performSearch(barcode, index);
+                // Only search if we haven't searched this barcode before
+                if (!searchedBarcodesRef.current.has(barcode)) {
+                    performSearch(barcode, index);
+                    searchedBarcodesRef.current.add(barcode);
+                }
             }
         });
 
@@ -123,10 +172,7 @@ export default function EditSession({
 
         // Cleanup timeouts on unmount
         return cleanup;
-    }, [
-        watchedProducts.map((p) => p.barcode).join(","),
-        // Remove other dependencies to prevent infinite loop
-    ]);
+    }, [watchedProducts.map((p) => p.barcode).join(",")]);
 
     // Handle camera scan success
     const handleScanSuccess = async (barcode) => {
@@ -139,7 +185,6 @@ export default function EditSession({
 
     // Handle camera scan error
     const handleScanError = (error) => {
-        console.error("Scan error:", error);
         toast.error("Gagal mengakses kamera", {
             description: "Silakan masukkan barcode secara manual",
         });
@@ -169,6 +214,7 @@ export default function EditSession({
     // Add new row to the form
     const addNewRow = useCallback(() => {
         append(defaultProductItem);
+        // Note: New rows will have empty barcode, so they won't trigger search until barcode is entered
     }, [append]);
 
     // Remove row from the form
@@ -189,6 +235,7 @@ export default function EditSession({
         async (data) => {
             try {
                 setIsSubmitting(true);
+                console.log({ data });
 
                 const response = await fetch(
                     `/api/session/${sessionData.id}/products`,
@@ -224,7 +271,7 @@ export default function EditSession({
                     });
 
                     // Navigate back to session detail and refresh
-                    router.push(`/user/session/${sessionData.id}`);
+                    // router.push(`/user/session/${sessionData.id}`);
                     router.refresh();
                 } else {
                     toast.error("Gagal menyimpan produk", {
@@ -233,7 +280,6 @@ export default function EditSession({
                     });
                 }
             } catch (error) {
-                console.error("Submit error:", error);
                 toast.error("Terjadi kesalahan jaringan", {
                     description: "Periksa koneksi internet Anda",
                 });
@@ -244,12 +290,6 @@ export default function EditSession({
         [sessionData.id, router]
     );
 
-    // Handle form reset - reset to original session data
-    const handleReset = useCallback(() => {
-        reset(getInitialFormValues());
-        resetSearchData();
-    }, [reset, resetSearchData]);
-
     // Handle back navigation
     const handleBack = () => {
         router.push(`/user/session/${sessionData.id}`);
@@ -258,14 +298,18 @@ export default function EditSession({
     return (
         <div className="w-full">
             <Card className="h-full border-0 shadow-none">
-                <CardHeader>
-                    <div className="flex items-center gap-4">
-                        <Button variant="outline" onClick={handleBack}>
+                <CardHeader className={"p-0"}>
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={handleBack}
+                            className={"w-fit"}
+                        >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Kembali
                         </Button>
-                        <div>
-                            <CardTitle className="text-3xl font-bold">
+                        <div className="flex-1">
+                            <CardTitle className="textxl md:text-3xl font-bold">
                                 Edit Dokumen:{" "}
                                 {sessionData.name || `#${sessionData.id}`}
                             </CardTitle>
@@ -275,6 +319,21 @@ export default function EditSession({
                                 manual
                             </CardDescription>
                         </div>
+                    </div>
+
+                    {/* Form Actions */}
+                    <div className="flex flex-row gap-2 mt-4">
+                        <Button
+                            type="submit"
+                            form="edit-session-form"
+                            className="flex items-center gap-2 flex-1"
+                            disabled={isSubmitting}
+                        >
+                            <Save className="h-4 w-4" />
+                            {isSubmitting
+                                ? "Menyimpan..."
+                                : `Simpan ${fields.length} Produk`}
+                        </Button>
                     </div>
                 </CardHeader>
 
@@ -300,6 +359,7 @@ export default function EditSession({
 
                     {/* Product Form */}
                     <form
+                        id="edit-session-form"
                         onSubmit={handleSubmit(onSubmit)}
                         className="space-y-4"
                     >
@@ -443,7 +503,7 @@ export default function EditSession({
                                             {/* UoM Select */}
                                             <TableCell className="px-1">
                                                 <UomSelect
-                                                    product={getProductData(
+                                                    product={getProductDataForUom(
                                                         index
                                                     )}
                                                     value={
@@ -451,11 +511,20 @@ export default function EditSession({
                                                             `products.${index}.uom_id`
                                                         ) || ""
                                                     }
-                                                    onValueChange={(value) => {
+                                                    onValueChange={(
+                                                        value,
+                                                        uomName
+                                                    ) => {
                                                         setValue(
                                                             `products.${index}.uom_id`,
                                                             value
                                                         );
+                                                        if (uomName) {
+                                                            setValue(
+                                                                `products.${index}.uom_name`,
+                                                                uomName
+                                                            );
+                                                        }
                                                     }}
                                                 />
                                             </TableCell>
@@ -566,35 +635,16 @@ export default function EditSession({
                             </p>
                         )}
 
-                        {/* Form Actions */}
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        {/* Add Row Button */}
+                        <div className="flex justify-start">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={addNewRow}
-                                className="flex items-center gap-2 w-full sm:w-auto"
+                                className="flex items-center gap-2"
                             >
                                 <Plus className="h-4 w-4" />
                                 Tambah Baris
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="flex items-center gap-2 flex-1"
-                                disabled={isSubmitting}
-                            >
-                                <Save className="h-4 w-4" />
-                                {isSubmitting
-                                    ? "Menyimpan..."
-                                    : `Simpan ${fields.length} Produk`}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                onClick={handleReset}
-                                disabled={isSubmitting}
-                                className="w-full sm:w-auto"
-                            >
-                                Reset
                             </Button>
                         </div>
                     </form>

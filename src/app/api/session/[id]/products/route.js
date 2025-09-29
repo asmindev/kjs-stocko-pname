@@ -1,6 +1,6 @@
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../auth/[...nextauth]/route";
 
 export async function POST(request, { params }) {
     try {
@@ -16,14 +16,25 @@ export async function POST(request, { params }) {
 
         const { id } = await params;
         const data = await request.json();
-        const userId = parseInt(session.user.id);
+
+        const is_allowed_role = ["leader", "admin"];
+        const userRole = session?.user?.role;
+
+        const isAllowed = is_allowed_role.includes(userRole);
+
+        const userId = isAllowed ? null : parseInt(session.user.id);
+        const whereClause = userId
+            ? {
+                  id: parseInt(id),
+                  user_id: userId, // Only get session for logged-in user unless leader
+              }
+            : {
+                  id: parseInt(id),
+              };
 
         // Verify that the session exists and belongs to the user
         const existingSession = await prisma.session.findFirst({
-            where: {
-                id: parseInt(id),
-                user_id: userId,
-            },
+            where: whereClause,
         });
 
         if (!existingSession) {
@@ -47,7 +58,19 @@ export async function POST(request, { params }) {
             );
         }
 
-        const { products } = data;
+        const { products, warehouse_id, warehouse_name } = data;
+        console.log({ warehouse_id, warehouse_name });
+
+        // Update warehouse_id if provided (admin functionality)
+        if (warehouse_id !== undefined) {
+            await prisma.session.update({
+                where: { id: parseInt(id) },
+                data: {
+                    warehouse_id: parseInt(warehouse_id),
+                    warehouse_name: warehouse_name || null,
+                },
+            });
+        }
 
         if (!products || !Array.isArray(products)) {
             return Response.json(

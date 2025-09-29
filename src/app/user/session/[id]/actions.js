@@ -159,13 +159,16 @@ export const confirmSession = async (sessionId) => {
             throw new Error("Forbidden: Insufficient permissions");
         }
 
-        // update all products and session state to CONFIRMED
-        await prisma.product.updateMany({
-            where: { session_id: parseInt(sessionId) },
-            data: { state: "CONFIRMED" },
-        });
+        // update session state to CONFIRMED
         await prisma.session.update({
             where: { id: parseInt(sessionId) },
+            data: { state: "CONFIRMED" },
+        });
+
+        // update all products state to CONFIRMED
+        console.log("Confirming session:", sessionId);
+        await prisma.product.updateMany({
+            where: { session_id: parseInt(sessionId) },
             data: { state: "CONFIRMED" },
         });
         revalidatePath(`/user/session/${sessionId}`);
@@ -173,8 +176,6 @@ export const confirmSession = async (sessionId) => {
         return { success: true };
     } catch (error) {
         console.error("Failed to confirm session:", error);
-        revalidatePath(`/user/session/${sessionId}`);
-        revalidatePath("/user/dashboard");
         throw error;
     }
 };

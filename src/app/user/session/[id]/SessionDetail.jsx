@@ -89,15 +89,14 @@ export default function SessionDetail({ data }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <div className="w-full flex justify-between items-center gap-2">
+                        <div className="w-full flex flex-col md:flex-row md:justify-between md:items-center gap-2">
                             <div className="flex items-center gap-2">
                                 <Package className="w-5 h-5" />
                                 {data.name || `Session #${data.id}`}
                             </div>
-                            <div className="flex gap-2">
+                            <div className="w-full gap-2 flex justify-end">
                                 <Button
                                     variant="outline"
-                                    size="sm"
                                     className="hover:cursor-pointer"
                                     disabled={DISABLE_ON_STATE.includes(
                                         data.state
@@ -110,7 +109,6 @@ export default function SessionDetail({ data }) {
                                 {/* CONFIRM BUTTON */}
                                 <Button
                                     variant="default"
-                                    size="sm"
                                     className={`hover:cursor-pointer ${
                                         session?.user?.role !== "leader" &&
                                         "hidden"

@@ -20,7 +20,6 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function UnpostedDetails({ productData, warehouseName }) {
-    console.log("UnpostedDetails productData:", productData);
     const router = useRouter();
 
     if (
@@ -100,8 +99,7 @@ export default function UnpostedDetails({ productData, warehouseName }) {
                                 <TableRow>
                                     <TableHead className="w-[5px]">#</TableHead>
                                     <TableHead>User</TableHead>
-                                    <TableHead>Qty Asli</TableHead>
-                                    <TableHead>Qty Konversi</TableHead>
+                                    <TableHead>Qty</TableHead>
                                     <TableHead>Created</TableHead>
                                     <TableHead>Session</TableHead>
                                     <TableHead>Lokasi</TableHead>
@@ -121,17 +119,7 @@ export default function UnpostedDetails({ productData, warehouseName }) {
                                                 {d.quantity} {d.uom?.name || ""}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>
-                                            <Badge variant="default">
-                                                {d.convertedQuantity ||
-                                                    d.quantity}{" "}
-                                                {productData.needsConversion
-                                                    ? productData.targetUom
-                                                          ?.name || ""
-                                                    : productData.originalUom
-                                                          ?.name || ""}
-                                            </Badge>
-                                        </TableCell>
+
                                         <TableCell>
                                             {new Date(
                                                 d.created_at

@@ -10,10 +10,13 @@ export default async function EditSessionPage({ params }) {
     const { id } = await params;
     const result = await getSessionById(id);
 
-    // Redirect if session not found or already posted
-    if (!result.success || result.data.state === "POST") {
-        redirect(`/user/session/${id}`);
+    // Redirect if session not found
+    if (!result.success) {
+        redirect(`/admin/session/${id}`);
     }
+
+    // For admin, allow editing even if posted (admin can edit everything)
+    // No redirect for posted sessions in admin mode
 
     // Get inventory locations and warehouses for the edit form
     let inventoryLocations = [];
