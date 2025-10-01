@@ -25,31 +25,23 @@ export default async function page() {
     const warehouses = await odoo.getWarehouses();
     // step 2: get inventory locations from odoo
     const locations = await odoo.getInventoryLocations();
+
     // step 3: get session list from database
     // get leaders
-    const leaders = await getLeaders();
-    const sessions = await prisma.session.findMany({
+    const leaders = await getLeaders(odoo);
+    const products = await prisma.product.findMany({
         include: {
-            products: true,
-            user: {
-                select: {
-                    id: true,
-                    name: true,
-                },
-            },
-        },
-        orderBy: {
-            created_at: "desc",
+            session: true,
+            User: true,
         },
     });
-
     return (
         <div className="w-full mx-auto">
             <Dashboard
                 warehouses={warehouses.warehouses}
-                sessions={sessions}
                 locations={locations.locations}
                 leaders={leaders}
+                products={products}
             />
         </div>
     );

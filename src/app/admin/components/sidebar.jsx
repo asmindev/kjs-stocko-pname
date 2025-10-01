@@ -49,6 +49,11 @@ export function AdminSidebar() {
             url: "/admin/unposted",
             icon: Check,
         },
+        {
+            title: "Sessions",
+            url: "/admin/session",
+            icon: User,
+        },
     ];
 
     const handleLogout = async () => {
