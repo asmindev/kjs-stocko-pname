@@ -59,10 +59,9 @@ export async function POST(request, { params }) {
         }
 
         const { products, warehouse_id, warehouse_name } = data;
-        console.log({ warehouse_id, warehouse_name });
 
         // Update warehouse_id if provided (admin functionality)
-        if (warehouse_id !== undefined) {
+        if (warehouse_id !== undefined && session?.user?.role === "admin") {
             await prisma.session.update({
                 where: { id: parseInt(id) },
                 data: {
@@ -79,18 +78,10 @@ export async function POST(request, { params }) {
             );
         }
 
-        // First, delete all existing products for this session
-        await prisma.product.deleteMany({
-            where: {
-                session_id: parseInt(id),
-            },
-        });
-
-        const results = [];
         let successCount = 0;
         let failedCount = 0;
 
-        // Process each product (create new ones)
+        // Process each product using safer approach: check existence first
         for (const product of products) {
             try {
                 const productData = {
@@ -108,18 +99,70 @@ export async function POST(request, { params }) {
                     location_name: product.location_name || null,
                 };
 
-                await prisma.product.create({
-                    data: productData,
+                console.log(
+                    "Processing product:",
+                    JSON.stringify(productData, null, 2)
+                );
+
+                // Check if product already exists for this session and barcode
+                const existingProduct = await prisma.product.findFirst({
+                    where: {
+                        session_id: parseInt(id),
+                        barcode: product.barcode,
+                    },
+                    include: {
+                        session: {
+                            include: {
+                                user: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 });
+
+                if (existingProduct) {
+                    // update userId too
+                    productData.userId = existingProduct.userId;
+                    // Update existing product
+                    await prisma.product.update({
+                        where: { id: existingProduct.id },
+                        data: productData,
+                    });
+                } else {
+                    // Create new product
+                    await prisma.product.create({
+                        data: productData,
+                    });
+                }
                 successCount++;
             } catch (error) {
                 console.error(
-                    `Error creating product for barcode ${product.barcode}:`,
+                    `Error processing product for barcode ${product.barcode}:`,
                     error
                 );
                 failedCount++;
             }
         }
+
+        // Remove products that are no longer in the updated list
+        // Get all barcodes from the current update
+        const currentBarcodes = products.map((p) => p.barcode);
+
+        // Delete products that exist in DB but not in current update
+        const deletedCount = await prisma.product.deleteMany({
+            where: {
+                session_id: parseInt(id),
+                barcode: {
+                    notIn: currentBarcodes,
+                },
+            },
+        });
+
+        console.log(`Removed ${deletedCount.count} outdated products`);
 
         return Response.json({
             success: successCount > 0,

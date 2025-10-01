@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { OdooSessionManager } from "@/lib/sessionManager";
 import { getServerSession } from "next-auth/next";
 import Dashboard from "./components/dashboard-page";
+import { getLeaders } from "./services/actions";
 
 export default async function page() {
     const session = await getServerSession(authOptions);
@@ -25,6 +26,8 @@ export default async function page() {
     // step 2: get inventory locations from odoo
     const locations = await odoo.getInventoryLocations();
     // step 3: get session list from database
+    // get leaders
+    const leaders = await getLeaders();
     const sessions = await prisma.session.findMany({
         include: {
             products: true,
@@ -39,13 +42,14 @@ export default async function page() {
             created_at: "desc",
         },
     });
-    // step 3: show pie chart ('DRAFT', 'POST') of Inventory Adjusmants, with filter by warehouse use combo
+
     return (
         <div className="w-full mx-auto">
             <Dashboard
                 warehouses={warehouses.warehouses}
                 sessions={sessions}
                 locations={locations.locations}
+                leaders={leaders}
             />
         </div>
     );

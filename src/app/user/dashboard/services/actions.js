@@ -68,7 +68,6 @@ export async function getSessionById(sessionId) {
         const isAllowed = is_allowed_role.includes(userRole);
 
         const userId = isAllowed ? null : parseInt(session.user.id);
-        console.log("Fetching session for userId:", userId); // --- IGNORE ---
 
         const whereClause = userId
             ? {

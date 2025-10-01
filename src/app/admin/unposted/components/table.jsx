@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { actionPostToOdoo } from "../actions";
+import { actionPostToOdoo } from "../post_to_odoo.action";
 
 export default function UnpostedGroupedTable({ data }) {
     const router = useRouter();
@@ -115,14 +115,114 @@ export default function UnpostedGroupedTable({ data }) {
             return;
         }
         console.log("Data to be posted to Odoo:", dataToPost[0]);
-        // Implement the logic to post data to Odoo
-        toast.promise(actionPostToOdoo({ data: dataToPost }), {
-            loading: "Memproses data...",
-            success: (e) => {
-                return e.message || "Data berhasil diposting ke Odoo!";
-            },
-            error: "Gagal memposting data ke Odoo.",
-        });
+
+        try {
+            const result = toast.promise(
+                actionPostToOdoo({ data: dataToPost }),
+                {
+                    loading: "Memproses data...",
+                    success: (data) => {
+                        if (data.success) {
+                            // Show detailed success message with results
+                            const successMsg =
+                                data.message ||
+                                "Data berhasil diposting ke Odoo!";
+                            const details = data.details
+                                ? ` (${data.details})`
+                                : "";
+
+                            // If there are errors, show them as warning
+                            if (data.results?.error?.length > 0) {
+                                setTimeout(() => {
+                                    toast.warning(
+                                        `Beberapa produk gagal diproses`,
+                                        {
+                                            description: `${
+                                                data.results.error.length
+                                            } produk gagal: ${data.results.error
+                                                .map(
+                                                    (e) =>
+                                                        `ID ${e.product_id}: ${e.error}`
+                                                )
+                                                .join(", ")}`,
+                                            duration: 8000,
+                                        }
+                                    );
+                                }, 1000);
+                            }
+
+                            return successMsg + details;
+                        } else {
+                            return (
+                                data.message || "Gagal memposting data ke Odoo."
+                            );
+                        }
+                    },
+                    error: (error) => {
+                        console.error("Post to Odoo error:", error);
+                        return (
+                            error.message || "Gagal memposting data ke Odoo."
+                        );
+                    },
+                }
+            );
+
+            // Show detailed results if available
+            if (result?.results) {
+                console.log("Post results:", result.results);
+
+                // Show success details
+                if (result.results.success?.length > 0) {
+                    setTimeout(() => {
+                        toast.success(
+                            `${result.results.success.length} produk berhasil diproses`,
+                            {
+                                description: `Produk ID: ${result.results.success
+                                    .map((s) => s.product_id)
+                                    .join(", ")}`,
+                                duration: 5000,
+                            }
+                        );
+                    }, 2000);
+                }
+            }
+        } catch (error) {
+            console.error("Error posting to Odoo:", error);
+
+            // Try to extract detailed error information
+            if (error?.results) {
+                const errorCount = error.results.error?.length || 0;
+                const successCount = error.results.success?.length || 0;
+
+                if (errorCount > 0) {
+                    const errorDetails = error.results.error
+                        .map((e) => `ID ${e.product_id}: ${e.error}`)
+                        .slice(0, 3) // Show max 3 errors
+                        .join("\n");
+
+                    toast.error(`Gagal memproses ${errorCount} produk`, {
+                        description:
+                            errorDetails +
+                            (errorCount > 3 ? "\n...dan lainnya" : ""),
+                        duration: 10000,
+                    });
+                }
+
+                if (successCount > 0) {
+                    toast.info(`${successCount} produk berhasil diproses`, {
+                        description: `Meski ada error, beberapa produk tetap berhasil`,
+                        duration: 5000,
+                    });
+                }
+            } else {
+                toast.error("Gagal memposting data ke Odoo", {
+                    description:
+                        error.message ||
+                        "Terjadi kesalahan yang tidak diketahui",
+                    duration: 8000,
+                });
+            }
+        }
     };
 
     return (
