@@ -212,10 +212,33 @@ export default function EditSession({
     );
 
     // Add new row to the form
+    // Automatically copies some values from the previous row
     const addNewRow = useCallback(() => {
-        append(defaultProductItem);
+        // Get the last row's data
+        const lastRowIndex = fields.length - 1;
+        const lastRowData =
+            lastRowIndex >= 0 ? watchedProducts[lastRowIndex] : null;
+
+        // Create new row with copied values from the last row
+        const newRow = {
+            ...defaultProductItem,
+            // Copy location data if exists (most commonly reused)
+            ...(lastRowData?.location_id && {
+                location_id: lastRowData.location_id,
+                location_name: lastRowData.location_name,
+            }),
+            // Optionally copy UoM data if you want
+            // ...(lastRowData?.uom_id && {
+            //     uom_id: lastRowData.uom_id,
+            //     uom_name: lastRowData.uom_name,
+            // }),
+            // Note: We don't copy barcode, name, product_id, or quantity
+            // as these should be unique for each product
+        };
+
+        append(newRow);
         // Note: New rows will have empty barcode, so they won't trigger search until barcode is entered
-    }, [append]);
+    }, [append, fields.length, watchedProducts]);
 
     // Remove row from the form
     const removeRow = useCallback(

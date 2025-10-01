@@ -138,8 +138,9 @@ const ProductTableForm = forwardRef(function ProductTableForm(
     const addNewRow = useCallback(() => {
         // Get the last row's data
         const lastRowIndex = fields.length - 1;
-        const lastRowData = lastRowIndex >= 0 ? watchedProducts[lastRowIndex] : null;
-        
+        const lastRowData =
+            lastRowIndex >= 0 ? watchedProducts[lastRowIndex] : null;
+
         // Create new row with copied values from the last row
         const newRow = {
             ...defaultProductItem,
@@ -156,7 +157,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
             // Note: We don't copy barcode, name, product_id, or quantity
             // as these should be unique for each product
         };
-        
+
         append(newRow);
     }, [append, fields.length, watchedProducts]);
 
