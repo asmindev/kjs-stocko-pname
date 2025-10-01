@@ -15,34 +15,23 @@ import {
     CheckCircle,
 } from "lucide-react";
 
-// Dynamically import BarcodeScanner for Next.js compatibility
-const BarcodeScanner = dynamic(
-    () => {
-        import("react-barcode-scanner/polyfill");
-        return import("react-barcode-scanner").then(
-            (mod) => mod.BarcodeScanner
-        );
-    },
-    { ssr: false }
-);
-
-// Dynamically import useTorch hook
-const useTorch = dynamic(
-    () => {
-        return import("react-barcode-scanner").then((mod) => ({
-            default: mod.useTorch,
-        }));
-    },
+// Dynamically import Scanner for Next.js compatibility
+const Scanner = dynamic(
+    () =>
+        import("@yudiel/react-qr-scanner").then((mod) => ({
+            default: mod.Scanner,
+        })),
     { ssr: false }
 );
 
 export default function BarcodeScannerComponent({ onScan, onError, onClose }) {
     const [scannedData, setScannedData] = useState("");
     const [isScanning, setIsScanning] = useState(true); // Langsung mulai scanning
+    const [isTorchOn, setIsTorchOn] = useState(false);
 
-    const handleScan = (result) => {
-        if (result && result.length > 0) {
-            const scannedCode = result[0].rawValue;
+    const handleScan = (detectedCodes) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const scannedCode = detectedCodes[0].rawValue;
             setScannedData(scannedCode);
             setIsScanning(false);
 
@@ -68,6 +57,10 @@ export default function BarcodeScannerComponent({ onScan, onError, onClose }) {
         }
     };
 
+    const toggleTorch = () => {
+        setIsTorchOn(!isTorchOn);
+    };
+
     return (
         <div className="barcode-scanner-container w-full max-w-md mx-auto">
             {isScanning && (
@@ -84,31 +77,56 @@ export default function BarcodeScannerComponent({ onScan, onError, onClose }) {
                                         Position barcode in the frame
                                     </p>
                                 </div>
-                                <Button
-                                    onClick={stopScanning}
-                                    variant="outline"
-                                    size="icon"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        onClick={toggleTorch}
+                                        variant="outline"
+                                        size="icon"
+                                    >
+                                        {isTorchOn ? (
+                                            <Flashlight className="h-4 w-4" />
+                                        ) : (
+                                            <FlashlightOff className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        onClick={stopScanning}
+                                        variant="outline"
+                                        size="icon"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Scanner viewport */}
                     <div className="w-full h-full relative pt-20 pb-20">
-                        <BarcodeScanner
-                            onCapture={handleScan}
+                        <Scanner
+                            onScan={handleScan}
                             onError={handleError}
-                            options={{
-                                formats: [
-                                    "qr_code",
-                                    "code_128",
-                                    "code_39",
-                                    "ean_13",
-                                    "ean_8",
-                                ],
-                                delay: 100,
+                            formats={[
+                                "qr_code",
+                                "code_128",
+                                "code_39",
+                                "ean_13",
+                                "ean_8",
+                            ]}
+                            scanDelay={100}
+                            constraints={{
+                                advanced: [{ torch: isTorchOn }],
+                            }}
+                            components={{
+                                finder: false, // We'll use our custom overlay
+                            }}
+                            styles={{
+                                container: { width: "100%", height: "100%" },
+                                video: {
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                },
                             }}
                         />
 
@@ -180,43 +198,11 @@ export default function BarcodeScannerComponent({ onScan, onError, onClose }) {
 export function BarcodeScannerWithTorch({ onScan, onError, onClose }) {
     const [scannedData, setScannedData] = useState("");
     const [isScanning, setIsScanning] = useState(true); // Langsung mulai scanning
+    const [isTorchOn, setIsTorchOn] = useState(false);
 
-    // This will be available only on client side
-    const TorchComponent = dynamic(
-        () => {
-            return import("react-barcode-scanner").then((mod) => {
-                const { useTorch } = mod;
-
-                return function TorchControls() {
-                    const { isTorchSupported, isTorchOn, setIsTorchOn } =
-                        useTorch();
-
-                    const onTorchSwitch = () => {
-                        setIsTorchOn(!isTorchOn);
-                    };
-
-                    return isTorchSupported ? (
-                        <Button
-                            onClick={onTorchSwitch}
-                            variant="outline"
-                            size="icon"
-                        >
-                            {isTorchOn ? (
-                                <Flashlight className="h-4 w-4" />
-                            ) : (
-                                <FlashlightOff className="h-4 w-4" />
-                            )}
-                        </Button>
-                    ) : null;
-                };
-            });
-        },
-        { ssr: false }
-    );
-
-    const handleScan = (result) => {
-        if (result && result.length > 0) {
-            const scannedCode = result[0].rawValue;
+    const handleScan = (detectedCodes) => {
+        if (detectedCodes && detectedCodes.length > 0) {
+            const scannedCode = detectedCodes[0].rawValue;
             setScannedData(scannedCode);
             setIsScanning(false);
 
@@ -241,6 +227,10 @@ export function BarcodeScannerWithTorch({ onScan, onError, onClose }) {
         }
     };
 
+    const toggleTorch = () => {
+        setIsTorchOn(!isTorchOn);
+    };
+
     return (
         <div className="barcode-scanner-container w-full max-w-md mx-auto">
             {isScanning && (
@@ -258,7 +248,17 @@ export function BarcodeScannerWithTorch({ onScan, onError, onClose }) {
                                     </p>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <TorchComponent />
+                                    <Button
+                                        onClick={toggleTorch}
+                                        variant="outline"
+                                        size="icon"
+                                    >
+                                        {isTorchOn ? (
+                                            <Flashlight className="h-4 w-4" />
+                                        ) : (
+                                            <FlashlightOff className="h-4 w-4" />
+                                        )}
+                                    </Button>
                                     <Button
                                         onClick={stopScanning}
                                         variant="outline"
@@ -273,18 +273,30 @@ export function BarcodeScannerWithTorch({ onScan, onError, onClose }) {
 
                     {/* Scanner viewport */}
                     <div className="w-full h-full relative pt-20 pb-20">
-                        <BarcodeScanner
-                            onCapture={handleScan}
+                        <Scanner
+                            onScan={handleScan}
                             onError={handleError}
-                            options={{
-                                formats: [
-                                    "qr_code",
-                                    "code_128",
-                                    "code_39",
-                                    "ean_13",
-                                    "ean_8",
-                                ],
-                                delay: 500,
+                            formats={[
+                                "qr_code",
+                                "code_128",
+                                "code_39",
+                                "ean_13",
+                                "ean_8",
+                            ]}
+                            scanDelay={500}
+                            constraints={{
+                                advanced: [{ torch: isTorchOn }],
+                            }}
+                            components={{
+                                finder: false, // We'll use our custom overlay
+                            }}
+                            styles={{
+                                container: { width: "100%", height: "100%" },
+                                video: {
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover",
+                                },
                             }}
                         />
 
