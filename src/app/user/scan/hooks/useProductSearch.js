@@ -110,7 +110,7 @@ export const useProductSearch = (setValue) => {
                     });
                     timeoutsRef.current.delete(index);
                 }
-            }, 500);
+            }, 2000);
 
             timeoutsRef.current.set(index, timeoutId);
         },

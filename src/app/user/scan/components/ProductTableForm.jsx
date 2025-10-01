@@ -133,10 +133,32 @@ const ProductTableForm = forwardRef(function ProductTableForm(
 
     /**
      * Add new row to the form
+     * Automatically copies some values from the previous row
      */
     const addNewRow = useCallback(() => {
-        append(defaultProductItem);
-    }, [append]);
+        // Get the last row's data
+        const lastRowIndex = fields.length - 1;
+        const lastRowData = lastRowIndex >= 0 ? watchedProducts[lastRowIndex] : null;
+        
+        // Create new row with copied values from the last row
+        const newRow = {
+            ...defaultProductItem,
+            // Copy location data if exists (most commonly reused)
+            ...(lastRowData?.location_id && {
+                location_id: lastRowData.location_id,
+                location_name: lastRowData.location_name,
+            }),
+            // Optionally copy UoM data if you want
+            // ...(lastRowData?.uom_id && {
+            //     uom_id: lastRowData.uom_id,
+            //     uom_name: lastRowData.uom_name,
+            // }),
+            // Note: We don't copy barcode, name, product_id, or quantity
+            // as these should be unique for each product
+        };
+        
+        append(newRow);
+    }, [append, fields.length, watchedProducts]);
 
     /**
      * Remove row from the form
@@ -228,7 +250,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                 <TableHead className="min-w-[180px] sm:min-w-[200px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
                                     Barcode
                                 </TableHead>
-                                <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap">
+                                <TableHead className="min-w-[400px] sm:min-w-[250px] whitespace-nowrap">
                                     Nama Produk
                                 </TableHead>
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
