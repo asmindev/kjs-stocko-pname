@@ -112,9 +112,11 @@ export default function EditSession({
     useEffect(() => {
         if (sessionData.products && sessionData.products.length > 0) {
             const existingBarcodes = sessionData.products
-                .map((p) => p.barcode)
-                .filter(Boolean);
-            searchedBarcodesRef.current = new Set(existingBarcodes);
+                .map((p, idx) => [idx, p.barcode])
+                .filter(([_, barcode]) => barcode);
+
+            // Initialize Map with row index -> barcode mapping
+            searchedBarcodesRef.current = new Map(existingBarcodes);
         }
     }, [sessionData.products]);
 
@@ -132,38 +134,42 @@ export default function EditSession({
     } = useProductSearch(setValue);
 
     const prevBarcodesRef = useRef([]);
-    const searchedBarcodesRef = useRef(new Set()); // Track barcodes that have been searched
+    const searchedBarcodesRef = useRef(new Map()); // Track barcodes per row: Map<rowIndex, barcode>
 
     useEffect(() => {
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
 
-        // Only search for barcodes that are new or changed and haven't been searched before
+        // Only search for barcodes that are new or changed
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
+            const currentProduct = watchedProducts[index];
 
             // Only perform search if:
             // 1. Barcode is different from previous
             // 2. Barcode is not empty
             // 3. Not currently searching for this row
-            // 4. Barcode hasn't been searched before (unless it's a change)
             if (
                 barcode !== prevBarcode &&
                 barcode &&
                 barcode.length > 0 &&
                 !isRowSearching(index)
             ) {
-                // Clear cache for previous barcode if it exists
-                if (prevBarcode) {
+                // If barcode changed and the row already has product data, clear it
+                if (prevBarcode && currentProduct?.name) {
+                    // Clear all product-related fields when barcode changes
+                    setValue(`products.${index}.product_id`, "");
+                    setValue(`products.${index}.name`, "");
+                    setValue(`products.${index}.uom_id`, "");
+                    setValue(`products.${index}.uom_name`, "");
+                    // Note: We keep location_id and location_name as they are reusable
+
                     clearSearchCache(index, prevBarcode);
-                    // Remove from searched set if we're changing it
-                    searchedBarcodesRef.current.delete(prevBarcode);
                 }
 
-                // Only search if we haven't searched this barcode before
-                if (!searchedBarcodesRef.current.has(barcode)) {
-                    performSearch(barcode, index);
-                    searchedBarcodesRef.current.add(barcode);
-                }
+                // Always perform search when barcode changes
+                performSearch(barcode, index);
+                // Update the Map with the new barcode for this row
+                searchedBarcodesRef.current.set(index, barcode);
             }
         });
 
@@ -211,22 +217,51 @@ export default function EditSession({
         [handleScanResult]
     );
 
+    /**
+     * Check if the last row is filled completely
+     */
+    const isLastRowComplete = useCallback(() => {
+        if (fields.length === 0) return true;
+
+        const lastRowIndex = fields.length - 1;
+        const lastRow = watchedProducts[lastRowIndex];
+
+        // Check if all required fields are filled
+        return (
+            lastRow?.barcode?.trim() &&
+            lastRow?.name?.trim() &&
+            lastRow?.location_id &&
+            lastRow?.quantity > 0
+        );
+    }, [fields.length, watchedProducts]);
+
     // Add new row to the form
     // Automatically copies some values from the previous row
     const addNewRow = useCallback(() => {
-        // Get the last row's data
+        // Validate that the last row is complete before adding new row
+        if (!isLastRowComplete()) {
+            toast.error("Lengkapi data produk sebelumnya terlebih dahulu");
+            return;
+        }
+
+        // Get the last row's data directly from form watch
         const lastRowIndex = fields.length - 1;
-        const lastRowData =
-            lastRowIndex >= 0 ? watchedProducts[lastRowIndex] : null;
+
+        // Use watch to get the most up-to-date values
+        const lastLocationId = watch(`products.${lastRowIndex}.location_id`);
+        const lastLocationName = watch(
+            `products.${lastRowIndex}.location_name`
+        );
 
         // Create new row with copied values from the last row
         const newRow = {
             ...defaultProductItem,
             // Copy location data if exists (most commonly reused)
-            ...(lastRowData?.location_id && {
-                location_id: lastRowData.location_id,
-                location_name: lastRowData.location_name,
-            }),
+            ...(lastLocationId &&
+                lastLocationName && {
+                    location_id: lastLocationId,
+                    location_name: lastLocationName,
+                }),
             // Optionally copy UoM data if you want
             // ...(lastRowData?.uom_id && {
             //     uom_id: lastRowData.uom_id,
@@ -238,7 +273,7 @@ export default function EditSession({
 
         append(newRow);
         // Note: New rows will have empty barcode, so they won't trigger search until barcode is entered
-    }, [append, fields.length, watchedProducts]);
+    }, [append, fields.length, watch, isLastRowComplete]);
 
     // Remove row from the form
     const removeRow = useCallback(
@@ -664,7 +699,13 @@ export default function EditSession({
                                 type="button"
                                 variant="outline"
                                 onClick={addNewRow}
+                                disabled={!isLastRowComplete()}
                                 className="flex items-center gap-2"
+                                title={
+                                    !isLastRowComplete()
+                                        ? "Lengkapi data produk sebelumnya terlebih dahulu"
+                                        : "Tambah baris produk baru"
+                                }
                             >
                                 <Plus className="h-4 w-4" />
                                 Tambah Baris

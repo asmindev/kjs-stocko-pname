@@ -81,6 +81,7 @@ export class OdooSessionManager {
             }
 
             if (!activeSession && password) {
+                console.log({ userId, email, password });
                 const client = new Client({ email, password });
                 const authResult = await client.authenticate();
                 if (!authResult) throw new Error("Odoo authentication failed");

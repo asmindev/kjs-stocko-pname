@@ -83,7 +83,7 @@ export async function getSessionById(sessionId) {
             include: {
                 products: {
                     orderBy: {
-                        created_at: "desc",
+                        created_at: "asc",
                     },
                 },
                 user: {

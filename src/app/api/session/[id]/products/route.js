@@ -81,8 +81,43 @@ export async function POST(request, { params }) {
         let successCount = 0;
         let failedCount = 0;
 
-        // Process each product using safer approach: check existence first
-        for (const product of products) {
+        // First, consolidate products with same barcode and location
+        // Group by barcode + location_id and sum quantities
+        const consolidatedProducts = products.reduce((acc, product) => {
+            // Create unique key from barcode and location_id
+            const key = `${product.barcode}_${product.location_id || "null"}`;
+
+            if (acc[key]) {
+                // If exists, add quantity
+                acc[key].quantity =
+                    (parseFloat(acc[key].quantity) || 0) +
+                    (parseFloat(product.quantity) || 0);
+            } else {
+                // First occurrence, store it
+                acc[key] = { ...product };
+            }
+
+            return acc;
+        }, {});
+
+        // Convert back to array
+        const productsToSave = Object.values(consolidatedProducts);
+
+        console.log(
+            `Consolidated ${products.length} products into ${productsToSave.length} unique entries`
+        );
+
+        // Delete all existing products for this session
+        await prisma.product.deleteMany({
+            where: {
+                session_id: parseInt(id),
+            },
+        });
+
+        console.log(`Cleared all existing products for session ${id}`);
+
+        // Process each consolidated product - create all as new
+        for (const product of productsToSave) {
             try {
                 const productData = {
                     barcode: product.barcode,
@@ -90,7 +125,7 @@ export async function POST(request, { params }) {
                     product_id: product.product_id || null, // ID dari Odoo
                     uom_id: product.uom_id ? parseInt(product.uom_id) : null,
                     uom_name: product.uom_name || null,
-                    quantity: product.quantity || 1,
+                    quantity: parseFloat(product.quantity) || 1,
                     session_id: parseInt(id),
                     userId: userId,
                     location_id: product.location_id
@@ -104,40 +139,11 @@ export async function POST(request, { params }) {
                     JSON.stringify(productData, null, 2)
                 );
 
-                // Check if product already exists for this session and barcode
-                const existingProduct = await prisma.product.findFirst({
-                    where: {
-                        session_id: parseInt(id),
-                        barcode: product.barcode,
-                    },
-                    include: {
-                        session: {
-                            include: {
-                                user: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
+                // Create new product entry
+                await prisma.product.create({
+                    data: productData,
                 });
 
-                if (existingProduct) {
-                    // update userId too
-                    productData.userId = existingProduct.userId;
-                    // Update existing product
-                    await prisma.product.update({
-                        where: { id: existingProduct.id },
-                        data: productData,
-                    });
-                } else {
-                    // Create new product
-                    await prisma.product.create({
-                        data: productData,
-                    });
-                }
                 successCount++;
             } catch (error) {
                 console.error(
@@ -148,21 +154,7 @@ export async function POST(request, { params }) {
             }
         }
 
-        // Remove products that are no longer in the updated list
-        // Get all barcodes from the current update
-        const currentBarcodes = products.map((p) => p.barcode);
-
-        // Delete products that exist in DB but not in current update
-        const deletedCount = await prisma.product.deleteMany({
-            where: {
-                session_id: parseInt(id),
-                barcode: {
-                    notIn: currentBarcodes,
-                },
-            },
-        });
-
-        console.log(`Removed ${deletedCount.count} outdated products`);
+        console.log(`Created ${successCount} products for session ${id}`);
 
         return Response.json({
             success: successCount > 0,
