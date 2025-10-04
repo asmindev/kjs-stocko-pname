@@ -28,7 +28,7 @@ export const GET = async (request) => {
 
     try {
         const auth = await client.authenticate();
-        const DOMAIN = [["barcode", "ilike", barcode]];
+        const DOMAIN = [["barcode", "ilike", `%${barcode}`]];
         const MODEL = "product.template";
         const OPTIONS = {
             fields: [
