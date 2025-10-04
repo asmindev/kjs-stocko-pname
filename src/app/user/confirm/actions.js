@@ -31,6 +31,7 @@ export async function getConfirmableSessions() {
                         barcode: true,
                         quantity: true,
                         state: true,
+                        location_name: true,
                     },
                 },
             },

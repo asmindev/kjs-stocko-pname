@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import {
     Table,
     TableBody,
@@ -29,18 +43,126 @@ import {
 import { confirmSessions, getSessionDetails } from "../actions";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Package, CheckCircle2 } from "lucide-react";
+import {
+    Package,
+    CheckCircle2,
+    Search,
+    Filter,
+    X,
+    Check,
+    ChevronsUpDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const SessionsTable = ({ sessions, onRefresh }) => {
     const [selectedSessions, setSelectedSessions] = useState(new Set());
     const [isConfirming, setIsConfirming] = useState(false);
 
+    // Search and filter states
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedUser, setSelectedUser] = useState("");
+    const [selectedWarehouse, setSelectedWarehouse] = useState("");
+    const [selectedLocation, setSelectedLocation] = useState("");
+
+    // Combobox open states
+    const [openUser, setOpenUser] = useState(false);
+    const [openWarehouse, setOpenWarehouse] = useState(false);
+    const [openLocation, setOpenLocation] = useState(false);
+
+    // Get unique values for filters
+    const uniqueUsers = useMemo(() => {
+        const users = sessions
+            .map((session) => session.user?.name)
+            .filter(Boolean);
+        return [...new Set(users)].sort();
+    }, [sessions]);
+
+    const uniqueWarehouses = useMemo(() => {
+        const warehouses = sessions
+            .map((session) => session.warehouse_name)
+            .filter(Boolean);
+        return [...new Set(warehouses)].sort();
+    }, [sessions]);
+
+    const uniqueLocations = useMemo(() => {
+        const locations = sessions
+            .flatMap(
+                (session) =>
+                    session.products?.map((product) => product.location_name) ||
+                    []
+            )
+            .filter(Boolean);
+        return [...new Set(locations)].sort();
+    }, [sessions]);
+
+    // Filter sessions based on search and filters
+    const filteredSessions = useMemo(() => {
+        return sessions.filter((session) => {
+            // Search filter (checks multiple fields)
+            const searchLower = searchTerm.toLowerCase();
+            const matchesSearch =
+                !searchTerm ||
+                session.name?.toLowerCase().includes(searchLower) ||
+                session.user?.name?.toLowerCase().includes(searchLower) ||
+                session.warehouse_name?.toLowerCase().includes(searchLower) ||
+                session.products?.some(
+                    (product) =>
+                        product.location_name
+                            ?.toLowerCase()
+                            .includes(searchLower) ||
+                        product.name?.toLowerCase().includes(searchLower) ||
+                        product.barcode?.toLowerCase().includes(searchLower)
+                );
+
+            // User filter
+            const matchesUser =
+                !selectedUser || session.user?.name === selectedUser;
+
+            // Warehouse filter
+            const matchesWarehouse =
+                !selectedWarehouse ||
+                session.warehouse_name === selectedWarehouse;
+
+            // Location filter (checks if any product in session matches)
+            const matchesLocation =
+                !selectedLocation ||
+                session.products?.some(
+                    (product) => product.location_name === selectedLocation
+                );
+
+            return (
+                matchesSearch &&
+                matchesUser &&
+                matchesWarehouse &&
+                matchesLocation
+            );
+        });
+    }, [
+        sessions,
+        searchTerm,
+        selectedUser,
+        selectedWarehouse,
+        selectedLocation,
+    ]);
+
+    // Clear all filters
+    const clearFilters = () => {
+        setSearchTerm("");
+        setSelectedUser("");
+        setSelectedWarehouse("");
+        setSelectedLocation("");
+    };
+
+    // Check if any filters are active
+    const hasActiveFilters =
+        searchTerm || selectedUser || selectedWarehouse || selectedLocation;
+
     // Handle select all checkbox
     const handleSelectAll = (checked) => {
         if (checked) {
-            const allSessionIds = sessions.map((session) => session.id);
+            const allSessionIds = filteredSessions.map((session) => session.id);
             setSelectedSessions(new Set(allSessionIds));
         } else {
             setSelectedSessions(new Set());
@@ -88,9 +210,11 @@ const SessionsTable = ({ sessions, onRefresh }) => {
     // Handle view session details
 
     const allSelected =
-        sessions.length > 0 && selectedSessions.size === sessions.length;
+        filteredSessions.length > 0 &&
+        selectedSessions.size === filteredSessions.length;
     const someSelected =
-        selectedSessions.size > 0 && selectedSessions.size < sessions.length;
+        selectedSessions.size > 0 &&
+        selectedSessions.size < filteredSessions.length;
 
     if (sessions.length === 0) {
         return (
@@ -111,167 +235,558 @@ const SessionsTable = ({ sessions, onRefresh }) => {
 
     return (
         <div className="space-y-4">
-            {/* Actions bar */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                    <p className="text-sm text-muted-foreground">
-                        {selectedSessions.size} dari {sessions.length} dokumen
-                        dipilih
-                    </p>
-                </div>
-                <Button
-                    onClick={handleConfirmSessions}
-                    disabled={selectedSessions.size === 0 || isConfirming}
-                    size="sm"
-                >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    {isConfirming
-                        ? "Mengkonfirmasi..."
-                        : `Konfirmasi (${selectedSessions.size})`}
-                </Button>
-            </div>
-
-            {/* Sessions table */}
+            {/* Search and Filter Bar */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Daftar Dokumen - Status Draft</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Search className="h-5 w-5" />
+                        Pencarian dan Filter
+                    </CardTitle>
                     <CardDescription>
-                        Dokumen yang dibuat oleh checker dan siap untuk
-                        dikonfirmasi
+                        Cari dan filter dokumen berdasarkan kriteria tertentu
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12">
-                                    <Checkbox
-                                        checked={allSelected}
-                                        onCheckedChange={handleSelectAll}
-                                        aria-label="Pilih semua dokumen"
-                                        {...(someSelected && {
-                                            "data-state": "indeterminate",
-                                        })}
-                                    />
-                                </TableHead>
-                                <TableHead>Dokumen</TableHead>
-                                <TableHead>Checker</TableHead>
-                                <TableHead>Warehouse</TableHead>
-                                <TableHead>Products</TableHead>
-                                <TableHead>Total Qty</TableHead>
-                                <TableHead>Tanggal</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {sessions.map((session) => (
-                                <TableRow key={session.id}>
-                                    <TableCell>
+                <CardContent className="space-y-6">
+                    {/* Search input */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">
+                            Pencarian Global
+                        </label>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Cari berdasarkan nama dokumen, checker, warehouse, lokasi, atau produk..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Filter selects */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                                Inputter
+                            </label>
+                            <Popover open={openUser} onOpenChange={setOpenUser}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={openUser}
+                                        className="w-full justify-between"
+                                    >
+                                        {selectedUser
+                                            ? uniqueUsers.find(
+                                                  (user) =>
+                                                      user === selectedUser
+                                              )
+                                            : "Pilih user..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Cari user..." />
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                User tidak ditemukan.
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                <CommandItem
+                                                    value=""
+                                                    onSelect={() => {
+                                                        setSelectedUser("");
+                                                        setOpenUser(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            selectedUser === ""
+                                                                ? "opacity-100"
+                                                                : "opacity-0"
+                                                        )}
+                                                    />
+                                                    Semua User
+                                                </CommandItem>
+                                                {uniqueUsers.map((user) => (
+                                                    <CommandItem
+                                                        key={user}
+                                                        value={user}
+                                                        onSelect={(
+                                                            currentValue
+                                                        ) => {
+                                                            setSelectedUser(
+                                                                currentValue ===
+                                                                    selectedUser
+                                                                    ? ""
+                                                                    : currentValue
+                                                            );
+                                                            setOpenUser(false);
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                selectedUser ===
+                                                                    user
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {user}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                                Warehouse
+                            </label>
+                            <Popover
+                                open={openWarehouse}
+                                onOpenChange={setOpenWarehouse}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={openWarehouse}
+                                        className="w-full justify-between"
+                                    >
+                                        {selectedWarehouse
+                                            ? uniqueWarehouses.find(
+                                                  (warehouse) =>
+                                                      warehouse ===
+                                                      selectedWarehouse
+                                              )
+                                            : "Pilih warehouse..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Cari warehouse..." />
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                Warehouse tidak ditemukan.
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                <CommandItem
+                                                    value=""
+                                                    onSelect={() => {
+                                                        setSelectedWarehouse(
+                                                            ""
+                                                        );
+                                                        setOpenWarehouse(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            selectedWarehouse ===
+                                                                ""
+                                                                ? "opacity-100"
+                                                                : "opacity-0"
+                                                        )}
+                                                    />
+                                                    Semua Warehouse
+                                                </CommandItem>
+                                                {uniqueWarehouses.map(
+                                                    (warehouse) => (
+                                                        <CommandItem
+                                                            key={warehouse}
+                                                            value={warehouse}
+                                                            onSelect={(
+                                                                currentValue
+                                                            ) => {
+                                                                setSelectedWarehouse(
+                                                                    currentValue ===
+                                                                        selectedWarehouse
+                                                                        ? ""
+                                                                        : currentValue
+                                                                );
+                                                                setOpenWarehouse(
+                                                                    false
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    selectedWarehouse ===
+                                                                        warehouse
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {warehouse}
+                                                        </CommandItem>
+                                                    )
+                                                )}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">
+                                Lokasi Produk
+                            </label>
+                            <Popover
+                                open={openLocation}
+                                onOpenChange={setOpenLocation}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={openLocation}
+                                        className="w-full justify-between"
+                                    >
+                                        {selectedLocation
+                                            ? uniqueLocations.find(
+                                                  (location) =>
+                                                      location ===
+                                                      selectedLocation
+                                              )
+                                            : "Pilih lokasi..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Cari lokasi..." />
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                Lokasi tidak ditemukan.
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                <CommandItem
+                                                    value=""
+                                                    onSelect={() => {
+                                                        setSelectedLocation("");
+                                                        setOpenLocation(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            selectedLocation ===
+                                                                ""
+                                                                ? "opacity-100"
+                                                                : "opacity-0"
+                                                        )}
+                                                    />
+                                                    Semua Lokasi
+                                                </CommandItem>
+                                                {uniqueLocations.map(
+                                                    (location) => (
+                                                        <CommandItem
+                                                            key={location}
+                                                            value={location}
+                                                            onSelect={(
+                                                                currentValue
+                                                            ) => {
+                                                                setSelectedLocation(
+                                                                    currentValue ===
+                                                                        selectedLocation
+                                                                        ? ""
+                                                                        : currentValue
+                                                                );
+                                                                setOpenLocation(
+                                                                    false
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    selectedLocation ===
+                                                                        location
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {location}
+                                                        </CommandItem>
+                                                    )
+                                                )}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                            <label className="text-sm font-medium text-foreground">
+                                Aksi
+                            </label>
+                            <Button
+                                variant="outline"
+                                onClick={clearFilters}
+                                disabled={!hasActiveFilters}
+                                className="w-full"
+                            >
+                                <X className="h-4 w-4 mr-2" />
+                                Reset Filter
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Filter summary */}
+                    {hasActiveFilters && (
+                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Filter className="h-4 w-4" />
+                                <span>
+                                    Menampilkan {filteredSessions.length} dari{" "}
+                                    {sessions.length} dokumen
+                                </span>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                                {hasActiveFilters && (
+                                    <>
+                                        {searchTerm && "Search"}
+                                        {searchTerm &&
+                                            (selectedUser ||
+                                                selectedWarehouse ||
+                                                selectedLocation) &&
+                                            " + "}
+                                        {[
+                                            selectedUser && "User",
+                                            selectedWarehouse && "Warehouse",
+                                            selectedLocation && "Location",
+                                        ]
+                                            .filter(Boolean)
+                                            .join(", ")}
+                                    </>
+                                )}
+                            </Badge>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Show message if no results found */}
+            {filteredSessions.length === 0 && sessions.length > 0 && (
+                <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-16">
+                        <Search className="h-12 w-12 text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">
+                            Tidak Ada Hasil
+                        </h3>
+                        <p className="text-muted-foreground text-center mb-4">
+                            Tidak ditemukan dokumen yang sesuai dengan kriteria
+                            pencarian atau filter.
+                        </p>
+                        <Button variant="outline" onClick={clearFilters}>
+                            <X className="h-4 w-4 mr-2" />
+                            Reset Semua Filter
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Actions bar */}
+            {filteredSessions.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-muted/30 rounded-lg border">
+                    <div className="flex items-center space-x-2">
+                        <div className="text-sm text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                                {selectedSessions.size}
+                            </span>{" "}
+                            dari{" "}
+                            <span className="font-medium text-foreground">
+                                {filteredSessions.length}
+                            </span>{" "}
+                            dokumen dipilih
+                            {hasActiveFilters && (
+                                <div className="text-xs mt-1">
+                                    (difilter dari {sessions.length} total
+                                    dokumen)
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <Button
+                        onClick={handleConfirmSessions}
+                        disabled={selectedSessions.size === 0 || isConfirming}
+                        size="sm"
+                        className="w-full sm:w-auto"
+                    >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {isConfirming
+                            ? "Mengkonfirmasi..."
+                            : `Konfirmasi (${selectedSessions.size})`}
+                    </Button>
+                </div>
+            )}
+
+            {/* Sessions table */}
+            {filteredSessions.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Daftar Dokumen - Status Draft</CardTitle>
+                        <CardDescription>
+                            Dokumen yang dibuat oleh checker dan siap untuk
+                            dikonfirmasi
+                            {hasActiveFilters && (
+                                <span className="ml-1">
+                                    (Menampilkan {filteredSessions.length} dari{" "}
+                                    {sessions.length} dokumen)
+                                </span>
+                            )}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-12">
                                         <Checkbox
-                                            checked={selectedSessions.has(
-                                                session.id
-                                            )}
-                                            onCheckedChange={(checked) =>
-                                                handleSelectSession(
-                                                    session.id,
-                                                    checked
-                                                )
-                                            }
-                                            aria-label={`Pilih dokumen ${session.name}`}
+                                            checked={allSelected}
+                                            onCheckedChange={handleSelectAll}
+                                            aria-label="Pilih semua dokumen"
+                                            {...(someSelected && {
+                                                "data-state": "indeterminate",
+                                            })}
                                         />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="space-y-1">
-                                            <p className="font-medium">
-                                                {session.name}
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center space-x-2">
-                                            <div>
+                                    </TableHead>
+                                    <TableHead>Dokumen</TableHead>
+                                    <TableHead>Checker</TableHead>
+                                    <TableHead>Warehouse</TableHead>
+                                    <TableHead>Products</TableHead>
+                                    <TableHead>Total Qty</TableHead>
+                                    <TableHead>Tanggal</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Aksi</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredSessions.map((session) => (
+                                    <TableRow key={session.id}>
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selectedSessions.has(
+                                                    session.id
+                                                )}
+                                                onCheckedChange={(checked) =>
+                                                    handleSelectSession(
+                                                        session.id,
+                                                        checked
+                                                    )
+                                                }
+                                                aria-label={`Pilih dokumen ${session.name}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1">
                                                 <p className="font-medium">
-                                                    {session.user?.name}
+                                                    {session.name}
                                                 </p>
                                             </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {session.warehouse_name ? (
+                                        </TableCell>
+                                        <TableCell>
                                             <div className="flex items-center space-x-2">
-                                                <span>
-                                                    {session.warehouse_name}
-                                                </span>
+                                                <div>
+                                                    <p className="font-medium">
+                                                        {session.user?.name}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">
-                                                -
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-center">
-                                            <span className="font-medium">
-                                                {session.productCount}
-                                            </span>
-                                            <p className="text-xs text-muted-foreground">
-                                                items
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-center">
-                                            <span className="font-medium">
-                                                {session.totalQuantity}
-                                            </span>
-                                            <p className="text-xs text-muted-foreground">
-                                                total
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="text-sm">
-                                            {format(
-                                                new Date(session.created_at),
-                                                "dd MMM yyyy",
-                                                { locale: id }
+                                        </TableCell>
+                                        <TableCell>
+                                            {session.warehouse_name ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <span>
+                                                        {session.warehouse_name}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    -
+                                                </span>
                                             )}
-                                            <p className="text-xs text-muted-foreground">
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-center">
+                                                <span className="font-medium">
+                                                    {session.productCount}
+                                                </span>
+                                                <p className="text-xs text-muted-foreground">
+                                                    items
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-center">
+                                                <span className="font-medium">
+                                                    {session.totalQuantity}
+                                                </span>
+                                                <p className="text-xs text-muted-foreground">
+                                                    total
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm">
                                                 {format(
                                                     new Date(
                                                         session.created_at
                                                     ),
-                                                    "HH:mm"
+                                                    "dd MMM yyyy",
+                                                    { locale: id }
                                                 )}
-                                            </p>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className="flex items-center space-x-1"
-                                        >
-                                            <span className="uppercase">
-                                                {session.state}
-                                            </span>
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Link
-                                            href={`/user/session/${session.id}`}
-                                        >
-                                            <Button variant="outline" size="sm">
-                                                Lihat Detail
-                                            </Button>
-                                        </Link>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {format(
+                                                        new Date(
+                                                            session.created_at
+                                                        ),
+                                                        "HH:mm"
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant="secondary"
+                                                className="flex items-center space-x-1"
+                                            >
+                                                <span className="uppercase">
+                                                    {session.state}
+                                                </span>
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Link
+                                                href={`/user/session/${session.id}`}
+                                            >
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    Lihat Detail
+                                                </Button>
+                                            </Link>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };
