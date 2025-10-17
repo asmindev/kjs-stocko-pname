@@ -22,14 +22,25 @@ export async function GET() {
             },
         });
 
-        const worksheetData = products.map((product) => ({
-            Barcode: product.barcode,
-            PIC: product.session.user.name,
-            "Nama Produk": product.name,
-            Lokasi: product.location_name,
-            UoM: product.uom_name,
-            Jumlah: product.quantity,
-        }));
+        const worksheetData = products.map((product) => {
+            try {
+                return {
+                    Barcode: product.barcode,
+                    PIC: product.session.user.name,
+                    "Nama Produk": product.name,
+                    Lokasi: product.location_name,
+                    UoM: product.uom_name,
+                    Jumlah: product.quantity,
+                };
+            } catch (error) {
+                console.log(
+                    "Error mapping product to worksheet data:",
+                    error,
+                    product
+                );
+                throw error;
+            }
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
