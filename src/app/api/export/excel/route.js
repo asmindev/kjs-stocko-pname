@@ -6,6 +6,12 @@ export async function GET() {
     try {
         const products = await prisma.product.findMany({
             include: {
+                User: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
                 session: {
                     include: {
                         user: {
@@ -24,9 +30,10 @@ export async function GET() {
 
         const worksheetData = products.map((product) => {
             try {
+                const user = product.session.user || product.User;
                 return {
                     Barcode: product.barcode,
-                    PIC: product.session.user.name,
+                    PIC: user.name,
                     "Nama Produk": product.name,
                     Lokasi: product.location_name,
                     UoM: product.uom_name,
