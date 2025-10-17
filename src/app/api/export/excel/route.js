@@ -30,7 +30,7 @@ export async function GET() {
 
         const worksheetData = products.map((product) => {
             try {
-                const user = product.session.user || product.User;
+                const user = product.session?.user || product.User;
                 return {
                     Barcode: product.barcode,
                     PIC: user.name,
