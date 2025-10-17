@@ -50,9 +50,9 @@ export async function GET() {
             },
         });
     } catch (error) {
-        console.error("Error exporting to Excel:", error);
+        console.log("Error exporting to Excel:", error);
         return NextResponse.json(
-            { error: "Failed to export" },
+            { error: "Failed to export", details: error.message },
             { status: 500 }
         );
     }
