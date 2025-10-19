@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STATES } from "../constants/states";
 
-export default function StatisticsCards({ warehouseStats }) {
+export default function StatisticsCards({ warehouseStats, totalOdooProducts }) {
     if (!warehouseStats) return null;
 
     return (
@@ -17,10 +17,13 @@ export default function StatisticsCards({ warehouseStats }) {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">
-                        {warehouseStats.totalProducts}
+                        {warehouseStats.totalProducts}/
+                        <span className="text-muted-foreground">
+                            {totalOdooProducts}
+                        </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Jumlah item produk
+                        Jumlah item produk terscan
                     </p>
                 </CardContent>
             </Card>

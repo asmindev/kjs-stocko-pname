@@ -25,6 +25,7 @@ export default function Dashboard({
     products,
     locations,
     leaders,
+    totalOdooProducts,
 }) {
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [selectedLeader, setSelectedLeader] = useState(null);
@@ -69,12 +70,15 @@ export default function Dashboard({
                             selectedWarehouse={selectedWarehouse}
                             onWarehouseChange={setSelectedWarehouse}
                         />
-                        <ExportButton />
+                        <ExportButton selectedWarehouse={selectedWarehouse} />
                     </div>
                     {/* Selected Warehouse Info */}
                     <WarehouseInfo selectedWarehouse={selectedWarehouse} />
                     {/* Statistics Cards */}
-                    <StatisticsCards warehouseStats={warehouseStats} />
+                    <StatisticsCards
+                        warehouseStats={warehouseStats}
+                        totalOdooProducts={totalOdooProducts}
+                    />
                     {/* Charts */}
                     <ChartsGrid
                         stateChartData={stateChartData}
@@ -133,14 +137,11 @@ export default function Dashboard({
                 {/* Leader Tab */}
                 <TabsContent value="leader" className="space-y-6">
                     {/* Leader Selector */}
-                    <div className="flex gap-4">
-                        <LeaderSelector
-                            leaders={leaders}
-                            selectedLeader={selectedLeader}
-                            onLeaderChange={setSelectedLeader}
-                        />
-                        <ExportButton />
-                    </div>
+                    <LeaderSelector
+                        leaders={leaders}
+                        selectedLeader={selectedLeader}
+                        onLeaderChange={setSelectedLeader}
+                    />
 
                     {/* Selected Leader Info */}
                     <LeaderInfo selectedLeader={selectedLeader} />

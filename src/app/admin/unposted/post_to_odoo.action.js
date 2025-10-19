@@ -43,104 +43,73 @@ function generateInventoryName(warehouseCode) {
 }
 
 /**
- * Process a single product item to create line data
- */
-async function processProductItem(item, odoo, stockLocationId, results) {
-    const product_id = item.key.split("-")[1];
-
-    try {
-        // Get product from Odoo
-        const [product] = await odoo.client.searchRead(
-            "product.product",
-            [["product_tmpl_id", "=", parseInt(product_id)]],
-            { fields: ["id", "name"] }
-        );
-
-        if (!product) {
-            results.error.push({
-                product_id: parseInt(product_id),
-                error: "Product tidak ditemukan di Odoo",
-            });
-            return null;
-        }
-
-        // Get stock quant data
-        const quant = await odoo.client.searchRead(
-            "stock.quant",
-            [
-                ["product_id", "=", product.id],
-                ["location_id", "=", stockLocationId],
-            ],
-            { fields: ["id", "qty"] }
-        );
-
-        let STOCK_QUANT_QTY = 0;
-        // jika ada stock quant, total qty di lokasi tersebut
-        if (quant && quant.length > 0) {
-            STOCK_QUANT_QTY = quant.reduce((sum, q) => sum + q.qty, 0);
-        }
-        console.log(
-            `Stock quant untuk product ${product.name} (${product_id}) di lokasi ${stockLocationId}: ${STOCK_QUANT_QTY}`
-        );
-
-        // Create line data
-        const lineData = {
-            product_tmpl_id: parseInt(product_id),
-            product_id: product.id,
-            product_uom_id: item.originalUom.id,
-            product_qty: item.quantity,
-            location_id: stockLocationId,
-            diff_qty: STOCK_QUANT_QTY - item.qty,
-        };
-
-        results.success.push({
-            product_id: parseInt(product_id),
-            message: "Berhasil diproses",
-        });
-
-        return [0, 0, lineData];
-    } catch (error) {
-        console.log(`Error processing product ${product_id}:`, error);
-        results.error.push({
-            product_id: parseInt(product_id),
-            error: error.message || "Unknown error",
-        });
-        return null;
-    }
-}
-
-/**
  * Process all product items to create LINE_IDS
+ * Ultra-optimized: Send raw data only, Python will handle everything
  */
-async function processProductItems(data, odoo, stockLocationId, results) {
-    const LINE_IDS = [];
+function processProductItems(data, stockLocationId, results) {
+    try {
+        console.log(`Preparing ${data.length} products for bulk processing...`);
 
-    for (const item of data) {
-        const lineData = await processProductItem(
-            item,
-            odoo,
-            stockLocationId,
-            results
-        );
-        if (lineData) {
+        // Build LINE_IDS with minimal data
+        // Python will fetch variants, calculate diff_qty, and determine type
+        const LINE_IDS = [];
+
+        for (const item of data) {
+            const product_tmpl_id = parseInt(item.key.split("-")[1]);
+
+            // Ambil qty dari item.qty (bukan item.quantity)
+            const qty = typeof item.qty === "number" ? item.qty : 0;
+
+            // Create minimal line data - Python will handle the rest
+            let UOM_ID = item.originalUom.id;
+            if (item.needsConversion) {
+                UOM_ID = item.targetUom.id;
+            }
+            const lineData = {
+                product_tmpl_id: product_tmpl_id, // Send template ID only
+                product_uom_id: item.originalUom.id,
+                product_qty: qty, // Ambil dari item.qty
+                location_id: stockLocationId,
+            };
+
             LINE_IDS.push(lineData);
-        }
-    }
 
-    return LINE_IDS;
+            results.success.push({
+                product_id: product_tmpl_id,
+                message: "Prepared for processing",
+            });
+        }
+
+        console.log(`Prepared ${LINE_IDS.length} lines for bulk creation`);
+        return LINE_IDS;
+    } catch (error) {
+        console.error("Error in preparing data:", error);
+        throw error;
+    }
 }
 
 /**
- * Create inventory adjustment in Odoo
+ * Create inventory adjustment in Odoo using bulk method
+ * This method creates inventory header and all lines in one transaction
  */
 async function createInventoryAdjustment(odoo, inventoryData) {
     const MODELS = "custom.stock.inventory";
-    const METHOD = "prepare_inventory";
+    const METHOD = "create_bulk_inventory";
 
     try {
-        const inventory = await odoo.client.create(MODELS, inventoryData);
-        await odoo.client.execute(MODELS, METHOD, [inventory]);
-        return inventory;
+        // Use the new bulk creation method
+        const result = await odoo.client.execute(MODELS, METHOD, [
+            inventoryData,
+        ]);
+
+        if (!result.success) {
+            throw new Error("Bulk inventory creation failed");
+        }
+
+        console.log(
+            `Bulk inventory created: ${result.name} with ${result.lines_count} lines`
+        );
+        return result.inventory_id;
     } catch (error) {
         throw new Error(
             `Gagal membuat inventory adjustment di Odoo: ${error.message}`
@@ -187,8 +156,12 @@ async function updateProductStates(productIds, documentId) {
 
 export const actionPostToOdoo = async ({ data }) => {
     console.log("Starting actionPostToOdoo with data length:", data.length);
-    const MAX_LINES = process.env.ODOO_MAX_POST_LINES_INVENTORY;
+    console.log("Data sample:", JSON.stringify(data.slice(0, 2), null, 2));
+
+    // Parse environment variable with fallback to 100
+    const MAX_LINES = 300;
     console.log("MAX LINES TO POST:", MAX_LINES);
+    console.log("ENV VALUE:", process.env.ODOO_MAX_POST_LINES_INVENTORY);
 
     // Track results for detailed error reporting
     const results = {
@@ -236,13 +209,9 @@ export const actionPostToOdoo = async ({ data }) => {
             .slice(0, 19)
             .replace("T", " ");
 
-        // Process all product items
-        const LINE_IDS = await processProductItems(
-            data,
-            odoo,
-            stockLocationId,
-            results
-        );
+        // Process all product items (no async needed, no Odoo calls)
+        const LINE_IDS = processProductItems(data, stockLocationId, results);
+        console.log(`Total LINE_IDS prepared: ${LINE_IDS.length}`);
 
         if (LINE_IDS.length === 0) {
             return {
@@ -253,14 +222,14 @@ export const actionPostToOdoo = async ({ data }) => {
             };
         }
 
-        // Prepare inventory data
+        // Prepare inventory data with lines
         const inventoryData = {
             name: inventoryName,
             location_id: stockLocationId,
             filter: "partial",
             date,
             accounting_date: date,
-            line_ids: LINE_IDS,
+            line_ids: LINE_IDS, // Send lines directly, not wrapped in [0, 0, data]
         };
 
         // Create inventory adjustment in Odoo
@@ -278,7 +247,7 @@ export const actionPostToOdoo = async ({ data }) => {
         const document = await createDocumentRecord(documentData);
 
         // Update product states
-        const productIds = LINE_IDS.map((line) => line[2].product_tmpl_id);
+        const productIds = LINE_IDS.map((line) => line.product_tmpl_id);
         await updateProductStates(productIds, document.id);
 
         revalidatePath("/admin/unposted");

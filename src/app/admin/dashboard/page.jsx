@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { OdooSessionManager } from "@/lib/sessionManager";
 import { getServerSession } from "next-auth/next";
 import Dashboard from "./components/dashboard-page";
-import { getLeaders } from "./services/actions";
+import { getLeaders, getTotalProductsCount } from "./services/actions";
 
 export default async function page() {
     const session = await getServerSession(authOptions);
@@ -29,6 +29,10 @@ export default async function page() {
     // step 3: get session list from database
     // get leaders
     const leaders = await getLeaders(odoo);
+
+    // step 4: get total products count from Odoo
+    const totalOdooProducts = await getTotalProductsCount();
+
     const products = await prisma.product.findMany({
         include: {
             session: true,
@@ -42,6 +46,7 @@ export default async function page() {
                 locations={locations.locations}
                 leaders={leaders}
                 products={products}
+                totalOdooProducts={totalOdooProducts}
             />
         </div>
     );

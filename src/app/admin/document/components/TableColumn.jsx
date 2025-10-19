@@ -9,6 +9,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const State = (state) => {
     if (state.state === "draft") {
@@ -25,6 +27,43 @@ const State = (state) => {
 };
 
 export default function DocumentsTable({ documents }) {
+    const [downloadingId, setDownloadingId] = useState(null);
+
+    const handleDownloadExcel = async (inventoryId, docName) => {
+        try {
+            setDownloadingId(inventoryId);
+
+            // Fetch file dari API
+            const response = await fetch(
+                `/api/document/${inventoryId}/download`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to download Excel");
+            }
+
+            // Convert response ke blob
+            const blob = await response.blob();
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${docName || `inventory_${inventoryId}`}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading Excel:", error);
+            toast.error("Gagal mendownload file Excel. Silakan coba lagi.");
+        } finally {
+            setDownloadingId(null);
+        }
+    };
+
     return (
         <div className="w-full overflow-x-auto rounded-md border">
             <Table className="min-w-[800px]">
@@ -36,6 +75,7 @@ export default function DocumentsTable({ documents }) {
                         <TableHead>Tanggal</TableHead>
                         <TableHead>Lokasi</TableHead>
                         <TableHead>Baris</TableHead>
+                        <TableHead>Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -63,6 +103,21 @@ export default function DocumentsTable({ documents }) {
                                 <TableCell>
                                     <Badge variant={"outline"}>
                                         {doc.line_ids.length}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge
+                                        onClick={() =>
+                                            handleDownloadExcel(
+                                                doc.id,
+                                                doc.name
+                                            )
+                                        }
+                                        className="cursor-pointer hover:bg-primary/90"
+                                    >
+                                        {downloadingId === doc.id
+                                            ? "Downloading..."
+                                            : "Excel"}
                                     </Badge>
                                 </TableCell>
                             </TableRow>

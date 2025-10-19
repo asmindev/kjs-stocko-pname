@@ -2,6 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import path from "path";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { OdooSessionManager } from "@/lib/sessionManager";
 
 export const getWarehouseList = async (odooSession) => {
     try {
@@ -51,5 +54,27 @@ export const getLeaders = async (odoo) => {
     } catch (error) {
         console.error("Error fetching leaders from Odoo:", error);
         return [];
+    }
+};
+
+export const getTotalProductsCount = async () => {
+    // get total products count from odoo, count with odoosession
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            throw new Error("Unauthorized. Please login first.");
+        }
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const count = await odoo.client.searchCount("product.product", []);
+        console.log("Total products count from Odoo:", count);
+        return count;
+    } catch (error) {
+        console.error("Error fetching total products count:", error);
+        return 0;
     }
 };
