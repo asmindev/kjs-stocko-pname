@@ -186,6 +186,7 @@ async function updateProductStates(productIds, documentId) {
 }
 
 export const actionPostToOdoo = async ({ data }) => {
+    console.log("Starting actionPostToOdoo with data length:", data.length);
     const MAX_LINES = process.env.ODOO_MAX_POST_LINES_INVENTORY;
     console.log("MAX LINES TO POST:", MAX_LINES);
 
