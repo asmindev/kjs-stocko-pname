@@ -54,15 +54,38 @@ export async function GET(req, { params }) {
             };
 
             // Calculate summary statistics
+            const positifLines = reportData.lines.filter(
+                (l) => l.keterangan === "Positif"
+            );
+            const negatifLines = reportData.lines.filter(
+                (l) => l.keterangan === "Negatif"
+            );
+            const balanceLines = reportData.lines.filter(
+                (l) => l.keterangan === "Sama"
+            );
+
             const summary = {
-                positif: reportData.lines.filter(
-                    (l) => l.keterangan === "Positif"
-                ).length,
-                negatif: reportData.lines.filter(
-                    (l) => l.keterangan === "Negatif"
-                ).length,
-                balance: reportData.lines.filter((l) => l.keterangan === "Sama")
-                    .length,
+                positif: {
+                    count: positifLines.length,
+                    totalValue: positifLines.reduce(
+                        (sum, l) => sum + l.selisih_value,
+                        0
+                    ),
+                },
+                negatif: {
+                    count: negatifLines.length,
+                    totalValue: negatifLines.reduce(
+                        (sum, l) => sum + l.selisih_value,
+                        0
+                    ),
+                },
+                balance: {
+                    count: balanceLines.length,
+                    totalValue: balanceLines.reduce(
+                        (sum, l) => sum + l.selisih_value,
+                        0
+                    ),
+                },
             };
 
             // Prepare data untuk worksheet - format simple
@@ -142,15 +165,15 @@ export async function GET(req, { params }) {
             // Table data
             reportData.lines.forEach((line) => {
                 wsData.push([
-                    line.barcode,
+                    String(line.barcode || ""), // Convert to string explicitly
                     line.product_name,
                     line.brand || "",
                     line.uom,
                     line.theoretical_qty,
                     line.real_qty,
                     line.diff_qty,
-                    formatRupiah(line.standard_price),
-                    formatRupiah(line.selisih_value),
+                    line.standard_price, // Keep as number, will format later
+                    line.selisih_value, // Keep as number, will format later
                     line.keterangan,
                 ]);
             });
@@ -164,37 +187,37 @@ export async function GET(req, { params }) {
             wsData.push([
                 "Positif",
                 ":",
-                `${summary.positif} baris`,
+                `${summary.positif.count} Produk`,
                 "",
                 "",
                 "",
                 "",
                 "",
-                "",
+                summary.positif.totalValue, // Keep as number
                 "",
             ]);
             wsData.push([
                 "Negatif",
                 ":",
-                `${summary.negatif} baris`,
+                `${summary.negatif.count} Produk`,
                 "",
                 "",
                 "",
                 "",
                 "",
-                "",
+                summary.negatif.totalValue, // Keep as number
                 "",
             ]);
             wsData.push([
                 "Balance (Sama)",
                 ":",
-                `${summary.balance} baris`,
+                `${summary.balance.count} Produk`,
                 "",
                 "",
                 "",
                 "",
                 "",
-                "",
+                summary.balance.totalValue, // Keep as number
                 "",
             ]);
             wsData.push([]);
@@ -209,7 +232,7 @@ export async function GET(req, { params }) {
                 "",
                 "",
                 "",
-                formatRupiah(reportData.total_selisih_value),
+                reportData.total_selisih_value, // Keep as number
                 "",
             ]);
 
@@ -229,6 +252,53 @@ export async function GET(req, { params }) {
                 { wch: 18 }, // Selisih Value
                 { wch: 12 }, // Keterangan
             ];
+
+            // Format barcode column as text to prevent scientific notation
+            // Starting from row 10 (after headers) where data begins
+            const dataStartRow = 10; // Row index where data starts (0-based)
+            for (
+                let i = dataStartRow;
+                i < dataStartRow + reportData.lines.length;
+                i++
+            ) {
+                const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 }); // Column A (barcode)
+                if (worksheet[cellRef]) {
+                    worksheet[cellRef].t = "s"; // Set type to string
+                    worksheet[cellRef].z = "@"; // Set format to text
+                }
+            }
+
+            // Format HPP (column H, index 7) and Selisih Value (column I, index 8) as currency
+            const currencyFormat = "#,##0.00";
+
+            // Format data rows
+            for (
+                let i = dataStartRow;
+                i < dataStartRow + reportData.lines.length;
+                i++
+            ) {
+                // HPP column (H)
+                const hppCellRef = XLSX.utils.encode_cell({ r: i, c: 7 });
+                if (worksheet[hppCellRef]) {
+                    worksheet[hppCellRef].z = currencyFormat;
+                }
+
+                // Selisih Value column (I)
+                const selisihCellRef = XLSX.utils.encode_cell({ r: i, c: 8 });
+                if (worksheet[selisihCellRef]) {
+                    worksheet[selisihCellRef].z = currencyFormat;
+                }
+            }
+
+            // Format summary and total rows
+            const summaryStartRow = dataStartRow + reportData.lines.length + 3; // After data + 2 empty rows + Summary label
+            for (let i = summaryStartRow; i < summaryStartRow + 4; i++) {
+                // 3 summary lines + 1 total
+                const selisihCellRef = XLSX.utils.encode_cell({ r: i, c: 8 });
+                if (worksheet[selisihCellRef]) {
+                    worksheet[selisihCellRef].z = currencyFormat;
+                }
+            }
 
             // Create workbook and add worksheet
             const workbook = XLSX.utils.book_new();

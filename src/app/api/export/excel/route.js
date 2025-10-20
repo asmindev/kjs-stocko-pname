@@ -151,15 +151,86 @@ export async function GET(req) {
 
         const summaryData = Array.from(summaryMap.values());
 
+        // Get warehouse name and date
+        const warehouseName =
+            products[0]?.session?.warehouse_name || "Unknown Warehouse";
+        const currentDate = new Date().toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+
         // Create workbook
         const workbook = XLSX.utils.book_new();
 
-        // Add Details worksheet
-        const detailsWorksheet = XLSX.utils.json_to_sheet(detailsData);
+        // ===== DETAILS WORKSHEET =====
+        // Create header title for Details
+        const detailsTitle = `${warehouseName} - Detail ${currentDate}`;
+        const detailsWSData = [
+            [detailsTitle], // Title row
+            [], // Empty row
+            // Header row
+            ["BARCODE", "NAMA_BARANG", "UOM", "BRAND", "QTY", "LOKASI", "PIC"],
+        ];
+
+        // Add data rows
+        detailsData.forEach((row) => {
+            detailsWSData.push([
+                row.BARCODE,
+                row.NAMA_BARANG,
+                row.UOM,
+                row.BRAND,
+                row.QTY,
+                row.LOKASI,
+                row.PIC,
+            ]);
+        });
+
+        const detailsWorksheet = XLSX.utils.aoa_to_sheet(detailsWSData);
+
+        // Merge cells for title (A1:G1)
+        detailsWorksheet["!merges"] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+        ];
+
+        // Center align the title
+        if (!detailsWorksheet["A1"].s) detailsWorksheet["A1"].s = {};
+        detailsWorksheet["A1"].s.alignment = {
+            horizontal: "center",
+            vertical: "center",
+        };
+
         XLSX.utils.book_append_sheet(workbook, detailsWorksheet, "Details");
 
-        // Add Summary worksheet
-        const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+        // ===== SUMMARY WORKSHEET =====
+        // Create header title for Summary
+        const summaryTitle = `${warehouseName} - Summary ${currentDate}`;
+        const summaryWSData = [
+            [summaryTitle], // Title row
+            [], // Empty row
+            // Header row
+            ["BARCODE", "PRODUCT", "BRAND", "QTY"],
+        ];
+
+        // Add data rows
+        summaryData.forEach((row) => {
+            summaryWSData.push([row.BARCODE, row.PRODUCT, row.BRAND, row.QTY]);
+        });
+
+        const summaryWorksheet = XLSX.utils.aoa_to_sheet(summaryWSData);
+
+        // Merge cells for title (A1:D1)
+        summaryWorksheet["!merges"] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        ];
+
+        // Center align the title
+        if (!summaryWorksheet["A1"].s) summaryWorksheet["A1"].s = {};
+        summaryWorksheet["A1"].s.alignment = {
+            horizontal: "center",
+            vertical: "center",
+        };
+
         XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Summary");
 
         const buffer = XLSX.write(workbook, {
