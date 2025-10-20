@@ -43,6 +43,28 @@ export async function GET(req, { params }) {
             // Import xlsx library
             const XLSX = await import("xlsx");
 
+            // Helper function untuk format rupiah
+            const formatRupiah = (number) => {
+                return new Intl.NumberFormat("id-ID", {
+                    style: "currency",
+                    currency: "IDR",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(number);
+            };
+
+            // Calculate summary statistics
+            const summary = {
+                positif: reportData.lines.filter(
+                    (l) => l.keterangan === "Positif"
+                ).length,
+                negatif: reportData.lines.filter(
+                    (l) => l.keterangan === "Negatif"
+                ).length,
+                balance: reportData.lines.filter((l) => l.keterangan === "Sama")
+                    .length,
+            };
+
             // Prepare data untuk worksheet - format simple
             const now = new Date();
             const printDate = now.toLocaleString("id-ID", {
@@ -107,12 +129,14 @@ export async function GET(req, { params }) {
             wsData.push([
                 "Barcode",
                 "Produk",
+                "Brand",
                 "UoM",
-                "Kuantitas Sistem",
-                "Kuantitas Nyata",
+                "Qty Sistem",
+                "Qty Fisik",
                 "Selisih",
                 "HPP",
-                "Total HPP",
+                "Selisih Value",
+                "Keterangan",
             ]);
 
             // Table data
@@ -120,12 +144,14 @@ export async function GET(req, { params }) {
                 wsData.push([
                     line.barcode,
                     line.product_name,
+                    line.brand || "",
                     line.uom,
                     line.theoretical_qty,
                     line.real_qty,
                     line.diff_qty,
-                    line.standard_price,
-                    line.total_hpp,
+                    formatRupiah(line.standard_price),
+                    formatRupiah(line.selisih_value),
+                    line.keterangan,
                 ]);
             });
 
@@ -133,16 +159,58 @@ export async function GET(req, { params }) {
             wsData.push([]);
             wsData.push([]);
 
+            // Summary section
+            wsData.push(["Summary:", "", "", "", "", "", "", "", "", ""]);
+            wsData.push([
+                "Positif",
+                ":",
+                `${summary.positif} baris`,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]);
+            wsData.push([
+                "Negatif",
+                ":",
+                `${summary.negatif} baris`,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]);
+            wsData.push([
+                "Balance (Sama)",
+                ":",
+                `${summary.balance} baris`,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]);
+            wsData.push([]);
+
             // Total row
             wsData.push([
-                "Total",
+                "Total Selisih Value",
                 "",
                 "",
                 "",
                 "",
                 "",
                 "",
-                reportData.total_hpp,
+                "",
+                formatRupiah(reportData.total_selisih_value),
+                "",
             ]);
 
             // Create worksheet
@@ -152,12 +220,14 @@ export async function GET(req, { params }) {
             worksheet["!cols"] = [
                 { wch: 15 }, // Barcode
                 { wch: 40 }, // Product
+                { wch: 15 }, // Brand
                 { wch: 10 }, // UoM
-                { wch: 18 }, // Theoretical
-                { wch: 18 }, // Real
-                { wch: 12 }, // Diff
+                { wch: 12 }, // Qty Sistem
+                { wch: 12 }, // Qty Fisik
+                { wch: 12 }, // Selisih
                 { wch: 15 }, // HPP
-                { wch: 15 }, // Total HPP
+                { wch: 18 }, // Selisih Value
+                { wch: 12 }, // Keterangan
             ];
 
             // Create workbook and add worksheet

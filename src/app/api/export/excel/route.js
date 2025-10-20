@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { OdooSessionManager } from "@/lib/sessionManager";
 
 export async function GET(req) {
     const XLSX = await import("xlsx");
@@ -59,6 +62,47 @@ export async function GET(req) {
             `Found ${products.length} products for warehouse ${warehouseId}`
         );
 
+        // ===== FETCH BRANDS FROM ODOO =====
+        const session = await getServerSession(authOptions);
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        // Get unique barcodes
+        const barcodes = [
+            ...new Set(products.map((p) => p.barcode).filter(Boolean)),
+        ];
+
+        console.log(
+            `Fetching brands for ${barcodes.length} unique barcodes...`
+        );
+
+        // Bulk fetch product templates from Odoo by barcode
+        let brandMap = {};
+        if (barcodes.length > 0) {
+            const productTemplates = await odoo.client.searchRead(
+                "product.template",
+                [["barcode", "in", barcodes]],
+                {
+                    fields: ["barcode", "brand_id"],
+                }
+            );
+
+            console.log(`Found ${productTemplates.length} products in Odoo`);
+
+            // Create brand map: barcode -> brand_name
+            brandMap = productTemplates.reduce((map, template) => {
+                if (template.barcode && template.brand_id) {
+                    // product_brand_id format: [id, "Brand Name"]
+                    map[template.barcode] = template.brand_id[1];
+                }
+                return map;
+            }, {});
+
+            console.log(`Mapped ${Object.keys(brandMap).length} brands`);
+        }
+
         // Worksheet 1: Details (semua informasi lengkap)
         const detailsData = products.map((product) => {
             try {
@@ -67,10 +111,10 @@ export async function GET(req) {
                     BARCODE: product.barcode,
                     NAMA_BARANG: product.name,
                     UOM: product.uom_name,
-                    BRAND: product.brand || "",
+                    BRAND: brandMap[product.barcode] || "", // Get from Odoo
                     QTY: product.quantity,
                     LOKASI: product.location_name,
-                    PIC: user.name,
+                    PIC: user?.name || "",
                 };
             } catch (error) {
                 console.log(
@@ -99,8 +143,8 @@ export async function GET(req) {
                 summaryMap.set(key, {
                     BARCODE: product.barcode,
                     PRODUCT: product.name,
+                    BRAND: brandMap[product.barcode] || "", // Get from Odoo
                     QTY: product.quantity,
-                    WAREHOUSE: product.session?.warehouse_name || "Unknown",
                 });
             }
         });
