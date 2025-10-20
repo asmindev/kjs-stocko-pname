@@ -58,6 +58,10 @@ export async function POST(request, { params }) {
             );
         }
 
+        // IMPORTANT: Always use the original session creator's userId
+        // This ensures that when leader/admin edits, the products still belong to the original checker
+        const originalUserId = existingSession.user_id;
+
         const { products, warehouse_id, warehouse_name } = data;
 
         // Update warehouse_id if provided (admin functionality)
@@ -127,7 +131,7 @@ export async function POST(request, { params }) {
                     uom_name: product.uom_name || null,
                     quantity: parseFloat(product.quantity) || 1,
                     session_id: parseInt(id),
-                    userId: userId,
+                    userId: originalUserId, // Use original session creator's userId
                     location_id: product.location_id
                         ? parseInt(product.location_id)
                         : null,
