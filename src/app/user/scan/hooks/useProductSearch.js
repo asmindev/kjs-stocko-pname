@@ -12,7 +12,6 @@ export const useProductSearch = (setValue) => {
     const { searchProduct } = useProduct();
     const [searchingRows, setSearchingRows] = useState(new Set());
     const [productData, setProductData] = useState({}); // Store complete product data by row index
-    const searchedBarcodesRef = useRef(new Set());
     const timeoutsRef = useRef(new Map());
 
     /**
@@ -23,17 +22,19 @@ export const useProductSearch = (setValue) => {
     const performSearch = useCallback(
         async (barcode, index) => {
             barcode = barcode?.trim();
-            if (!barcode) return;
-            // if barcode length < 5, ignore
-            if (barcode.length < 6) {
+            console.log(
+                `[performSearch] Called with barcode: "${barcode}", index: ${index}`
+            );
+
+            if (!barcode) {
+                console.log(`[performSearch] Barcode is empty, returning`);
                 return;
             }
-
-            // Create a unique key for this index-barcode combination
-            const searchKey = `${index}-${barcode}`;
-
-            // Skip if already searched
-            if (searchedBarcodesRef.current.has(searchKey)) {
+            // if barcode length < 6, ignore
+            if (barcode.length < 6) {
+                console.log(
+                    `[performSearch] Barcode too short (${barcode.length} chars), returning`
+                );
                 return;
             }
 
@@ -42,77 +43,80 @@ export const useProductSearch = (setValue) => {
                 clearTimeout(timeoutsRef.current.get(index));
             }
 
-            const timeoutId = setTimeout(async () => {
-                setSearchingRows((prev) => new Set(prev).add(index));
-                searchedBarcodesRef.current.add(searchKey);
+            // Execute search immediately without timeout
+            console.log(
+                `[performSearch] Starting search for barcode: ${barcode}`
+            );
+            setSearchingRows((prev) => new Set(prev).add(index));
 
-                try {
-                    const foundProduct = await searchProduct(barcode);
+            try {
+                const foundProduct = await searchProduct(barcode);
+                console.log(`[performSearch] Search result:`, foundProduct);
 
-                    if (foundProduct) {
-                        // Store complete product data
-                        setProductData((prev) => ({
-                            ...prev,
-                            [index]: foundProduct,
-                        }));
+                if (foundProduct) {
+                    // Store complete product data
+                    setProductData((prev) => ({
+                        ...prev,
+                        [index]: foundProduct,
+                    }));
 
-                        // Set product ID from Odoo
-                        if (foundProduct.id) {
-                            setValue(
-                                `products.${index}.product_id`,
-                                foundProduct.id
-                            );
-                        }
-
-                        // Set product barcode from database (actual barcode)
-                        if (foundProduct.barcode) {
-                            setValue(
-                                `products.${index}.barcode`,
-                                foundProduct.barcode
-                            );
-                        }
-
-                        // Set product name
+                    // Set product ID from Odoo
+                    if (foundProduct.id) {
                         setValue(
-                            `products.${index}.name`,
-                            foundProduct.name || ""
+                            `products.${index}.product_id`,
+                            foundProduct.id
                         );
+                    }
 
-                        // Set default UoM
-                        const { uom_id, uom_name } =
-                            getDefaultUom(foundProduct);
+                    // Set product barcode from database (actual barcode)
+                    if (foundProduct.barcode) {
+                        setValue(
+                            `products.${index}.barcode`,
+                            foundProduct.barcode
+                        );
+                    }
 
-                        if (uom_id) {
-                            setValue(`products.${index}.uom_id`, uom_id);
-                            setValue(`products.${index}.uom_name`, uom_name);
-                        }
+                    // Always set product name - use shouldValidate to ensure it triggers
+                    setValue(
+                        `products.${index}.name`,
+                        foundProduct.name || "",
+                        { shouldValidate: true, shouldDirty: true }
+                    );
 
-                        toast.success(`Produk ditemukan!`, {
-                            description: `${foundProduct.name} (${
-                                foundProduct.barcode || barcode
-                            })`,
+                    // Set default UoM
+                    const { uom_id, uom_name } = getDefaultUom(foundProduct);
+
+                    if (uom_id) {
+                        setValue(`products.${index}.uom_id`, uom_id, {
+                            shouldValidate: true,
                         });
-                    } else {
-                        toast.error("Produk tidak ditemukan di Odoo", {
-                            description: `Barcode: ${barcode}`,
+                        setValue(`products.${index}.uom_name`, uom_name, {
+                            shouldValidate: true,
                         });
                     }
-                } catch (error) {
-                    toast.error("Gagal mencari produk", {
+
+                    toast.success(`Produk ditemukan!`, {
+                        description: `${foundProduct.name} (${
+                            foundProduct.barcode || barcode
+                        })`,
+                    });
+                } else {
+                    toast.error("Produk tidak ditemukan di Odoo", {
                         description: `Barcode: ${barcode}`,
                     });
-                    console.error("Search error:", error);
-                } finally {
-                    setSearchingRows((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.delete(index);
-                        return newSet;
-                    });
-                    timeoutsRef.current.delete(index);
                 }
-            }, 2000);
-
-            timeoutsRef.current.set(index, timeoutId);
+            } catch (error) {
+                toast.error("Gagal mencari produk", {
+                    description: `Barcode: ${barcode}`,
+                });
+                console.error("Search error:", error);
+            } finally {
+                setSearchingRows((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(index);
+                    return newSet;
+                });
+            }
         },
         [searchProduct, setValue]
     );
@@ -124,14 +128,6 @@ export const useProductSearch = (setValue) => {
      */
     const handleScanResult = useCallback(
         (barcode, targetIndex) => {
-            // Clear previous search cache for this row
-            const keysToRemove = Array.from(searchedBarcodesRef.current).filter(
-                (key) => key.startsWith(`${targetIndex}-`)
-            );
-            keysToRemove.forEach((key) =>
-                searchedBarcodesRef.current.delete(key)
-            );
-
             // Temporarily set the scanned barcode
             setValue(`products.${targetIndex}.barcode`, barcode);
             // Trigger search for this specific barcode - this will update the barcode field with the actual product barcode if found
@@ -166,12 +162,6 @@ export const useProductSearch = (setValue) => {
             newSet.delete(index);
             return newSet;
         });
-
-        // Clear searched cache for this row
-        const keysToRemove = Array.from(searchedBarcodesRef.current).filter(
-            (key) => key.startsWith(`${index}-`)
-        );
-        keysToRemove.forEach((key) => searchedBarcodesRef.current.delete(key));
     }, []);
 
     /**
@@ -180,7 +170,6 @@ export const useProductSearch = (setValue) => {
     const resetSearchData = useCallback(() => {
         setProductData({});
         setSearchingRows(new Set());
-        searchedBarcodesRef.current.clear();
 
         // Clear all timeouts
         timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
@@ -212,39 +201,16 @@ export const useProductSearch = (setValue) => {
     );
 
     /**
-     * Clear search cache untuk row dan barcode tertentu
-     * @param {number} index - Index row
-     * @param {string} oldBarcode - Barcode lama yang akan di-clear dari cache
-     */
-    const clearSearchCache = useCallback((index, oldBarcode = null) => {
-        if (oldBarcode) {
-            // Clear specific barcode cache
-            const searchKey = `${index}-${oldBarcode}`;
-            searchedBarcodesRef.current.delete(searchKey);
-        } else {
-            // Clear all cache for this row
-            const keysToRemove = Array.from(searchedBarcodesRef.current).filter(
-                (key) => key.startsWith(`${index}-`)
-            );
-            keysToRemove.forEach((key) =>
-                searchedBarcodesRef.current.delete(key)
-            );
-        }
-    }, []);
-
-    /**
      * Trigger immediate search for a specific barcode and index
      * @param {string} barcode - Barcode to search
      * @param {number} index - Row index
      */
     const triggerImmediateSearch = useCallback(
         (barcode, index) => {
-            // Clear any previous search cache for this row
-            clearSearchCache(index);
             // Perform search immediately
             performSearch(barcode, index);
         },
-        [clearSearchCache, performSearch]
+        [performSearch]
     );
 
     // Cleanup effect untuk timeouts
@@ -265,7 +231,6 @@ export const useProductSearch = (setValue) => {
         resetSearchData,
         getProductData,
         isRowSearching,
-        clearSearchCache,
         triggerImmediateSearch,
         setProductData, // Add this for external initialization
         cleanup,

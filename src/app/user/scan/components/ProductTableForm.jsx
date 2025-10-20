@@ -85,25 +85,30 @@ const ProductTableForm = forwardRef(function ProductTableForm(
         resetSearchData,
         getProductData,
         isRowSearching,
-        clearSearchCache,
         cleanup,
     } = useProductSearch(setValue);
 
     const prevBarcodesRef = useRef([]);
+    const barcodeString = watchedProducts.map((p) => p.barcode || "").join("|");
+
     useEffect(() => {
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
+
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
             const currentProduct = watchedProducts[index];
 
-            if (
-                barcode !== prevBarcode &&
-                barcode &&
-                barcode.length > 0 &&
-                !isRowSearching(index)
-            ) {
-                // If barcode changed and the row already has product data, clear it
+            // Trigger search when barcode changes and has minimum length
+            if (barcode !== prevBarcode && barcode && barcode.length >= 6) {
+                console.log(
+                    `Barcode changed at index ${index}: "${prevBarcode}" -> "${barcode}"`
+                );
+
+                // If barcode changed and the row already has product data, clear it first
                 if (prevBarcode && currentProduct?.name) {
+                    console.log(
+                        `Clearing previous product data for index ${index}`
+                    );
                     // Clear all product-related fields when barcode changes
                     setValue(`products.${index}.product_id`, "");
                     setValue(`products.${index}.name`, "");
@@ -111,10 +116,12 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                     setValue(`products.${index}.uom_name`, "");
                     // Note: We keep location_id and location_name as they are reusable
                     setValue(`products.${index}.quantity`, ""); // Reset to default if needed
-
-                    clearSearchCache(index, prevBarcode);
                 }
 
+                // Always perform search when barcode changes (no cache, no search state check)
+                console.log(
+                    `Triggering search for barcode: ${barcode} at index ${index}`
+                );
                 performSearch(barcode, index);
             }
         });
@@ -124,10 +131,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
 
         // Cleanup timeouts on unmount
         return cleanup;
-    }, [
-        watchedProducts.map((p) => p.barcode).join(","),
-        // Remove other dependencies to prevent infinite loop
-    ]);
+    }, [barcodeString, performSearch, setValue, cleanup, watchedProducts]);
 
     /**
      * Handle scan request for specific row
