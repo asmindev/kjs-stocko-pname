@@ -17,7 +17,7 @@ export const VALIDATION_MESSAGES = {
     BARCODE_INVALID: "Format barcode tidak valid",
     BARCODE_DUPLICATE: "Barcode sudah ada di baris lain",
     QUANTITY_REQUIRED: "Quantity wajib diisi",
-    QUANTITY_MIN: "Quantity minimal 1",
+    QUANTITY_MIN: "Quantity minimal 0.1",
     QUANTITY_INVALID: "Quantity harus berupa angka",
     QUANTITY_INTEGER: "Quantity harus berupa bilangan bulat",
     PRODUCTS_MIN: "Minimal harus ada 1 produk",
@@ -61,7 +61,7 @@ export const VALIDATION_RULES = {
         PATTERN: /^[a-zA-Z0-9\-_\.]+$/,
     },
     QUANTITY: {
-        MIN: 1,
+        MIN: 0.1,
         MAX: 999999,
     },
     NAME: {
@@ -145,9 +145,9 @@ export const INPUT_CONFIG = {
     },
     QUANTITY: {
         type: "number",
-        min: "1",
-        step: "1",
-        placeholder: "1",
+        min: "0.1",
+        step: "0.01",
+        placeholder: "1.00",
         className: "w-full text-sm text-center",
     },
 };

@@ -38,6 +38,14 @@ export const useProductSearch = (setValue) => {
                 return;
             }
 
+            // ✅ PERFORMANCE FIX: Check if product already cached
+            if (productData[index]?.barcode === barcode) {
+                console.log(
+                    `⏭️  Product already cached for index ${index}, skipping API call`
+                );
+                return;
+            }
+
             // Clear any existing timeout for this index
             if (timeoutsRef.current.has(index)) {
                 clearTimeout(timeoutsRef.current.get(index));
@@ -118,7 +126,7 @@ export const useProductSearch = (setValue) => {
                 });
             }
         },
-        [searchProduct, setValue]
+        [searchProduct, setValue, productData]
     );
 
     /**

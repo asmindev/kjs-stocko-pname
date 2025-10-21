@@ -31,8 +31,7 @@ export const productTableSchema = z.object({
                         required_error: "Quantity wajib diisi",
                         invalid_type_error: "Quantity harus berupa angka",
                     })
-                    .min(1, "Quantity minimal 1")
-                    // .int("Quantity harus berupa bilangan bulat"),
+                    .min(0.1, "Quantity minimal 0.1")
                     // Modified to allow 1 or 2 decimal places
                     .refine(
                         (val) =>

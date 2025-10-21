@@ -1,4 +1,4 @@
-
+perlu di perhatikan: 10001313
 
 FILENAME = 'cindy.json'
 

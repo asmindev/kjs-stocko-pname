@@ -488,7 +488,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     }
                                                 )}
                                                 type="number"
-                                                min="1"
+                                                min="0.1"
                                                 step="0.01"
                                                 placeholder="1.00"
                                                 className={cn(

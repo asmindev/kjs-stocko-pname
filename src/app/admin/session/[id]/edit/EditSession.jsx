@@ -173,7 +173,24 @@ export default function EditSession({
     }, [initializeProductData, setProductData, watchedProducts]);
 
     const prevBarcodesRef = useRef([]);
+    const isInitialLoadRef = useRef(true); // ← Track initial load
+
     useEffect(() => {
+        // Mark initial load as complete after a short delay
+        setTimeout(() => {
+            isInitialLoadRef.current = false;
+        }, 100);
+    }, []);
+
+    useEffect(() => {
+        // ✅ Skip validation on initial load
+        if (isInitialLoadRef.current) {
+            console.log(
+                "⏭️  Admin Edit: Skipping barcode validation on initial load"
+            );
+            return;
+        }
+
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
@@ -641,7 +658,7 @@ export default function EditSession({
                                                             }
                                                         )}
                                                         type="number"
-                                                        min="1"
+                                                        min="0.1"
                                                         step="0.01"
                                                         placeholder="1.00"
                                                         className={cn(

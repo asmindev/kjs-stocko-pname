@@ -131,15 +131,63 @@ export default function EditSession({
         isRowSearching,
         clearSearchCache,
         cleanup,
+        setProductData, // ← Added for initializing cache
     } = useProductSearch(setValue);
 
     const prevBarcodesRef = useRef([]);
     const searchedBarcodesRef = useRef(new Map()); // Track barcodes per row: Map<rowIndex, barcode>
+    const isInitialLoadRef = useRef(true); // ← Track initial load to skip validation
+
+    // ✅ PERFORMANCE FIX: Initialize product data cache from session data
+    useEffect(() => {
+        if (sessionData.products && sessionData.products.length > 0) {
+            const initialProductData = {};
+
+            sessionData.products.forEach((product, index) => {
+                if (product.product_id) {
+                    // Cache complete product data to prevent refetch
+                    initialProductData[index] = {
+                        id: product.product_id,
+                        barcode: product.barcode,
+                        name: product.name,
+                        uom_id: product.uom_id,
+                        uom_name: product.uom_name,
+                        uom_po_id: product.uom_id, // For UomSelect compatibility
+                    };
+                }
+
+                // Set previous barcode to prevent initial refetch
+                prevBarcodesRef.current[index] = product.barcode || "";
+            });
+
+            if (Object.keys(initialProductData).length > 0) {
+                setProductData(initialProductData);
+                console.log(
+                    `⚡ Performance: Cached ${
+                        Object.keys(initialProductData).length
+                    } products (skipped ${
+                        Object.keys(initialProductData).length
+                    } API calls)`
+                );
+            }
+        }
+
+        // Mark initial load as complete
+        setTimeout(() => {
+            isInitialLoadRef.current = false;
+        }, 100);
+    }, []); // Only run once on mount
 
     useEffect(() => {
+        // ✅ Skip validation on initial load
+        if (isInitialLoadRef.current) {
+            console.log("⏭️  Skipping barcode validation on initial load");
+            return;
+        }
+
         const currentBarcodes = watchedProducts.map((p) => p.barcode || "");
 
-        // Only search for barcodes that are new or changed
+        // Only search for barcodes that are new or changed (user actually edited)
         currentBarcodes.forEach((barcode, index) => {
             const prevBarcode = prevBarcodesRef.current[index] || "";
             const currentProduct = watchedProducts[index];
@@ -638,7 +686,7 @@ export default function EditSession({
                                                             }
                                                         )}
                                                         type="number"
-                                                        min="1"
+                                                        min="0.1"
                                                         step="0.01"
                                                         placeholder="1.00"
                                                         className={cn(
