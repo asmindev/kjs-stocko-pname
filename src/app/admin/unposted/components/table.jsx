@@ -116,10 +116,11 @@ export default function UnpostedGroupedTable({ data }) {
             return;
         }
         console.log("Data to be posted to Odoo:", dataToPost[0]);
-
+        const LIMIT = 300;
+        const finalDataToPost = dataToPost.slice(0, LIMIT);
         try {
             const result = toast.promise(
-                actionPostToOdoo({ data: dataToPost }),
+                actionPostToOdoo({ data: finalDataToPost }),
                 {
                     loading: "Memproses data...",
                     success: (data) => {
