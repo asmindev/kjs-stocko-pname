@@ -103,13 +103,13 @@ async function createInventoryAdjustment(odoo, inventoryData) {
         ]);
 
         if (!result.success) {
-            throw new Error("Bulk inventory creation failed");
+            throw new Error(result.message || "Bulk inventory creation failed");
         }
 
         console.log(
             `Bulk inventory created: ${result.name} with ${result.lines_count} lines`
         );
-        return result.inventory_id;
+        return result;
     } catch (error) {
         throw new Error(
             `Gagal membuat inventory adjustment di Odoo: ${error.message}`
@@ -135,12 +135,18 @@ async function createDocumentRecord(documentData) {
 
 /**
  * Update product states to POSTED
+ * Only update products that were successfully processed in Odoo
  */
-async function updateProductStates(productIds, documentId) {
+async function updateProductStates(successProductIds, documentId) {
     try {
-        await prisma.product.updateMany({
+        if (successProductIds.length === 0) {
+            console.log("No successful products to update");
+            return;
+        }
+
+        const updated = await prisma.product.updateMany({
             where: {
-                product_id: { in: productIds },
+                product_id: { in: successProductIds },
                 state: "CONFIRMED",
             },
             data: {
@@ -148,6 +154,8 @@ async function updateProductStates(productIds, documentId) {
                 state: "POST",
             },
         });
+
+        console.log(`Updated ${updated.count} products to POST state`);
     } catch (error) {
         // Log error but don't fail the entire process since Odoo inventory was already created
         console.error("Error updating product states:", error);
@@ -233,32 +241,50 @@ export const actionPostToOdoo = async ({ data }) => {
         };
 
         // Create inventory adjustment in Odoo
-        const inventory = await createInventoryAdjustment(odoo, inventoryData);
+        const odooResult = await createInventoryAdjustment(odoo, inventoryData);
+
+        // Extract success, error, and skipped product IDs from Odoo response
+        const successProductIds = odooResult.data?.success || [];
+        const errorProductIds = odooResult.data?.error || [];
+        const skippedProductIds = odooResult.data?.skipped || [];
+
+        console.log(`Odoo processing results:
+            Success: ${successProductIds.length}
+            Error: ${errorProductIds.length}
+            Skipped: ${skippedProductIds.length}`);
 
         // Create document record in database
         const documentData = {
             name: inventoryName,
             warehouse_id: warehouseId,
             warehouse_name: warehouse.name,
-            inventory_id: inventory,
+            inventory_id: odooResult.inventory_id,
             state: "POST",
             userId: parseInt(session.user.id),
         };
         const document = await createDocumentRecord(documentData);
 
-        // Update product states
-        const productIds = LINE_IDS.map((line) => line.product_tmpl_id);
-        await updateProductStates(productIds, document.id);
+        // Update product states - ONLY for successfully processed products
+        await updateProductStates(successProductIds, document.id);
 
         revalidatePath("/admin/unposted");
 
         return {
             success: true,
-            message: `Berhasil posting ${document.name}`,
-            results,
-            details: `Total produk diproses: ${data.length}, Berhasil: ${results.success.length}, Gagal: ${results.error.length}`,
-            inventoryId: inventory,
+            message: odooResult.message || `Berhasil posting ${document.name}`,
+            inventoryId: odooResult.inventory_id,
+            inventoryName: odooResult.name,
+            linesCount: odooResult.lines_count,
             documentId: document.id,
+            details: {
+                totalProcessed: data.length,
+                successCount: successProductIds.length,
+                errorCount: errorProductIds.length,
+                skippedCount: skippedProductIds.length,
+                successProducts: successProductIds,
+                errorProducts: errorProductIds,
+                skippedProducts: skippedProductIds,
+            },
         };
     } catch (error) {
         return {

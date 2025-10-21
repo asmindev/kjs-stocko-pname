@@ -129,9 +129,6 @@ export default function UnpostedGroupedTable({ data }) {
                             const successMsg =
                                 data.message ||
                                 "Data berhasil diposting ke Odoo!";
-                            const details = data.details
-                                ? ` (${data.details})`
-                                : "";
 
                             // If there are errors, show them as warning
                             if (data.results?.error?.length > 0) {
@@ -153,7 +150,7 @@ export default function UnpostedGroupedTable({ data }) {
                                 }, 1000);
                             }
 
-                            return successMsg + details;
+                            return successMsg;
                         } else {
                             return (
                                 data.message || "Gagal memposting data ke Odoo."
