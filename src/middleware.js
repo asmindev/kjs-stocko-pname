@@ -75,10 +75,16 @@ export default withAuth(
                     );
 
                     if (!odoo) {
-                        // Hapus session dari database
-                        await prisma.session.deleteMany({
+                        // ✅ FIX: Hapus HANYA OdooSession (auth), BUKAN Session (scanning)!
+                        await prisma.odooSession.deleteMany({
                             where: { user_id: parseInt(session.user.id) },
                         });
+
+                        console.warn(
+                            `⚠️ Odoo connection failed for user ${session.user.id}. OdooSession cleared.`
+                        );
+                        console.log(`📦 Scanning Sessions preserved.`);
+
                         return false;
                     }
                 }

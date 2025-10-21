@@ -60,7 +60,7 @@ model Session {
 
     // Relationships
     products Product[] // One-to-many relation with products
-    user     User?     @relation(fields: [user_id], references: [id])
+    user     User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
 }
 
 // model untuk menyimpan dokumen hasil post ke Odoo (inventory adjustment)
@@ -99,10 +99,10 @@ model Product {
     userId     Int?
 
     // Relationship
-    session     Session?  @relation(fields: [session_id], references: [id])
-    User        User?     @relation(fields: [userId], references: [id])
-    uom         Uom?      @relation(fields: [uom_id], references: [id])
-    Document    Document? @relation(fields: [document_id], references: [id])
+    session     Session?  @relation(fields: [session_id], references: [id], onDelete: Restrict)
+    User        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+    uom         Uom?      @relation(fields: [uom_id], references: [id], onDelete: SetNull)
+    Document    Document? @relation(fields: [document_id], references: [id], onDelete: SetNull)
     document_id Int?
 }
 
