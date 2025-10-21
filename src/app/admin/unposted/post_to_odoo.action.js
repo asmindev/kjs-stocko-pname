@@ -55,7 +55,7 @@ function processProductItems(data, stockLocationId, results) {
         const LINE_IDS = [];
 
         for (const item of data) {
-            const product_tmpl_id = parseInt(item.key.split("-")[1]);
+            const product_tmpl_id = parseInt(item.product_id);
 
             // Ambil qty dari item.qty (bukan item.quantity)
             const qty = typeof item.qty === "number" ? item.qty : 0;
@@ -67,7 +67,7 @@ function processProductItems(data, stockLocationId, results) {
             }
             const lineData = {
                 product_tmpl_id: product_tmpl_id, // Send template ID only
-                product_uom_id: item.originalUom.id,
+                product_uom_id: UOM_ID,
                 product_qty: qty, // Ambil dari item.qty
                 location_id: stockLocationId,
             };
@@ -167,6 +167,7 @@ export const actionPostToOdoo = async ({ data }) => {
     const results = {
         success: [],
         error: [],
+        skipped: [],
     };
 
     // Validation
@@ -211,7 +212,6 @@ export const actionPostToOdoo = async ({ data }) => {
 
         // Process all product items (no async needed, no Odoo calls)
         const LINE_IDS = processProductItems(data, stockLocationId, results);
-        console.log(`Total LINE_IDS prepared: ${LINE_IDS.length}`);
 
         if (LINE_IDS.length === 0) {
             return {

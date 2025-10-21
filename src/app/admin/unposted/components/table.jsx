@@ -36,6 +36,7 @@ export default function UnpostedGroupedTable({ data }) {
             for (const prod of wh.products || []) {
                 rows.push({
                     key: `${wh.warehouse_id}-${prod.key}`,
+                    product_id: prod.key,
                     product: prod.name,
                     warehouse:
                         wh.warehouse_name || `Warehouse ${wh.warehouse_id}`,
@@ -123,6 +124,7 @@ export default function UnpostedGroupedTable({ data }) {
                     loading: "Memproses data...",
                     success: (data) => {
                         if (data.success) {
+                            console.log("Post to Odoo success:", data);
                             // Show detailed success message with results
                             const successMsg =
                                 data.message ||

@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { confirmSession } from "./actions";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const STATE_MAP = {
     DRAFT: {
@@ -95,17 +96,18 @@ export default function SessionDetail({ data }) {
                                 {data.name || `Session #${data.id}`}
                             </div>
                             <div className="w-full gap-2 flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    className="hover:cursor-pointer"
-                                    disabled={DISABLE_ON_STATE.includes(
-                                        data.state
-                                    )}
-                                    onClick={handleEdit}
-                                >
-                                    <Edit className="w-4 h-4 mr-2" />
-                                    Edit
-                                </Button>
+                                <Link href={`/user/session/${data.id}/edit`}>
+                                    <Button
+                                        variant="outline"
+                                        className="hover:cursor-pointer"
+                                        disabled={DISABLE_ON_STATE.includes(
+                                            data.state
+                                        )}
+                                    >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Edit
+                                    </Button>
+                                </Link>
                                 {/* CONFIRM BUTTON */}
                                 <Button
                                     variant="default"
