@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useState } from "react";
 import { toast } from "sonner";
+import GenerateZeroQtyDialog from "./GenerateZeroQtyDialog";
 
 const State = (state) => {
     if (state.state === "draft") {
@@ -26,7 +27,7 @@ const State = (state) => {
     }
 };
 
-export default function DocumentsTable({ documents }) {
+export default function DocumentsTable({ documents, locations }) {
     const [downloadingId, setDownloadingId] = useState(null);
 
     const handleDownloadExcel = async (inventoryId, docName) => {
@@ -65,66 +66,83 @@ export default function DocumentsTable({ documents }) {
     };
 
     return (
-        <div className="w-full overflow-x-auto rounded-md border">
-            <Table className="min-w-[800px]">
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[50px]">User</TableHead>
-                        <TableHead>Nama</TableHead>
-                        <TableHead>Status Di Server</TableHead>
-                        <TableHead>Tanggal</TableHead>
-                        <TableHead>Lokasi</TableHead>
-                        <TableHead>Baris</TableHead>
-                        <TableHead>Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {!documents || documents.length === 0 ? (
+        <div className="space-y-4">
+            {/* Action Bar */}
+            <div className="flex items-center justify-end">
+                <GenerateZeroQtyDialog
+                    documents={documents}
+                    locations={locations}
+                />
+            </div>
+
+            {/* Table */}
+            <div className="w-full overflow-x-auto rounded-md border">
+                <Table className="min-w-[800px]">
+                    <TableHeader>
                         <TableRow>
-                            <TableCell
-                                colSpan={6}
-                                className="h-24 text-center text-muted-foreground"
-                            >
-                                Tidak ada dokumen untuk ditampilkan.
-                            </TableCell>
+                            <TableHead className="w-[50px]">No</TableHead>
+                            <TableHead className="w-[50px]">User</TableHead>
+                            <TableHead>Nama</TableHead>
+                            <TableHead>Status Di Server</TableHead>
+                            <TableHead>Tanggal</TableHead>
+                            <TableHead>Lokasi</TableHead>
+                            <TableHead>Baris</TableHead>
+                            <TableHead>Aksi</TableHead>
                         </TableRow>
-                    ) : (
-                        documents.map((doc) => (
-                            <TableRow key={doc.id}>
-                                <TableCell className="font-medium">
-                                    {doc.create_uid?.[1] || "Unknown User"}
-                                </TableCell>
-                                <TableCell>{doc.name}</TableCell>
-                                <TableCell>
-                                    <State state={doc.state} />
-                                </TableCell>
-                                <TableCell>{doc.date}</TableCell>
-                                <TableCell>{doc.location_id?.[1]}</TableCell>
-                                <TableCell>
-                                    <Badge variant={"outline"}>
-                                        {doc.line_ids.length}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge
-                                        onClick={() =>
-                                            handleDownloadExcel(
-                                                doc.id,
-                                                doc.name
-                                            )
-                                        }
-                                        className="cursor-pointer hover:bg-primary/90"
-                                    >
-                                        {downloadingId === doc.id
-                                            ? "Downloading..."
-                                            : "Excel"}
-                                    </Badge>
+                    </TableHeader>
+                    <TableBody>
+                        {!documents || documents.length === 0 ? (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={8}
+                                    className="h-24 text-center text-muted-foreground"
+                                >
+                                    Tidak ada dokumen untuk ditampilkan.
                                 </TableCell>
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        ) : (
+                            documents.map((doc, index) => (
+                                <TableRow key={doc.id}>
+                                    <TableCell className="font-medium">
+                                        {index + 1}
+                                    </TableCell>
+                                    <TableCell className="font-medium">
+                                        {doc.create_uid?.[1] || "Unknown User"}
+                                    </TableCell>
+                                    <TableCell>{doc.name}</TableCell>
+                                    <TableCell>
+                                        <State state={doc.state} />
+                                    </TableCell>
+                                    <TableCell>{doc.date}</TableCell>
+                                    <TableCell>
+                                        {doc.location_id?.[1]}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={"outline"}>
+                                            {doc.line_ids.length}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            onClick={() =>
+                                                handleDownloadExcel(
+                                                    doc.id,
+                                                    doc.name
+                                                )
+                                            }
+                                            className="cursor-pointer hover:bg-primary/90"
+                                        >
+                                            {downloadingId === doc.id
+                                                ? "Downloading..."
+                                                : "Excel"}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 }

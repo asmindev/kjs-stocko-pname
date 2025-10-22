@@ -4,7 +4,6 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 
 export async function GET(req, { params }) {
-    console.log("parameters received:", params);
     try {
         const { id } = await params; // inventory_id dari Odoo
 
@@ -33,8 +32,6 @@ export async function GET(req, { params }) {
                 "get_report_data",
                 [[parseInt(id)]]
             );
-
-            console.log("Received report data:", reportData);
 
             if (!reportData) {
                 throw new Error("Failed to get report data");

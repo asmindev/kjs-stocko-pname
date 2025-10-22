@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import React from "react";
-import { getDocuments } from "./actions";
+import { getDocuments, getWarehouseLocations } from "./actions";
 import DocumentsTable from "./components/TableColumn";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -15,7 +15,15 @@ export default async function page() {
             </div>
         );
     }
-    const documents = await getDocuments();
+
+    const documentsResult = await getDocuments();
+    // ambil unique doc.location_id[1] dari documents
+    const locations = documentsResult.documents
+        .map((doc) => doc.location_id)
+        .filter((v, i, a) => a.findIndex((t) => t[0] === v[0]) === i);
+
+    const documents = documentsResult.documents || [];
+
     return (
         <>
             <div>
@@ -24,7 +32,7 @@ export default async function page() {
                     List of all documents has posted di Odoo.
                 </p>
             </div>
-            <DocumentsTable documents={documents.documents} />
+            <DocumentsTable documents={documents} locations={locations} />
         </>
     );
 }
