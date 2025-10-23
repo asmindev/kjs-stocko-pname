@@ -181,7 +181,7 @@ export async function generateZeroQuantity(inventoryIds, locationId) {
         // created document
         const doc = await prisma.document.create({
             data: {
-                inventory_id: result.id,
+                inventory_id: result.inventory_id,
                 name: result.name,
                 warehouse_id: locationId,
                 warehouse_name: result.location_id?.[1] || "Unknown Location",

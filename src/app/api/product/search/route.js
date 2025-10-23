@@ -45,6 +45,7 @@ export const GET = async (request) => {
 
         // Search for product by barcode
         const product = await client.searchRead(MODEL, DOMAIN, OPTIONS);
+        console.log({ product });
 
         if (!product || product.length === 0) {
             return NextResponse.json(

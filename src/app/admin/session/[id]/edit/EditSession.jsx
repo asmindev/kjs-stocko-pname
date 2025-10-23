@@ -149,7 +149,6 @@ export default function EditSession({
         resetSearchData,
         getProductData,
         isRowSearching,
-        clearSearchCache,
         cleanup,
         setProductData, // We need this to initialize existing product data
     } = useProductSearch(setValue);
@@ -201,8 +200,9 @@ export default function EditSession({
                 barcode.length > 0 &&
                 !isRowSearching(index)
             ) {
+                // Clear product data if barcode changed
                 if (prevBarcode) {
-                    clearSearchCache(index, prevBarcode);
+                    clearProductData(index);
                 }
 
                 performSearch(barcode, index);

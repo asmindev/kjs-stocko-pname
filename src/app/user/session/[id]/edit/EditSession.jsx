@@ -129,7 +129,6 @@ export default function EditSession({
         resetSearchData,
         getProductData,
         isRowSearching,
-        clearSearchCache,
         cleanup,
         setProductData, // ← Added for initializing cache
     } = useProductSearch(setValue);
@@ -211,7 +210,7 @@ export default function EditSession({
                     setValue(`products.${index}.uom_name`, "");
                     // Note: We keep location_id and location_name as they are reusable
 
-                    clearSearchCache(index, prevBarcode);
+                    clearProductData(index);
                 }
 
                 // Always perform search when barcode changes
