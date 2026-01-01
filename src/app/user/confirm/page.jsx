@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
     Card,
@@ -16,7 +16,7 @@ import RefreshButton from "./components/RefreshButton";
 import { getConfirmableSessions, getConfirmPageFilters } from "./actions";
 import { AlertCircle, CheckCircle2, Users } from "lucide-react";
 
-export default function ConfirmPage() {
+function ConfirmPageContent() {
     const searchParams = useSearchParams();
     const [sessions, setSessions] = useState([]);
     const [pagination, setPagination] = useState(null);
@@ -223,5 +223,13 @@ export default function ConfirmPage() {
                 />
             )}
         </div>
+    );
+}
+
+export default function ConfirmPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ConfirmPageContent />
+        </Suspense>
     );
 }
