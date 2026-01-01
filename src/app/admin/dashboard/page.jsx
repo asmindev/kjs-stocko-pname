@@ -19,6 +19,7 @@ export default async function page({ searchParams }) {
     const {
         warehouse,
         leader,
+        tab,
         page: pageParam,
         limit: limitParam,
         search,
@@ -35,12 +36,15 @@ export default async function page({ searchParams }) {
         session.user.email
     );
 
-    // Fetch Odoo Data
+    // Conditional fetching based on active tab
+    const activeTab = tab || "warehouse";
+
+    // Fetch Odoo Data (conditionally fetch leaders only when needed)
     const [warehousesData, locationsData, leaders, totalOdooProducts] =
         await Promise.all([
             odoo.getWarehouses(),
             odoo.getInventoryLocations(),
-            getLeaders(odoo),
+            activeTab === "leader" ? getLeaders(odoo) : Promise.resolve([]),
             getTotalProductsCount(),
         ]);
 
