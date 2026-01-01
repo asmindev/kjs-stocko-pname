@@ -96,7 +96,12 @@ export default function Dashboard({
     // Determine current active tab/mode based on what is selected
     // If leader is selected, we are in leader mode. If warehouse is selected, warehouse mode.
     // Default to 'warehouse' if neither or warehouse selected.
-    const activeTab = selectedLeader ? "leader" : "warehouse";
+    // Determine current active tab/mode
+    // Priority: 1. URL search param 'tab' 2. Derived from selected props 3. Default to 'warehouse'
+    const activeTab =
+        searchParams.get("tab") === "leader" || selectedLeader
+            ? "leader"
+            : "warehouse";
 
     return (
         <div className="space-y-6">
@@ -109,21 +114,8 @@ export default function Dashboard({
             <Tabs
                 value={activeTab}
                 onValueChange={(val) => {
-                    // When clicking tab, we might want to clear params or keep them?
-                    // Usually tabs switch view context.
-                    // If switching to leader, maybe clear warehouse?
-                    // User click tab, we can let them use simple state, OR reset URL.
-                    // Simplest is to just switch tab visually, but the content depends on selection.
-                    // If I select Warehouse tab but have ?leader=1, it's confusing.
-                    // Let's force router push if switching tabs involves clearing context.
-                    const params = new URLSearchParams(searchParams);
-                    if (val === "warehouse") {
-                        params.delete("leader");
-                        // Optionally set default warehouse or leave empty
-                    } else {
-                        params.delete("warehouse");
-                    }
-                    router.push(`${pathname}?${params.toString()}`);
+                    // Simple router push with tab parameter
+                    router.push(`${pathname}?tab=${val}`);
                 }}
                 className="w-full"
             >
