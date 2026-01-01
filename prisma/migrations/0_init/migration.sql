@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "public"."SessionState" AS ENUM ('DRAFT', 'CONFIRMED', 'POST', 'DONE');
 
@@ -113,6 +116,30 @@ CREATE INDEX "odoo_sessions_user_id_idx" ON "public"."odoo_sessions"("user_id");
 CREATE INDEX "odoo_sessions_expires_at_idx" ON "public"."odoo_sessions"("expires_at");
 
 -- CreateIndex
+CREATE INDEX "Session_user_id_idx" ON "public"."Session"("user_id");
+
+-- CreateIndex
+CREATE INDEX "Session_created_at_idx" ON "public"."Session"("created_at");
+
+-- CreateIndex
+CREATE INDEX "Document_created_at_idx" ON "public"."Document"("created_at");
+
+-- CreateIndex
+CREATE INDEX "Product_state_idx" ON "public"."Product"("state");
+
+-- CreateIndex
+CREATE INDEX "Product_barcode_idx" ON "public"."Product"("barcode");
+
+-- CreateIndex
+CREATE INDEX "Product_session_id_idx" ON "public"."Product"("session_id");
+
+-- CreateIndex
+CREATE INDEX "Product_created_at_idx" ON "public"."Product"("created_at");
+
+-- CreateIndex
+CREATE INDEX "Product_product_id_idx" ON "public"."Product"("product_id");
+
+-- CreateIndex
 CREATE INDEX "uoms_category_id_idx" ON "public"."uoms"("category_id");
 
 -- AddForeignKey
@@ -125,7 +152,7 @@ ALTER TABLE "public"."Session" ADD CONSTRAINT "Session_user_id_fkey" FOREIGN KEY
 ALTER TABLE "public"."Document" ADD CONSTRAINT "Document_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."Session"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -138,3 +165,4 @@ ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_document_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."uoms" ADD CONSTRAINT "uoms_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."uom_categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
