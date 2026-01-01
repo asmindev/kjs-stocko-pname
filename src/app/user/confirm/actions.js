@@ -9,36 +9,116 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
  * Get all sessions that can be confirmed by a leader
  * Only sessions in DRAFT state from checker users
  */
-export async function getConfirmableSessions() {
+export async function getConfirmableSessions({
+    page = 1,
+    limit = 10,
+    search = "",
+    user = "",
+    warehouse = "",
+    location = "",
+} = {}) {
     try {
-        const sessions = await prisma.session.findMany({
-            where: {
-                state: "DRAFT",
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        role: true,
+        const skip = (page - 1) * limit;
+        const where = {
+            state: "DRAFT",
+        };
+
+        // Filters
+        if (user) {
+            where.user = { name: user };
+        }
+        if (warehouse) {
+            where.warehouse_name = warehouse;
+        }
+        if (location) {
+            where.products = {
+                some: { location_name: location },
+            };
+        }
+
+        // Search
+        if (search) {
+            const searchLower = search.toLowerCase();
+            where.OR = [
+                { name: { contains: search, mode: "insensitive" } },
+                { user: { name: { contains: search, mode: "insensitive" } } },
+                {
+                    warehouse_name: {
+                        contains: search,
+                        mode: "insensitive",
                     },
                 },
-                products: {
-                    select: {
-                        id: true,
-                        name: true,
-                        barcode: true,
-                        quantity: true,
-                        state: true,
-                        location_name: true,
+                {
+                    products: {
+                        some: {
+                            OR: [
+                                {
+                                    name: {
+                                        contains: search,
+                                        mode: "insensitive",
+                                    },
+                                },
+                                {
+                                    barcode: {
+                                        contains: search,
+                                        mode: "insensitive",
+                                    },
+                                },
+                                {
+                                    location_name: {
+                                        contains: search,
+                                        mode: "insensitive",
+                                    },
+                                },
+                            ],
+                        },
                     },
                 },
-            },
-            orderBy: {
-                created_at: "desc",
-            },
-        });
+            ];
+        }
+
+        const [sessions, totalCount, productStats] = await Promise.all([
+            prisma.session.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            role: true,
+                        },
+                    },
+                    products: {
+                        select: {
+                            id: true,
+                            name: true,
+                            barcode: true,
+                            quantity: true,
+                            state: true,
+                            location_name: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    created_at: "desc",
+                },
+                skip,
+                take: limit,
+            }),
+            prisma.session.count({ where }),
+            prisma.product.aggregate({
+                where: {
+                    session: where, // Re-use the session filters
+                },
+                _count: {
+                    _all: true,
+                },
+                _sum: {
+                    quantity: true,
+                },
+            }),
+        ]);
 
         // Calculate product counts and total quantities for each session
         const sessionsWithStats = sessions.map((session) => ({
@@ -53,10 +133,83 @@ export async function getConfirmableSessions() {
             ).length,
         }));
 
-        return { success: true, data: sessionsWithStats };
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return {
+            success: true,
+            data: sessionsWithStats,
+            pagination: {
+                page,
+                limit,
+                totalCount,
+                totalPages,
+            },
+            stats: {
+                totalSessions: totalCount,
+                totalProducts: productStats._count._all,
+                totalQuantity: productStats._sum.quantity || 0,
+            },
+        };
     } catch (error) {
         console.error("Error fetching confirmable sessions:", error);
         return { success: false, error: "Failed to fetch sessions" };
+    }
+}
+
+export async function getConfirmPageFilters() {
+    try {
+        // Fetch unique users, warehouses, and locations from DRAFT sessions
+        const where = { state: "DRAFT" };
+
+        const [users, warehouses, locations] = await Promise.all([
+            prisma.session.findMany({
+                where,
+                select: { user: { select: { name: true } } },
+                distinct: ["user_id"], // assuming user_id relation
+            }),
+            prisma.session.findMany({
+                where,
+                select: { warehouse_name: true },
+                distinct: ["warehouse_name"],
+            }),
+            // For locations, it's harder because it's in products.
+            // We'll fetch all products in DRAFT sessions and distinct them.
+            // CAUTION: This might be heavy if there are millions of products.
+            // Optimization: Use clean SQL or aggregate if possible.
+            // For now, let's fetch products with distinct location_name in DRAFT sessions
+            prisma.product.findMany({
+                where: {
+                    session: { state: "DRAFT" },
+                    location_name: { not: null },
+                },
+                select: { location_name: true },
+                distinct: ["location_name"],
+            }),
+        ]);
+
+        return {
+            success: true,
+            filters: {
+                users: users
+                    .map((u) => u.user?.name)
+                    .filter(Boolean)
+                    .sort(),
+                warehouses: warehouses
+                    .map((w) => w.warehouse_name)
+                    .filter(Boolean)
+                    .sort(),
+                locations: locations
+                    .map((l) => l.location_name)
+                    .filter(Boolean)
+                    .sort(),
+            },
+        };
+    } catch (error) {
+        console.error("Error fetching filters:", error);
+        return {
+            success: false,
+            filters: { users: [], warehouses: [], locations: [] },
+        };
     }
 }
 

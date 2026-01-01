@@ -61,6 +61,9 @@ model Session {
     // Relationships
     products Product[] // One-to-many relation with products
     user     User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+    @@index([user_id])
+    @@index([created_at])
 }
 
 // model untuk menyimpan dokumen hasil post ke Odoo (inventory adjustment)
@@ -78,6 +81,8 @@ model Document {
 
     // Relationships
     user User? @relation(fields: [userId], references: [id])
+
+    @@index([created_at])
 }
 
 model Product {
@@ -104,6 +109,12 @@ model Product {
     uom         Uom?      @relation(fields: [uom_id], references: [id], onDelete: SetNull)
     Document    Document? @relation(fields: [document_id], references: [id], onDelete: SetNull)
     document_id Int?
+
+    @@index([state])
+    @@index([barcode])
+    @@index([session_id])
+    @@index([created_at])
+    @@index([product_id])
 }
 
 enum SessionState {

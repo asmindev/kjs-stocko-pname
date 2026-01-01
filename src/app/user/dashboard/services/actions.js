@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../api/auth/[...nextauth]/route";
 
-export async function getSessions() {
+export async function getSessions({ page = 1, limit = 10, search = "" } = {}) {
     try {
         // Get user session
         const session = await getServerSession(authOptions);
@@ -17,24 +17,40 @@ export async function getSessions() {
         }
 
         const userId = parseInt(session.user.id);
+        const skip = (page - 1) * limit;
 
-        const sessions = await prisma.session.findMany({
-            where: {
-                user_id: userId, // Only get sessions for logged-in user
-            },
-            include: {
-                products: true,
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
+        const where = {
+            user_id: userId,
+        };
+
+        if (search) {
+            where.name = {
+                contains: search,
+                mode: "insensitive",
+            };
+        }
+
+        // Parallel fetch for data and count
+        const [sessions, totalCount] = await Promise.all([
+            prisma.session.findMany({
+                where,
+                include: {
+                    products: true,
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
                     },
                 },
-            },
-            orderBy: {
-                created_at: "desc",
-            },
-        });
+                orderBy: {
+                    created_at: "desc",
+                },
+                skip,
+                take: limit,
+            }),
+            prisma.session.count({ where }),
+        ]);
 
         // Transform data untuk menambahkan informasi jumlah produk
         const sessionsWithProductCount = sessions.map((session) => ({
@@ -43,7 +59,18 @@ export async function getSessions() {
             created_at: session.created_at.toISOString(),
         }));
 
-        return { success: true, data: sessionsWithProductCount };
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return {
+            success: true,
+            data: sessionsWithProductCount,
+            pagination: {
+                page,
+                limit,
+                totalCount,
+                totalPages,
+            },
+        };
     } catch (error) {
         console.error("Error fetching sessions:", error);
         return { success: false, error: "Failed to fetch sessions" };

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Card,
     CardContent,
@@ -36,11 +36,60 @@ import {
     Filter,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import PaginationControls from "@/components/ui/pagination-controls";
 
-export default function SessionList({ sessions }) {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [stateFilter, setStateFilter] = useState("all");
-    const [sortBy, setSortBy] = useState("newest");
+export default function SessionList({
+    sessions,
+    pagination,
+    searchParams,
+    stats,
+}) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParamsHook = useSearchParams();
+
+    // Initialize state from URL params
+    const [searchTerm, setSearchTerm] = useState(searchParams?.search || "");
+    const [stateFilter, setStateFilter] = useState(
+        searchParams?.state || "all"
+    );
+
+    // Debounce search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchTerm !== (searchParams?.search || "")) {
+                const params = new URLSearchParams(searchParamsHook);
+                if (searchTerm) {
+                    params.set("search", searchTerm);
+                } else {
+                    params.delete("search");
+                }
+                params.set("page", "1"); // Reset to page 1 on search
+                router.push(`${pathname}?${params.toString()}`);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, router, pathname, searchParamsHook, searchParams?.search]);
+
+    // Sync state with URL params (for back/forward navigation)
+    useEffect(() => {
+        setSearchTerm(searchParams?.search || "");
+        setStateFilter(searchParams?.state || "all");
+    }, [searchParams]);
+
+    const handleStateFilterChange = (value) => {
+        setStateFilter(value);
+        const params = new URLSearchParams(searchParamsHook);
+        if (value && value !== "all") {
+            params.set("state", value);
+        } else {
+            params.delete("state");
+        }
+        params.set("page", "1"); // Reset to page 1 on filter
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     // Get state badge variant
     const getStateBadge = (state) => {
@@ -73,7 +122,7 @@ export default function SessionList({ sessions }) {
         }
     };
 
-    // Calculate session statistics
+    // Calculate session statistics for rows
     const getSessionStats = (session) => {
         const productStates = session.products.reduce((acc, product) => {
             acc[product.state] = (acc[product.state] || 0) + 1;
@@ -92,144 +141,76 @@ export default function SessionList({ sessions }) {
         };
     };
 
-    // Filter and search sessions
-    const filteredSessions = useMemo(() => {
-        let filtered = sessions;
-
-        // Apply search filter
-        if (searchTerm) {
-            filtered = filtered.filter(
-                (session) =>
-                    session.name
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    session.warehouse_name
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    session.user?.name
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase()) ||
-                    session.user?.email
-                        ?.toLowerCase()
-                        .includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Apply state filter
-        if (stateFilter !== "all") {
-            filtered = filtered.filter(
-                (session) => session.state === stateFilter
-            );
-        }
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-            switch (sortBy) {
-                case "newest":
-                    return new Date(b.created_at) - new Date(a.created_at);
-                case "oldest":
-                    return new Date(a.created_at) - new Date(b.created_at);
-                case "name":
-                    return a.name.localeCompare(b.name);
-                case "products":
-                    return b._count.products - a._count.products;
-                default:
-                    return 0;
-            }
-        });
-
-        return filtered;
-    }, [sessions, searchTerm, stateFilter, sortBy]);
-
-    // Get overview statistics
-    const overviewStats = useMemo(() => {
-        const total = sessions.length;
-        const byState = sessions.reduce((acc, session) => {
-            acc[session.state] = (acc[session.state] || 0) + 1;
-            return acc;
-        }, {});
-
-        const totalProducts = sessions.reduce(
-            (sum, session) => sum + session._count.products,
-            0
-        );
-
-        return {
-            total,
-            byState,
-            totalProducts,
-        };
-    }, [sessions]);
-
     return (
         <div className="space-y-6">
             {/* Overview Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center space-x-2">
-                            <Calendar className="h-5 w-5 text-blue-600" />
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">
-                                    Total Sessions
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {overviewStats.total}
-                                </p>
+            {stats && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex items-center space-x-2">
+                                <Calendar className="h-5 w-5 text-blue-600" />
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">
+                                        Total Sessions
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {stats.totalSessions}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center space-x-2">
-                            <Package className="h-5 w-5 text-green-600" />
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">
-                                    Total Products
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {overviewStats.totalProducts}
-                                </p>
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex items-center space-x-2">
+                                <Package className="h-5 w-5 text-green-600" />
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">
+                                        Total Products
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {stats.totalProducts}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center space-x-2">
-                            <Filter className="h-5 w-5 text-yellow-600" />
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">
-                                    Draft Sessions
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {overviewStats.byState.DRAFT || 0}
-                                </p>
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex items-center space-x-2">
+                                <Filter className="h-5 w-5 text-yellow-600" />
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">
+                                        Draft Sessions
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {stats.byState?.DRAFT || 0}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center space-x-2">
-                            <Building className="h-5 w-5 text-purple-600" />
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">
-                                    Completed
-                                </p>
-                                <p className="text-2xl font-bold">
-                                    {overviewStats.byState.DONE || 0}
-                                </p>
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex items-center space-x-2">
+                                <Building className="h-5 w-5 text-purple-600" />
+                                <div>
+                                    <p className="text-sm font-medium text-gray-600">
+                                        Completed
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                        {stats.byState?.DONE || 0}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
             {/* Filters and Search */}
             <Card>
                 <CardHeader>
@@ -258,7 +239,7 @@ export default function SessionList({ sessions }) {
                         {/* State Filter */}
                         <Select
                             value={stateFilter}
-                            onValueChange={setStateFilter}
+                            onValueChange={handleStateFilterChange}
                         >
                             <SelectTrigger className="w-48">
                                 <SelectValue placeholder="Filter by state" />
@@ -276,17 +257,39 @@ export default function SessionList({ sessions }) {
                             </SelectContent>
                         </Select>
 
-                        {/* Sort */}
-                        <Select value={sortBy} onValueChange={setSortBy}>
-                            <SelectTrigger className="w-48">
-                                <SelectValue placeholder="Sort by" />
+                        {/* Sort Control */}
+                        <Select
+                            value={`${searchParams?.sortBy || "created_at"}-${
+                                searchParams?.sortOrder || "desc"
+                            }`}
+                            onValueChange={(value) => {
+                                const [sortBy, sortOrder] = value.split("-");
+                                const params = new URLSearchParams(
+                                    searchParamsHook
+                                );
+                                params.set("sortBy", sortBy);
+                                params.set("sortOrder", sortOrder);
+                                router.push(`${pathname}?${params.toString()}`);
+                            }}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Urutkan" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="newest">Terbaru</SelectItem>
-                                <SelectItem value="oldest">Terlama</SelectItem>
-                                <SelectItem value="name">Nama A-Z</SelectItem>
-                                <SelectItem value="products">
-                                    Jumlah Produk
+                                <SelectItem value="created_at-desc">
+                                    Terbaru
+                                </SelectItem>
+                                <SelectItem value="created_at-asc">
+                                    Terlama
+                                </SelectItem>
+                                <SelectItem value="name-asc">
+                                    Nama (A-Z)
+                                </SelectItem>
+                                <SelectItem value="name-desc">
+                                    Nama (Z-A)
+                                </SelectItem>
+                                <SelectItem value="warehouse_name-asc">
+                                    Warehouse (A-Z)
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -294,13 +297,20 @@ export default function SessionList({ sessions }) {
 
                     {/* Results Info */}
                     <div className="mb-4 text-sm text-gray-600">
-                        Menampilkan {filteredSessions.length} dari{" "}
-                        {sessions.length} session
-                        {searchTerm && ` untuk pencarian "${searchTerm}"`}
+                        {pagination?.totalCount > 0 ? (
+                            <>
+                                Menampilkan {sessions.length} dari{" "}
+                                {pagination.totalCount} session
+                                {searchTerm &&
+                                    ` untuk pencarian "${searchTerm}"`}
+                            </>
+                        ) : (
+                            "Tidak ada data"
+                        )}
                     </div>
 
                     {/* Session Table */}
-                    {filteredSessions.length > 0 ? (
+                    {sessions.length > 0 ? (
                         <div className="rounded-md border">
                             <Table>
                                 <TableHeader>
@@ -316,7 +326,7 @@ export default function SessionList({ sessions }) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredSessions.map((session) => {
+                                    {sessions.map((session) => {
                                         const stats = getSessionStats(session);
                                         const stateBadge = getStateBadge(
                                             session.state
@@ -372,31 +382,6 @@ export default function SessionList({ sessions }) {
                                                             }
                                                         </span>
                                                     </div>
-                                                    {/* Product State Summary */}
-                                                    {stats.totalProducts >
-                                                        0 && (
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {Object.entries(
-                                                                stats.productStates
-                                                            ).map(
-                                                                ([
-                                                                    state,
-                                                                    count,
-                                                                ]) => (
-                                                                    <Badge
-                                                                        key={
-                                                                            state
-                                                                        }
-                                                                        variant="outline"
-                                                                        className="text-xs"
-                                                                    >
-                                                                        {state}:{" "}
-                                                                        {count}
-                                                                    </Badge>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="text-sm font-medium">
@@ -458,6 +443,19 @@ export default function SessionList({ sessions }) {
                                     ? "Coba ubah filter atau kata kunci pencarian"
                                     : "Belum ada session yang dibuat"}
                             </p>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {pagination && (
+                        <div className="mt-4">
+                            <PaginationControls
+                                totalCount={pagination.totalCount}
+                                pageSize={pagination.limit}
+                                page={pagination.page}
+                                totalPages={pagination.totalPages}
+                                pageSizeOptions={[10, 20, 30, 50]}
+                            />
                         </div>
                     )}
                 </CardContent>

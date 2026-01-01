@@ -11,59 +11,35 @@ import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
 
 export default function LocationsTable({
-    products = [],
+    serverLocationCounts,
     title = "Data Lokasi",
     description,
 }) {
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Group products by location
-    const locationSummary = products.reduce((acc, product) => {
-        const locationName = product.location_name || "Unknown";
-
-        if (!acc[locationName]) {
-            acc[locationName] = {
+    // Convert server stats to array
+    const locationData = useMemo(() => {
+        if (!serverLocationCounts) return [];
+        return Object.entries(serverLocationCounts)
+            .map(([locationName, quantity]) => ({
                 locationName,
-                locationId: product.location_id,
-                totalProducts: 0,
-                totalQuantity: 0,
-                states: {},
-                sessions: new Set(),
-            };
-        }
-
-        acc[locationName].totalProducts += 1;
-        acc[locationName].totalQuantity += product.quantity;
-        acc[locationName].states[product.state] =
-            (acc[locationName].states[product.state] || 0) + 1;
-        if (product.session?.name) {
-            acc[locationName].sessions.add(product.session.name);
-        }
-
-        return acc;
-    }, {});
-
-    const locationData = Object.values(locationSummary).sort(
-        (a, b) => b.totalQuantity - a.totalQuantity
-    );
+                totalQuantity: quantity,
+            }))
+            .sort((a, b) => b.totalQuantity - a.totalQuantity);
+    }, [serverLocationCounts]);
 
     // Filter locations based on search term
     const searchedLocations = useMemo(() => {
         if (!searchTerm) return locationData;
 
-        return locationData.filter(
-            (location) =>
-                location.locationName
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()) ||
-                location.locationId?.toString().includes(searchTerm) ||
-                Object.keys(location.states).some((state) =>
-                    state.toLowerCase().includes(searchTerm.toLowerCase())
-                )
+        return locationData.filter((location) =>
+            location.locationName
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
         );
     }, [locationData, searchTerm]);
 
-    if (!products || !locationData.length) return null;
+    if (!locationData.length) return null;
 
     return (
         <Card>
@@ -85,7 +61,7 @@ export default function LocationsTable({
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                         <Input
-                            placeholder="Cari berdasarkan nama lokasi, ID lokasi, atau status..."
+                            placeholder="Cari berdasarkan nama lokasi..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
@@ -145,9 +121,6 @@ export default function LocationsTable({
                     <div className="text-center py-8 text-gray-500">
                         <Search className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                         <p>Tidak ada lokasi yang ditemukan</p>
-                        <p className="text-sm mt-1">
-                            Coba gunakan kata kunci yang berbeda
-                        </p>
                     </div>
                 )}
             </CardContent>

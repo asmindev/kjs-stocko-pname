@@ -56,96 +56,72 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const SessionsTable = ({ sessions, onRefresh }) => {
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import PaginationControls from "@/components/ui/pagination-controls";
+
+const SessionsTable = ({ sessions, pagination, filters, onRefresh }) => {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const [selectedSessions, setSelectedSessions] = useState(new Set());
     const [isConfirming, setIsConfirming] = useState(false);
 
-    // Search and filter states
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedUser, setSelectedUser] = useState("");
-    const [selectedWarehouse, setSelectedWarehouse] = useState("");
-    const [selectedLocation, setSelectedLocation] = useState("");
+    // Initial state from URL
+    const [searchTerm, setSearchTerm] = useState(
+        searchParams.get("search") || ""
+    );
+    const [selectedUser, setSelectedUser] = useState(
+        searchParams.get("user") || ""
+    );
+    const [selectedWarehouse, setSelectedWarehouse] = useState(
+        searchParams.get("warehouse") || ""
+    );
+    const [selectedLocation, setSelectedLocation] = useState(
+        searchParams.get("location") || ""
+    );
 
     // Combobox open states
     const [openUser, setOpenUser] = useState(false);
     const [openWarehouse, setOpenWarehouse] = useState(false);
     const [openLocation, setOpenLocation] = useState(false);
 
-    // Get unique values for filters
-    const uniqueUsers = useMemo(() => {
-        const users = sessions
-            .map((session) => session.user?.name)
-            .filter(Boolean);
-        return [...new Set(users)].sort();
-    }, [sessions]);
+    // Sync state with URL params
+    useEffect(() => {
+        setSearchTerm(searchParams.get("search") || "");
+        setSelectedUser(searchParams.get("user") || "");
+        setSelectedWarehouse(searchParams.get("warehouse") || "");
+        setSelectedLocation(searchParams.get("location") || "");
+    }, [searchParams]);
 
-    const uniqueWarehouses = useMemo(() => {
-        const warehouses = sessions
-            .map((session) => session.warehouse_name)
-            .filter(Boolean);
-        return [...new Set(warehouses)].sort();
-    }, [sessions]);
+    // Update URL helper
+    const updateUrl = (key, value) => {
+        const params = new URLSearchParams(searchParams);
+        if (value) {
+            params.set(key, value);
+        } else {
+            params.delete(key);
+        }
+        params.set("page", "1"); // Reset to page 1 on filter change
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
-    const uniqueLocations = useMemo(() => {
-        const locations = sessions
-            .flatMap(
-                (session) =>
-                    session.products?.map((product) => product.location_name) ||
-                    []
-            )
-            .filter(Boolean);
-        return [...new Set(locations)].sort();
-    }, [sessions]);
+    // Debounce search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchTerm !== (searchParams.get("search") || "")) {
+                updateUrl("search", searchTerm);
+            }
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]); // Removed other deps to avoid loops
 
-    // Filter sessions based on search and filters
-    const filteredSessions = useMemo(() => {
-        return sessions.filter((session) => {
-            // Search filter (checks multiple fields)
-            const searchLower = searchTerm.toLowerCase();
-            const matchesSearch =
-                !searchTerm ||
-                session.name?.toLowerCase().includes(searchLower) ||
-                session.user?.name?.toLowerCase().includes(searchLower) ||
-                session.warehouse_name?.toLowerCase().includes(searchLower) ||
-                session.products?.some(
-                    (product) =>
-                        product.location_name
-                            ?.toLowerCase()
-                            .includes(searchLower) ||
-                        product.name?.toLowerCase().includes(searchLower) ||
-                        product.barcode?.toLowerCase().includes(searchLower)
-                );
+    const uniqueUsers = filters?.users || [];
+    const uniqueWarehouses = filters?.warehouses || [];
+    const uniqueLocations = filters?.locations || [];
 
-            // User filter
-            const matchesUser =
-                !selectedUser || session.user?.name === selectedUser;
-
-            // Warehouse filter
-            const matchesWarehouse =
-                !selectedWarehouse ||
-                session.warehouse_name === selectedWarehouse;
-
-            // Location filter (checks if any product in session matches)
-            const matchesLocation =
-                !selectedLocation ||
-                session.products?.some(
-                    (product) => product.location_name === selectedLocation
-                );
-
-            return (
-                matchesSearch &&
-                matchesUser &&
-                matchesWarehouse &&
-                matchesLocation
-            );
-        });
-    }, [
-        sessions,
-        searchTerm,
-        selectedUser,
-        selectedWarehouse,
-        selectedLocation,
-    ]);
+    // Filter sessions - now just use sessions prop as it's already filtered
+    const filteredSessions = sessions;
 
     // Clear all filters
     const clearFilters = () => {
@@ -153,6 +129,7 @@ const SessionsTable = ({ sessions, onRefresh }) => {
         setSelectedUser("");
         setSelectedWarehouse("");
         setSelectedLocation("");
+        router.push(pathname); // Clear all params
     };
 
     // Check if any filters are active
@@ -296,8 +273,10 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                             <CommandGroup>
                                                 <CommandItem
                                                     value=""
+                                                    value=""
                                                     onSelect={() => {
                                                         setSelectedUser("");
+                                                        updateUrl("user", "");
                                                         setOpenUser(false);
                                                     }}
                                                 >
@@ -318,11 +297,17 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                         onSelect={(
                                                             currentValue
                                                         ) => {
-                                                            setSelectedUser(
+                                                            const newValue =
                                                                 currentValue ===
-                                                                    selectedUser
+                                                                selectedUser
                                                                     ? ""
-                                                                    : currentValue
+                                                                    : currentValue;
+                                                            setSelectedUser(
+                                                                newValue
+                                                            );
+                                                            updateUrl(
+                                                                "user",
+                                                                newValue
                                                             );
                                                             setOpenUser(false);
                                                         }}
@@ -385,6 +370,10 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                         setSelectedWarehouse(
                                                             ""
                                                         );
+                                                        updateUrl(
+                                                            "warehouse",
+                                                            ""
+                                                        );
                                                         setOpenWarehouse(false);
                                                     }}
                                                 >
@@ -407,11 +396,17 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                             onSelect={(
                                                                 currentValue
                                                             ) => {
-                                                                setSelectedWarehouse(
+                                                                const newValue =
                                                                     currentValue ===
-                                                                        selectedWarehouse
+                                                                    selectedWarehouse
                                                                         ? ""
-                                                                        : currentValue
+                                                                        : currentValue;
+                                                                setSelectedWarehouse(
+                                                                    newValue
+                                                                );
+                                                                updateUrl(
+                                                                    "warehouse",
+                                                                    newValue
                                                                 );
                                                                 setOpenWarehouse(
                                                                     false
@@ -475,6 +470,10 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                     value=""
                                                     onSelect={() => {
                                                         setSelectedLocation("");
+                                                        updateUrl(
+                                                            "location",
+                                                            ""
+                                                        );
                                                         setOpenLocation(false);
                                                     }}
                                                 >
@@ -497,11 +496,17 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                                             onSelect={(
                                                                 currentValue
                                                             ) => {
-                                                                setSelectedLocation(
+                                                                const newValue =
                                                                     currentValue ===
-                                                                        selectedLocation
+                                                                    selectedLocation
                                                                         ? ""
-                                                                        : currentValue
+                                                                        : currentValue;
+                                                                setSelectedLocation(
+                                                                    newValue
+                                                                );
+                                                                updateUrl(
+                                                                    "location",
+                                                                    newValue
                                                                 );
                                                                 setOpenLocation(
                                                                     false
@@ -551,7 +556,8 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                                 <Filter className="h-4 w-4" />
                                 <span>
                                     Menampilkan {filteredSessions.length} dari{" "}
-                                    {sessions.length} dokumen
+                                    {pagination?.totalCount || sessions.length}{" "}
+                                    dokumen
                                 </span>
                             </div>
                             <Badge variant="secondary" className="text-xs">
@@ -613,8 +619,9 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                             dokumen dipilih
                             {hasActiveFilters && (
                                 <div className="text-xs mt-1">
-                                    (difilter dari {sessions.length} total
-                                    dokumen)
+                                    (difilter data page ini dari{" "}
+                                    {pagination?.totalCount || sessions.length}{" "}
+                                    total dokumen)
                                 </div>
                             )}
                         </div>
@@ -644,7 +651,8 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                             {hasActiveFilters && (
                                 <span className="ml-1">
                                     (Menampilkan {filteredSessions.length} dari{" "}
-                                    {sessions.length} dokumen)
+                                    {pagination?.totalCount || sessions.length}{" "}
+                                    dokumen)
                                 </span>
                             )}
                         </CardDescription>
@@ -786,6 +794,16 @@ const SessionsTable = ({ sessions, onRefresh }) => {
                         </Table>
                     </CardContent>
                 </Card>
+            )}
+            {/* Sessions table */}
+            {/* Pagination */}
+            {pagination && (
+                <PaginationControls
+                    totalCount={pagination.totalCount}
+                    pageSize={pagination.limit}
+                    page={pagination.page}
+                    totalPages={pagination.totalPages}
+                />
             )}
         </div>
     );

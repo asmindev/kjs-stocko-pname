@@ -1,8 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDashboardData } from "../hooks/useDashboardData";
-import { useLeaderData } from "../hooks/useLeaderData";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
     WarehouseSelector,
     WarehouseInfo,
@@ -19,31 +18,85 @@ import {
     LeaderStatisticsCards,
     LeaderStatusDistribution,
 } from "./index";
+import { STATES } from "../constants/states";
 
 export default function Dashboard({
     warehouses,
-    products,
+    paginatedProducts,
+    pagination,
     locations,
     leaders,
     totalOdooProducts,
+    serverStats,
+    selectedWarehouse,
+    selectedLeader,
 }) {
-    const [selectedWarehouse, setSelectedWarehouse] = useState(null);
-    const [selectedLeader, setSelectedLeader] = useState(null);
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
 
-    const {
-        filteredProducts,
-        warehouseStats,
-        stateChartData,
-        locationChartData,
-    } = useDashboardData(products, selectedWarehouse, locations);
+    // Handlers for interactions that change URL params
+    const handleWarehouseChange = (warehouse) => {
+        const params = new URLSearchParams(searchParams);
+        if (warehouse) {
+            params.set("warehouse", warehouse.lot_stock_id[0]);
+            params.delete("leader"); // Switch mode
+            params.delete("page");
+        } else {
+            params.delete("warehouse");
+        }
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
-    const {
-        leaderProducts,
-        leaderStats,
-        leaderStateChartData,
-        leaderLocationChartData,
-        leaderLocations,
-    } = useLeaderData(products, selectedLeader, locations);
+    const handleLeaderChange = (leader) => {
+        const params = new URLSearchParams(searchParams);
+        if (leader) {
+            params.set("leader", leader.id);
+            params.delete("warehouse"); // Switch mode
+            params.delete("page");
+        } else {
+            params.delete("leader");
+        }
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    // Prepare chart data locally from serverStats
+    const stateChartData = useMemo(() => {
+        if (!serverStats?.stateCount) return [];
+        return Object.entries(serverStats.stateCount).map(([state, count]) => {
+            const stateConfig = STATES.find((s) => s.label === state) || {
+                label: state,
+                color: "gray",
+            };
+            return {
+                name: state,
+                value: count,
+                color: stateConfig.color,
+            };
+        });
+    }, [serverStats]);
+
+    const locationChartData = useMemo(() => {
+        if (!serverStats) return [];
+        const data = [
+            {
+                name: "Lokasi Terhitung",
+                value: serverStats.locationsWithProducts,
+                color: "green",
+            },
+            {
+                name: "Lokasi Belum Terhitung",
+                value: serverStats.locationsWithoutProducts,
+                color: "red",
+            },
+        ];
+        return data.filter((item) => item.value > 0);
+    }, [serverStats]);
+
+    // Determine current active tab/mode based on what is selected
+    // If leader is selected, we are in leader mode. If warehouse is selected, warehouse mode.
+    // Default to 'warehouse' if neither or warehouse selected.
+    const activeTab = selectedLeader ? "leader" : "warehouse";
 
     return (
         <div className="space-y-6">
@@ -53,7 +106,27 @@ export default function Dashboard({
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="warehouse" className="w-full">
+            <Tabs
+                value={activeTab}
+                onValueChange={(val) => {
+                    // When clicking tab, we might want to clear params or keep them?
+                    // Usually tabs switch view context.
+                    // If switching to leader, maybe clear warehouse?
+                    // User click tab, we can let them use simple state, OR reset URL.
+                    // Simplest is to just switch tab visually, but the content depends on selection.
+                    // If I select Warehouse tab but have ?leader=1, it's confusing.
+                    // Let's force router push if switching tabs involves clearing context.
+                    const params = new URLSearchParams(searchParams);
+                    if (val === "warehouse") {
+                        params.delete("leader");
+                        // Optionally set default warehouse or leave empty
+                    } else {
+                        params.delete("warehouse");
+                    }
+                    router.push(`${pathname}?${params.toString()}`);
+                }}
+                className="w-full"
+            >
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="warehouse">
                         Dashboard Warehouse
@@ -63,34 +136,33 @@ export default function Dashboard({
 
                 {/* Warehouse Tab */}
                 <TabsContent value="warehouse" className="space-y-6">
-                    {/* Warehouse Selector */}
                     <div className="flex gap-4">
                         <WarehouseSelector
                             warehouses={warehouses}
                             selectedWarehouse={selectedWarehouse}
-                            onWarehouseChange={setSelectedWarehouse}
+                            onWarehouseChange={handleWarehouseChange}
                         />
                         <ExportButton selectedWarehouse={selectedWarehouse} />
                     </div>
-                    {/* Selected Warehouse Info */}
+
                     <WarehouseInfo selectedWarehouse={selectedWarehouse} />
-                    {/* Statistics Cards */}
+
                     <StatisticsCards
-                        warehouseStats={warehouseStats}
+                        warehouseStats={serverStats} // Passing serverStats which matches structure
                         totalOdooProducts={totalOdooProducts}
                     />
-                    {/* Charts */}
+
                     <ChartsGrid
                         stateChartData={stateChartData}
                         locationChartData={locationChartData}
                     />
-                    {/* Status Distribution Info */}
+
                     <StatusDistribution
-                        warehouseStats={warehouseStats}
+                        warehouseStats={serverStats}
                         selectedWarehouse={selectedWarehouse}
                     />
-                    {/* Products Section with Tabs */}
-                    {filteredProducts.length > 0 && (
+
+                    {paginatedProducts && paginatedProducts.length > 0 && (
                         <div className="grid gap-6">
                             <Tabs defaultValue="produk" className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
@@ -105,8 +177,11 @@ export default function Dashboard({
                                     value="produk"
                                     className="space-y-6"
                                 >
+                                    {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
                                     <ProductsTable
-                                        filteredProducts={filteredProducts}
+                                        filteredProducts={paginatedProducts}
+                                        selectedWarehouse={selectedWarehouse}
+                                        pagination={pagination}
                                     />
                                 </TabsContent>
                                 <TabsContent
@@ -114,59 +189,62 @@ export default function Dashboard({
                                     className="space-y-6"
                                 >
                                     <LocationsTable
-                                        products={filteredProducts}
+                                        products={paginatedProducts} // Note: This table shows locations of *paginated* products only?
+                                        // LocationsTable usually aggregates products. If only 20 products, table is useless.
+                                        // Ideally LocationsTable should use serverStats.locationCount!
+                                        // I need to check LocationsTable implementation.
                                         title="Data Lokasi Warehouse"
                                         description={
                                             selectedWarehouse
                                                 ? `Daftar lokasi di ${selectedWarehouse.name}`
                                                 : "Daftar semua lokasi"
                                         }
+                                        serverLocationCounts={
+                                            serverStats?.locationCount
+                                        } // Pass pre-aggregated data
                                     />
                                 </TabsContent>
                             </Tabs>
                         </div>
-                    )}{" "}
-                    {/* Empty State */}
-                    {selectedWarehouse && filteredProducts.length === 0 && (
-                        <EmptyState selectedWarehouse={selectedWarehouse} />
                     )}
-                    {/* Initial State - Select Warehouse Info */}
+
+                    {selectedWarehouse &&
+                        (!paginatedProducts ||
+                            paginatedProducts.length === 0) && (
+                            <EmptyState selectedWarehouse={selectedWarehouse} />
+                        )}
+
                     {!selectedWarehouse && <InitialState />}
                 </TabsContent>
 
                 {/* Leader Tab */}
                 <TabsContent value="leader" className="space-y-6">
-                    {/* Leader Selector */}
                     <LeaderSelector
                         leaders={leaders}
                         selectedLeader={selectedLeader}
-                        onLeaderChange={setSelectedLeader}
+                        onLeaderChange={handleLeaderChange}
                     />
 
-                    {/* Selected Leader Info */}
                     <LeaderInfo selectedLeader={selectedLeader} />
 
-                    {/* Leader Statistics Cards */}
-                    <LeaderStatisticsCards leaderStats={leaderStats} />
+                    <LeaderStatisticsCards leaderStats={serverStats} />
 
-                    {/* Leader Charts */}
-                    {leaderStats &&
-                        (leaderStateChartData.length > 0 ||
-                            leaderLocationChartData.length > 0) && (
+                    {serverStats &&
+                        (stateChartData.length > 0 ||
+                            locationChartData.length > 0) && (
                             <ChartsGrid
-                                stateChartData={leaderStateChartData}
-                                locationChartData={leaderLocationChartData}
+                                stateChartData={stateChartData}
+                                locationChartData={locationChartData}
                             />
                         )}
 
-                    {/* Leader Status Distribution Info */}
                     <LeaderStatusDistribution
-                        leaderStats={leaderStats}
+                        leaderStats={serverStats}
+                        leader={selectedLeader} // Component prop name might be leader or selectedLeader
                         selectedLeader={selectedLeader}
                     />
 
-                    {/* Leader Products Section with Tabs */}
-                    {leaderProducts.length > 0 && (
+                    {paginatedProducts && paginatedProducts.length > 0 && (
                         <div className="grid gap-6">
                             <Tabs defaultValue="produk" className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
@@ -182,8 +260,10 @@ export default function Dashboard({
                                     className="space-y-6"
                                 >
                                     <ProductsTable
-                                        filteredProducts={leaderProducts}
+                                        filteredProducts={paginatedProducts}
+                                        selectedWarehouse={selectedWarehouse} // Or leader context? Table generic?
                                         title="Data Produk Leader"
+                                        pagination={pagination}
                                         description={
                                             selectedLeader
                                                 ? `Daftar produk dalam tanggung jawab ${selectedLeader.name}`
@@ -196,7 +276,10 @@ export default function Dashboard({
                                     className="space-y-6"
                                 >
                                     <LocationsTable
-                                        products={leaderProducts}
+                                        products={paginatedProducts}
+                                        serverLocationCounts={
+                                            serverStats?.locationCount
+                                        }
                                         title="Data Lokasi Leader"
                                         description={
                                             selectedLeader
@@ -209,14 +292,16 @@ export default function Dashboard({
                         </div>
                     )}
 
-                    {/* Leader Empty State */}
-                    {selectedLeader && leaderProducts.length === 0 && (
-                        <EmptyState
-                            selectedWarehouse={{ name: selectedLeader.name }}
-                        />
-                    )}
+                    {selectedLeader &&
+                        (!paginatedProducts ||
+                            paginatedProducts.length === 0) && (
+                            <EmptyState
+                                selectedWarehouse={{
+                                    name: selectedLeader.name,
+                                }}
+                            />
+                        )}
 
-                    {/* Leader Initial State */}
                     {!selectedLeader && (
                         <InitialState
                             title="Pilih Leader untuk Melihat Data"

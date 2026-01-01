@@ -1,11 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { OdooSessionManager } from "@/lib/sessionManager";
 import Client from "@/app/odoo";
-
-const prisma = new PrismaClient();
 
 export const authOptions = {
     providers: [

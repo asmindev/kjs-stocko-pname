@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     Card,
     CardContent,
@@ -12,23 +13,51 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import SessionsTable from "./components/SessionsTable";
 import RefreshButton from "./components/RefreshButton";
-import { getConfirmableSessions } from "./actions";
+import { getConfirmableSessions, getConfirmPageFilters } from "./actions";
 import { AlertCircle, CheckCircle2, Users } from "lucide-react";
 
 export default function ConfirmPage() {
+    const searchParams = useSearchParams();
     const [sessions, setSessions] = useState([]);
+    const [pagination, setPagination] = useState(null);
+    const [filters, setFilters] = useState(null);
+    const [stats, setStats] = useState({
+        totalSessions: 0,
+        totalProducts: 0,
+        totalQuantity: 0,
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const fetchSessions = async () => {
+    const fetchFilters = async () => {
+        const result = await getConfirmPageFilters();
+        if (result.success) {
+            setFilters(result.filters);
+        }
+    };
+
+    const fetchSessions = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const result = await getConfirmableSessions();
+            const params = {
+                page: searchParams.get("page") || 1,
+                limit: searchParams.get("limit") || 10,
+                search: searchParams.get("search") || "",
+                user: searchParams.get("user") || "",
+                warehouse: searchParams.get("warehouse") || "",
+                location: searchParams.get("location") || "",
+            };
+
+            const result = await getConfirmableSessions(params);
 
             if (result.success) {
                 setSessions(result.data);
+                setPagination(result.pagination);
+                if (result.stats) {
+                    setStats(result.stats);
+                }
             } else {
                 setError(result.error || "Gagal memuat data session");
             }
@@ -37,26 +66,22 @@ export default function ConfirmPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [searchParams]);
+
+    useEffect(() => {
+        fetchFilters();
+    }, []);
 
     useEffect(() => {
         fetchSessions();
-    }, []);
+    }, [fetchSessions]);
 
     const handleRefresh = () => {
         fetchSessions();
     };
 
-    // Calculate statistics
-    const totalSessions = sessions.length;
-    const totalProducts = sessions.reduce(
-        (sum, session) => sum + session.productCount,
-        0
-    );
-    const totalQuantity = sessions.reduce(
-        (sum, session) => sum + session.totalQuantity,
-        0
-    );
+    // Statistics from server
+    const { totalSessions, totalProducts, totalQuantity } = stats;
 
     return (
         <div className="space-y-6">
@@ -190,7 +215,12 @@ export default function ConfirmPage() {
                 </Card>
             ) : (
                 /* Sessions table */
-                <SessionsTable sessions={sessions} onRefresh={handleRefresh} />
+                <SessionsTable
+                    sessions={sessions}
+                    pagination={pagination}
+                    filters={filters}
+                    onRefresh={handleRefresh}
+                />
             )}
         </div>
     );

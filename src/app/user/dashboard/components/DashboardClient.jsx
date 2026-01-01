@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import SessionTable from "./SessionTable";
 import SessionDetail from "../../session/[id]/SessionDetail";
+import PaginationControls from "@/components/ui/pagination-controls";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
     Card,
     CardContent,
@@ -14,10 +18,35 @@ import {
 import { User2 } from "lucide-react";
 
 // Client Component untuk handle state
-export default function DashboardClient({ sessions }) {
+// Client Component untuk handle state
+export default function DashboardClient({ sessions, pagination }) {
     const { data: session } = useSession();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const [selectedSessionId, setSelectedSessionId] = useState(null);
     const [isDetailView, setIsDetailView] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(
+        searchParams.get("search") || ""
+    );
+
+    // Debounce search update
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchTerm !== (searchParams.get("search") || "")) {
+                const params = new URLSearchParams(searchParams);
+                if (searchTerm) {
+                    params.set("search", searchTerm);
+                } else {
+                    params.delete("search");
+                }
+                params.set("page", "1"); // Reset to page 1
+                router.push(`${pathname}?${params.toString()}`);
+            }
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm, router, pathname, searchParams]);
 
     const handleViewDetail = (sessionId) => {
         setSelectedSessionId(sessionId);
@@ -65,7 +94,7 @@ export default function DashboardClient({ sessions }) {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {sessions.length}
+                            {pagination?.totalCount || sessions.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
                             Dokumen tersimpan
@@ -75,7 +104,29 @@ export default function DashboardClient({ sessions }) {
             </div>
 
             {/* Sessions Table */}
+            {/* Search */}
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                    placeholder="Cari session..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                />
+            </div>
+
+            {/* Sessions Table */}
             <SessionTable sessions={sessions} />
+
+            {/* Pagination */}
+            {pagination && (
+                <PaginationControls
+                    totalCount={pagination.totalCount}
+                    pageSize={pagination.limit}
+                    page={pagination.page}
+                    totalPages={pagination.totalPages}
+                />
+            )}
         </div>
     );
 }

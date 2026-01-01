@@ -18,8 +18,12 @@ function LoadingCard() {
 }
 
 // Dashboard Content Component
-async function DashboardContent() {
-    const sessionsResult = await getSessions();
+async function DashboardContent({ searchParams }) {
+    const page = parseInt(searchParams?.page) || 1;
+    const limit = parseInt(searchParams?.limit) || 10;
+    const search = searchParams?.search || "";
+
+    const sessionsResult = await getSessions({ page, limit, search });
 
     if (!sessionsResult.success) {
         return (
@@ -33,15 +37,21 @@ async function DashboardContent() {
         );
     }
 
-    return <DashboardClient sessions={sessionsResult.data} />;
+    return (
+        <DashboardClient
+            sessions={sessionsResult.data}
+            pagination={sessionsResult.pagination}
+        />
+    );
 }
 
 // Main Dashboard Page
-export default function DashboardPage() {
+export default async function DashboardPage({ searchParams }) {
+    const resolvedSearchParams = await searchParams;
     return (
         <div className="container mx-auto">
             <Suspense fallback={<LoadingCard />}>
-                <DashboardContent />
+                <DashboardContent searchParams={resolvedSearchParams} />
             </Suspense>
         </div>
     );

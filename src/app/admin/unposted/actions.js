@@ -15,15 +15,32 @@ import {
 import { parse } from "date-fns/parse";
 import { revalidatePath } from "next/cache";
 
-export const getUnpostedProducts = async () => {
+export const getUnpostedProducts = async (params = {}) => {
+    const { warehouseId, search, page = 1, limit = 20 } = params;
+
     const session = await getServerSession(authOptions);
     await OdooSessionManager.getClient(session.user.id, session.user.email);
 
+    const where = {
+        state: "CONFIRMED",
+    };
+
+    if (warehouseId && warehouseId !== "all") {
+        where.session = {
+            warehouse_id: parseInt(warehouseId),
+        };
+    }
+
+    if (search) {
+        where.OR = [
+            { name: { contains: search, mode: "insensitive" } },
+            { barcode: { contains: search, mode: "insensitive" } },
+        ];
+    }
+
     // get all products with `state` CONFIRMED
     const products = await prisma.product.findMany({
-        where: {
-            state: "CONFIRMED",
-        },
+        where,
         include: {
             session: {
                 include: {
@@ -202,24 +219,58 @@ export const getUnpostedProducts = async () => {
         });
     }
 
-    const groupedProducts = Array.from(warehouseMap.values())
-        .map((w) => ({
-            ...w,
-            products: w.products
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((prod) => ({
-                    ...prod,
-                    data: prod.data.sort(
-                        (a, b) =>
-                            new Date(b.created_at) - new Date(a.created_at)
-                    ),
-                })),
-        }))
-        .sort((a, b) =>
-            String(a.warehouse_name).localeCompare(String(b.warehouse_name))
-        );
+    const groupedProducts = Array.from(warehouseMap.values()).map((w) => ({
+        ...w,
+        products: w.products
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((prod) => ({
+                ...prod,
+                data: prod.data.sort(
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                ),
+            })),
+    }));
+    // --- Post-Grouping Filtering & Pagination ---
 
-    return { groupedProducts };
+    // 1. Flatten for pagination (match table structure)
+    let flatList = [];
+    groupedProducts.forEach((wh) => {
+        wh.products.forEach((prod) => {
+            flatList.push({
+                key: `${wh.warehouse_id}-${prod.key}`,
+                product_id: prod.key,
+                product: prod.name,
+                warehouse: wh.warehouse_name || `Warehouse ${wh.warehouse_id}`,
+                warehouseId: wh.warehouse_id,
+                qty: prod.quantity,
+                targetUom: prod.targetUom,
+                originalUom: prod.originalUom,
+                needsConversion: prod.needsConversion,
+                details: prod.data || [],
+            });
+        });
+    });
+
+    const totalCount = flatList.length;
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    const paginatedRows = flatList.slice(startIndex, endIndex);
+
+    return {
+        paginatedRows,
+        totalCount,
+        totalPages: Math.ceil(totalCount / Number(limit)),
+    };
+};
+
+export const getWarehousesList = async () => {
+    const session = await getServerSession(authOptions);
+    const odoo = await OdooSessionManager.getClient(
+        session.user.id,
+        session.user.email
+    );
+    const { warehouses } = await odoo.getWarehouses();
+    return warehouses;
 };
 
 export const getProductDetails = async (warehouseId, productKey) => {

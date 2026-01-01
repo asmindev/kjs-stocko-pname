@@ -1,9 +1,7 @@
 // lib/sessionManager.js
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import Client from "@/app/odoo";
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
 
 // --- Encryption untuk session data ---
 const ENCRYPTION_KEY = crypto
