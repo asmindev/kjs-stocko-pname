@@ -13,7 +13,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Check, Home, LogOut, Package, User } from "lucide-react";
+import { Check, Home, LogOut, Package, Shield, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import {
@@ -53,6 +53,11 @@ export function AdminSidebar() {
             title: "Sessions",
             url: "/admin/session",
             icon: User,
+        },
+        {
+            title: "Verifikasi",
+            url: "/admin/verification",
+            icon: Shield,
         },
     ];
 

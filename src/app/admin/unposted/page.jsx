@@ -1,9 +1,12 @@
 import React from "react";
 import { getUnpostedProducts, getWarehousesList } from "./actions";
+import { getMaxPostLines } from "./post_to_odoo.action";
 import UnpostedGroupedTable from "./components/table";
 
 export default async function Page({ searchParams }) {
-    const { page, limit, warehouse, search } = searchParams;
+    const resolvedSearchParams = await searchParams;
+    const { page, limit, warehouse, search } = resolvedSearchParams;
+    const maxPostLines = await getMaxPostLines();
 
     // Parallel fetch
     const [unpostedData, warehouses] = await Promise.all([
@@ -35,6 +38,7 @@ export default async function Page({ searchParams }) {
                 search: search || "",
                 warehouse: warehouse || "all",
             }}
+            maxPostLines={maxPostLines}
         />
     );
 }

@@ -15,11 +15,8 @@ import {
 import { parse } from "date-fns/parse";
 import { revalidatePath } from "next/cache";
 
-export const getUnpostedProducts = async (params = {}) => {
-    const { warehouseId, search, page = 1, limit = 20 } = params;
-
-    const session = await getServerSession(authOptions);
-    await OdooSessionManager.getClient(session.user.id, session.user.email);
+export const fetchAndGroupUnpostedProducts = async (params = {}) => {
+    const { warehouseId, search } = params;
 
     const where = {
         state: "CONFIRMED",
@@ -62,8 +59,8 @@ export const getUnpostedProducts = async (params = {}) => {
         },
     });
 
-    // Group UOMs by category untuk konversi
-    const uomCategoryMap = groupUomsByCategory(allUoms);
+    // Group UOMs by category untuk konversi - unused but kept if needed later or we can remove
+    // const uomCategoryMap = groupUomsByCategory(allUoms);
 
     // Pertama, group products untuk menentukan target UOM per produk
     const warehouseMap = new Map();
@@ -230,9 +227,8 @@ export const getUnpostedProducts = async (params = {}) => {
                 ),
             })),
     }));
-    // --- Post-Grouping Filtering & Pagination ---
 
-    // 1. Flatten for pagination (match table structure)
+    // Post-Grouping Filtering & Flattening
     let flatList = [];
     groupedProducts.forEach((wh) => {
         wh.products.forEach((prod) => {
@@ -249,6 +245,20 @@ export const getUnpostedProducts = async (params = {}) => {
                 details: prod.data || [],
             });
         });
+    });
+
+    return flatList;
+};
+
+export const getUnpostedProducts = async (params = {}) => {
+    const { warehouseId, search, page = 1, limit = 20 } = params;
+
+    const session = await getServerSession(authOptions);
+    await OdooSessionManager.getClient(session.user.id, session.user.email);
+
+    const flatList = await fetchAndGroupUnpostedProducts({
+        warehouseId,
+        search,
     });
 
     const totalCount = flatList.length;

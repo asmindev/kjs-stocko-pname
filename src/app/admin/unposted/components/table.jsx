@@ -27,15 +27,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Import Input
 import { toast } from "sonner";
-import { actionPostToOdoo } from "../post_to_odoo.action";
+import { actionBatchPostToOdoo } from "../post_to_odoo.action";
 import PaginationControls from "@/components/ui/pagination-controls"; // Import Pagination
 import { Search } from "lucide-react"; // Import Search Icon
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2, AlertCircle, X } from "lucide-react"; // Import Icons
 
 export default function UnpostedGroupedTable({
     data,
     warehousesList,
     pagination,
     searchParams,
+    maxPostLines = 500, // Default to 500 if not provided
 }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -45,6 +59,7 @@ export default function UnpostedGroupedTable({
     const [selectedWarehouse, setSelectedWarehouse] = useState(
         searchParams?.warehouse || "all"
     );
+    const [postResult, setPostResult] = useState(null); // State for post result
 
     // Sync Search with URL
     useEffect(() => {
@@ -163,52 +178,45 @@ export default function UnpostedGroupedTable({
         );
     }
 
-    const postToOdoo = async () => {
-        // Only post visible data for now (or filtered data if we could)
-        // Since data is paginated, we post meaningful chunk.
-
+    const handlePostToOdoo = async () => {
         if (selectedWarehouse === "all") {
             toast.error(
                 "Silakan pilih warehouse terlebih dahulu untuk posting (Fitur posting batch per warehouse)."
             );
-            // Or allow posting mixed? Usually unsafe.
             return;
         }
 
-        const dataToPost = data.filter(
-            (row) => row.warehouseId.toString() === selectedWarehouse
-        );
-
-        if (dataToPost.length === 0) {
-            // This might happen if 'all' is selected but page has rows from other WH.
-            // If warehouse IS selected, data SHOULD match.
-            toast.error(
-                "Tidak ada data valid di halaman ini untuk warehouse terpilih."
-            );
-            return;
-        }
-
-        console.log("Data to be posted to Odoo:", dataToPost[0]);
-        const LIMIT = 300; // Action limit
-        const finalDataToPost = dataToPost.slice(0, LIMIT);
+        // Confirmation dialog is now handled by AlertDialog UI
+        // Triggered by Continue action
 
         try {
             const result = toast.promise(
-                actionPostToOdoo({ data: finalDataToPost }),
+                actionBatchPostToOdoo({ warehouseId: selectedWarehouse }),
                 {
-                    loading: `Memproses ${finalDataToPost.length} item...`,
+                    loading: `Memproses batch posting ke Odoo (Max ${maxPostLines} item)...`,
                     success: (res) => {
                         if (res.success) {
-                            // Show warnings if any
+                            setPostResult({
+                                type: "success",
+                                message: res.message,
+                                details: res.details,
+                            });
+
                             if (res.results?.error?.length > 0) {
                                 return `Berhasil posting ${res.results.success.length} item. ${res.results.error.length} gagal.`;
                             }
-                            return res.message || "Berhasil posting!";
+                            return res.message || "Berhasil posting batch!";
                         } else {
                             throw new Error(res.message);
                         }
                     },
-                    error: (err) => err.message || "Gagal posting.",
+                    error: (err) => {
+                        setPostResult({
+                            type: "error",
+                            message: err.message || "Gagal posting.",
+                        });
+                        return err.message || "Gagal posting.";
+                    },
                 }
             );
         } catch (error) {
@@ -220,6 +228,88 @@ export default function UnpostedGroupedTable({
         <Card className="mt-4">
             <CardHeader>
                 <div className="flex flex-col gap-4">
+                    {/* Post Result Alert */}
+                    {postResult && (
+                        <Alert
+                            variant={
+                                postResult.type === "success"
+                                    ? "default"
+                                    : "destructive"
+                            }
+                            className={
+                                postResult.type === "success"
+                                    ? "order-green-500 bg-green-50 relative"
+                                    : "relative"
+                            }
+                        >
+                            <button
+                                onClick={() => setPostResult(null)}
+                                className="absolute top-4 right-4 text-gray-500 hover:text-gray-900"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                            {postResult.type === "success" ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            ) : (
+                                <AlertCircle className="h-4 w-4" />
+                            )}
+                            <AlertTitle
+                                className={
+                                    postResult.type === "success"
+                                        ? "text-green-800"
+                                        : ""
+                                }
+                            >
+                                {postResult.type === "success"
+                                    ? "Berhasil Diposting"
+                                    : "Gagal Posting"}
+                            </AlertTitle>
+                            <AlertDescription
+                                className={
+                                    postResult.type === "success"
+                                        ? "text-green-700"
+                                        : ""
+                                }
+                            >
+                                <div className="flex flex-col gap-1">
+                                    <p>{postResult.message}</p>
+                                    {postResult.details && (
+                                        <div className="text-xs mt-1 font-mono bg-green-100 p-2 rounded">
+                                            {typeof postResult.details ===
+                                            "object" ? (
+                                                <ul className="list-disc list-inside">
+                                                    <li>
+                                                        Total:{" "}
+                                                        {
+                                                            postResult.details
+                                                                .totalProcessed
+                                                        }
+                                                    </li>
+                                                    <li>
+                                                        Success:{" "}
+                                                        {
+                                                            postResult.details
+                                                                .successCount
+                                                        }
+                                                    </li>
+                                                    <li>
+                                                        Error:{" "}
+                                                        {
+                                                            postResult.details
+                                                                .errorCount
+                                                        }
+                                                    </li>
+                                                </ul>
+                                            ) : (
+                                                postResult.details
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <CardTitle>Unposted</CardTitle>
@@ -228,9 +318,38 @@ export default function UnpostedGroupedTable({
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button size="sm" onClick={() => postToOdoo()}>
-                                POST TO ODOO ({data.length} items visible)
-                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button size="sm">
+                                        POST BATCH TO ODOO (Max {maxPostLines})
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Posting ke Odoo?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Apakah Anda yakin ingin memposting
+                                            data unposted untuk warehouse
+                                            terpilih? Sistem akan mengambil
+                                            maksimal {maxPostLines} item
+                                            CONFIRMED dan mempostingnya sebagai
+                                            Inventory Adjustment di Odoo.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                            Batal
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => handlePostToOdoo()}
+                                        >
+                                            Lanjutkan
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </div>
 

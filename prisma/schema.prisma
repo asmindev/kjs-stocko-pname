@@ -161,3 +161,15 @@ enum DocumentState {
     POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
     DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
 }
+
+model VerificationResult {
+  id           Int      @id @default(autoincrement())
+  odoo_line_id Int      // Removed @unique to allow multiple entries
+  product_qty  Float
+  location_id  Int
+  verifier_id  Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("verification_results")
+}

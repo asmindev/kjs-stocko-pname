@@ -53,7 +53,9 @@ export async function getDocuments() {
 
         // get documents from odoo
         const MODEL = "custom.stock.inventory";
-        const domain = [["id", "in", documents.map((s) => s.inventory_id)]];
+        const INVENTORY_IDS = documents.map((s) => s.inventory_id);
+        console.log({ INVENTORY_IDS });
+        const domain = [["id", "in", INVENTORY_IDS]];
         const fields = [
             "location_id",
             "state",

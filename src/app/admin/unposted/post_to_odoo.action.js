@@ -1,9 +1,14 @@
 "use server";
+import { fetchAndGroupUnpostedProducts } from "./actions";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { OdooSessionManager } from "@/lib/sessionManager";
 import { getServerSession } from "next-auth";
+
+export const getMaxPostLines = async () => {
+    return parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
+};
 
 /**
  * Get warehouse data from Odoo
@@ -166,8 +171,9 @@ export const actionPostToOdoo = async ({ data }) => {
     console.log("Starting actionPostToOdoo with data length:", data.length);
     console.log("Data sample:", JSON.stringify(data.slice(0, 2), null, 2));
 
-    // Parse environment variable with fallback to 100
-    const MAX_LINES = 300;
+    // Parse environment variable with fallback to 500
+    const MAX_LINES =
+        parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
     console.log("MAX LINES TO POST:", MAX_LINES);
     console.log("ENV VALUE:", process.env.ODOO_MAX_POST_LINES_INVENTORY);
 
@@ -286,12 +292,45 @@ export const actionPostToOdoo = async ({ data }) => {
                 skippedProducts: skippedProductIds,
             },
         };
-    } catch (error) {
+    } catch (error) {}
+};
+
+export const actionBatchPostToOdoo = async ({ warehouseId }) => {
+    console.log("Starting Batch Post for warehouse:", warehouseId);
+
+    // 1. Fetch ALL unposted products for the warehouse (grouped/flat)
+    const allData = await fetchAndGroupUnpostedProducts({ warehouseId });
+
+    if (!allData || allData.length === 0) {
         return {
             success: false,
-            error: error.message,
-            results,
-            details: `Total produk diproses: ${data.length}, Berhasil: ${results.success.length}, Gagal: ${results.error.length}`,
+            message: "Tidak ada data unposted untuk warehouse ini.",
         };
     }
+
+    // 2. Limit to MAX_LINES
+    const MAX_LINES =
+        parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
+    const dataToPost = allData.slice(0, MAX_LINES);
+
+    console.log(
+        `Found ${allData.length} items. Posting batch of ${dataToPost.length} items.`
+    );
+
+    // 3. Delegate to existing action logic
+    // We can call actionPostToOdoo directly, passing the prepared data.
+    // Note: actionPostToOdoo handles session auth again, which is fine.
+    // However, actionPostToOdoo also slices data to 300. We should update actionPostToOdoo limit or just rely on it.
+    // Let's modify actionPostToOdoo to accept a higher limit or respect input if possible.
+    // Actually, actionPostToOdoo hardcodes MAX_LINES = 300. We should probably update that too or duplicate logic.
+    // Better to update actionPostToOdoo to respect our slice, or increase its internal limit.
+
+    // Let's call the reuseable logic. But wait, `actionPostToOdoo` is a server action.
+    // We can call it as a function.
+
+    // NOTE: We rely on actionPostToOdoo to handle the posting.
+    // We previously saw actionPostToOdoo has `const MAX_LINES = 300;`.
+    // We should update `actionPostToOdoo` to support 500 first.
+
+    return await actionPostToOdoo({ data: dataToPost });
 };

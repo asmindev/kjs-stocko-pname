@@ -1,0 +1,294 @@
+"use server";
+
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth";
+import { OdooSessionManager } from "@/lib/sessionManager";
+import { prisma } from "@/lib/prisma";
+
+import { revalidatePath } from "next/cache";
+
+// Fetch Single Line Detail (Merged with Prisma)
+// Fetch Single Line Detail (Merged with Prisma)
+export async function getVerificationLine(lineId) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        // 1. Fetch Odoo Data (Base)
+        const odooResult = await odoo.client.execute(
+            "custom.stock.inventory",
+            "get_verification_line_detail",
+            [],
+            { line_id: parseInt(lineId) }
+        );
+
+        if (!odooResult) return { success: false, error: "Line not found" };
+
+        // 2. Fetch Prisma Entries (All added entries)
+        const localEntries = await prisma.verificationResult.findMany({
+            where: { odoo_line_id: parseInt(lineId) },
+        });
+
+        // 3. Return Combined Data
+        // Note: Session.inventory_id is often null, so we show all scans for this product
+        return {
+            success: true,
+            data: {
+                ...odooResult,
+                entries: localEntries, // Pass list of entries to frontend
+
+                // Fetch Previous Scans (all scans for this product_id)
+                previousScans: await prisma.product.findMany({
+                    where: {
+                        barcode: odooResult.barcode,
+                    },
+                    include: {
+                        User: {
+                            select: { name: true },
+                        },
+                        session: {
+                            select: { name: true },
+                        },
+                    },
+                    orderBy: {
+                        created_at: "desc",
+                    },
+                    take: 20, // Limit to last 20 scans
+                }),
+            },
+        };
+    } catch (e) {
+        console.error("Error fetching line:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+// Fetch Locations (from inventory.product.locations)
+export async function getInventoryLocationsForEdit() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const locations = await odoo.getInventoryLocations();
+
+        return { success: true, data: locations };
+    } catch (e) {
+        console.error("Error fetching locations:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+// Fetch Users (Verifier Candidates)
+export async function getOpnameUsers() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const users = await odoo.client.execute(
+            "res.users",
+            "search_read",
+            [[["can_access_opname_react", "=", true]]],
+            {
+                fields: ["id", "name", "login"],
+                limit: 100,
+            }
+        );
+
+        return { success: true, data: users };
+    } catch (e) {
+        console.error("Error fetching users:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+// Add New Verification Entry
+export async function addVerificationEntry(
+    lineId,
+    qty,
+    locationId,
+    verifierId
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        await prisma.verificationResult.create({
+            data: {
+                odoo_line_id: parseInt(lineId),
+                product_qty: parseFloat(qty),
+                location_id: parseInt(locationId),
+                verifier_id: parseInt(verifierId),
+            },
+        });
+
+        revalidatePath("/admin/verification");
+        revalidatePath(`/admin/verification/${lineId}/edit`);
+
+        return { success: true, message: "Entry added" };
+    } catch (e) {
+        console.error("Error adding entry:", e);
+        return { success: false, message: e.message };
+    }
+}
+
+// Delete Entry
+export async function deleteVerificationEntry(entryId, lineId) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        await prisma.verificationResult.delete({
+            where: { id: parseInt(entryId) },
+        });
+
+        revalidatePath("/admin/verification");
+        revalidatePath(`/admin/verification/${lineId}/edit`);
+
+        return { success: true, message: "Entry deleted" };
+    } catch (e) {
+        console.error("Error deleting entry:", e);
+        return { success: false, message: e.message };
+    }
+}
+
+export async function getVerificationData(
+    inventoryId = null,
+    page = 1,
+    limit = 20,
+    search = "",
+    status = null
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const documents = await prisma.document.findMany({
+            where: {
+                inventory_id: { not: null },
+            },
+            orderBy: {
+                created_at: "desc",
+            },
+            select: {
+                inventory_id: true,
+                name: true,
+            },
+        });
+
+        const allInventoryIds = documents
+            .map((d) => d.inventory_id)
+            .filter((id) => id !== null);
+
+        if (allInventoryIds.length === 0) {
+            return {
+                success: true,
+                meta: { total_items: 0 },
+                data: [],
+                inventories: [],
+            };
+        }
+
+        let targetIds = [];
+        if (inventoryId) {
+            targetIds = [parseInt(inventoryId)];
+        } else {
+            targetIds = allInventoryIds;
+        }
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const result = await odoo.client.execute(
+            "custom.stock.inventory",
+            "get_data_for_verification",
+            [],
+            {
+                inventory_ids: targetIds,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                search_query: search || null,
+                status_filter: status || null,
+            }
+        );
+
+        if (!result) {
+            return { success: false, error: "Failed to fetch data from Odoo" };
+        }
+
+        const { data, meta } = result;
+
+        // 4. Fetch ALL Entries for these lines from Prisma
+        const lineIds = data.map((d) => d.id);
+
+        if (lineIds.length > 0) {
+            const entries = await prisma.verificationResult.findMany({
+                where: {
+                    odoo_line_id: { in: lineIds },
+                },
+            });
+
+            // 5. Aggregate Entries
+            const entriesMap = new Map();
+            entries.forEach((e) => {
+                const current = entriesMap.get(e.odoo_line_id) || 0;
+                entriesMap.set(e.odoo_line_id, current + e.product_qty);
+            });
+
+            for (let item of data) {
+                const additionalQty = entriesMap.get(item.id) || 0;
+                // Total Verified = Odoo Scanned + Local Additions
+                item.scanned_qty = (item.scanned_qty || 0) + additionalQty;
+
+                // Recalc Stats
+                item.diff_qty = item.scanned_qty - item.system_qty;
+
+                if (additionalQty > 0) {
+                    item.is_verified = true;
+                }
+
+                if (item.diff_qty > 0) item.status = "Positif";
+                else if (item.diff_qty < 0) item.status = "Negatif";
+                else item.status = "Balance";
+
+                item.hpp_diff = item.diff_qty * item.hpp;
+            }
+        }
+
+        const inventories = documents
+            .filter((d) => d.inventory_id && d.name)
+            .map((d) => ({
+                id: d.inventory_id,
+                name: d.name,
+            }));
+        const uniqueInventories = Array.from(
+            new Map(inventories.map((item) => [item.id, item])).values()
+        );
+
+        return {
+            success: true,
+            meta: meta,
+            data: data,
+            inventories: uniqueInventories,
+        };
+    } catch (error) {
+        console.error("Error fetching verification data:", error);
+        return { success: false, error: error.message };
+    }
+}
