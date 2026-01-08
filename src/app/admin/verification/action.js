@@ -127,6 +127,7 @@ export async function addVerificationEntry(
         const session = await getServerSession(authOptions);
         if (!session) return { success: false, error: "Unauthorized" };
 
+        // 1. Save to Prisma (local database)
         await prisma.verificationResult.create({
             data: {
                 odoo_line_id: parseInt(lineId),
@@ -136,10 +137,38 @@ export async function addVerificationEntry(
             },
         });
 
+        // 2. Sync to Odoo (add qty to inventory line)
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const odooResult = await odoo.client.execute(
+            "custom.stock.inventory",
+            "add_verification_qty",
+            [],
+            {
+                line_id: parseInt(lineId),
+                additional_qty: parseFloat(qty),
+                // Note: location_id not sent - line already has correct location from Odoo
+                verifier_id: parseInt(verifierId),
+            }
+        );
+
+        if (!odooResult.success) {
+            console.warn("Odoo sync warning:", odooResult.message);
+            // Continue anyway - Prisma save succeeded
+        }
+        console.log("Odoo sync result:", odooResult);
+
         revalidatePath("/admin/verification");
         revalidatePath(`/admin/verification/${lineId}/edit`);
 
-        return { success: true, message: "Entry added" };
+        return {
+            success: true,
+            message: "Entry added",
+            odoo_sync: odooResult.success,
+        };
     } catch (e) {
         console.error("Error adding entry:", e);
         return { success: false, message: e.message };

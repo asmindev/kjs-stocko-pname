@@ -39,6 +39,17 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function VerificationEditForm({ line, locations, users }) {
     const router = useRouter();
@@ -122,8 +133,6 @@ export function VerificationEditForm({ line, locations, users }) {
     };
 
     const handleDeleteEntry = async (entryId) => {
-        if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return;
-
         setLoading(true);
         try {
             const result = await deleteVerificationEntry(entryId, line.id);
@@ -349,15 +358,42 @@ export function VerificationEditForm({ line, locations, users }) {
                                 </PopoverContent>
                             </Popover>
                         </div>
-                        <Button
-                            onClick={handleAddEntry}
-                            disabled={loading}
-                            size="sm"
-                            className="h-9"
-                        >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Tambah
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    disabled={
+                                        loading ||
+                                        !newQty ||
+                                        !newLocationId ||
+                                        !newVerifierId
+                                    }
+                                    size="sm"
+                                    className="h-9"
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Tambah
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Konfirmasi Tambah Verifikasi
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Anda akan menambahkan qty{" "}
+                                        <strong>{newQty || 0}</strong> ke
+                                        inventory line ini. Data akan disimpan
+                                        ke database dan Odoo. Lanjutkan?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleAddEntry}>
+                                        Ya, Tambahkan
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </div>
 
@@ -426,19 +462,49 @@ export function VerificationEditForm({ line, locations, users }) {
                                                 )}
                                             </TableCell>
                                             <TableCell className="py-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6 text-red-500 hover:text-red-700"
-                                                    onClick={() =>
-                                                        handleDeleteEntry(
-                                                            entry.id
-                                                        )
-                                                    }
-                                                    disabled={loading}
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-red-500 hover:text-red-700"
+                                                            disabled={loading}
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>
+                                                                Hapus Data?
+                                                            </AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Apakah Anda
+                                                                yakin ingin
+                                                                menghapus data
+                                                                verifikasi ini?
+                                                                Tindakan ini
+                                                                tidak dapat
+                                                                dibatalkan.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>
+                                                                Batal
+                                                            </AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() =>
+                                                                    handleDeleteEntry(
+                                                                        entry.id
+                                                                    )
+                                                                }
+                                                                className="bg-red-600 hover:bg-red-700"
+                                                            >
+                                                                Hapus
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </TableCell>
                                         </TableRow>
                                     ))
