@@ -121,23 +121,14 @@ export async function addVerificationEntry(
     lineId,
     qty,
     locationId,
-    verifierId
+    verifierId,
+    note = ""
 ) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) return { success: false, error: "Unauthorized" };
 
-        // 1. Save to Prisma (local database)
-        await prisma.verificationResult.create({
-            data: {
-                odoo_line_id: parseInt(lineId),
-                product_qty: parseFloat(qty),
-                location_id: parseInt(locationId),
-                verifier_id: parseInt(verifierId),
-            },
-        });
-
-        // 2. Sync to Odoo (add qty to inventory line)
+        // 1. Sync to Odoo FIRST (to get verification_id)
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
             session.user.email
@@ -149,17 +140,33 @@ export async function addVerificationEntry(
             [],
             {
                 line_id: parseInt(lineId),
-                additional_qty: parseFloat(qty),
-                // Note: location_id not sent - line already has correct location from Odoo
+                verification_qty: parseFloat(qty),
+                inventory_product_location_id: parseInt(locationId),
                 verifier_id: parseInt(verifierId),
+                note: note || null,
             }
         );
 
         if (!odooResult.success) {
-            console.warn("Odoo sync warning:", odooResult.message);
-            // Continue anyway - Prisma save succeeded
+            console.error("Odoo sync failed:", odooResult.message);
+            return {
+                success: false,
+                message: "Gagal menyimpan ke Odoo: " + odooResult.message,
+            };
         }
         console.log("Odoo sync result:", odooResult);
+
+        // 2. Save to Prisma (with Odoo verification_id)
+        await prisma.verificationResult.create({
+            data: {
+                odoo_line_id: parseInt(lineId),
+                odoo_verification_id: odooResult.data?.verification_id || null,
+                product_qty: parseFloat(qty),
+                location_id: parseInt(locationId),
+                verifier_id: parseInt(verifierId),
+                note: note || null,
+            },
+        });
 
         revalidatePath("/admin/verification");
         revalidatePath(`/admin/verification/${lineId}/edit`);
@@ -167,7 +174,7 @@ export async function addVerificationEntry(
         return {
             success: true,
             message: "Entry added",
-            odoo_sync: odooResult.success,
+            odoo_sync: true,
         };
     } catch (e) {
         console.error("Error adding entry:", e);
@@ -176,14 +183,42 @@ export async function addVerificationEntry(
 }
 
 // Delete Entry
-export async function deleteVerificationEntry(entryId, lineId) {
+export async function deleteVerificationEntry(
+    entryId,
+    lineId,
+    odooVerificationId = null
+) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) return { success: false, error: "Unauthorized" };
 
+        // 1. Delete from Prisma
         await prisma.verificationResult.delete({
             where: { id: parseInt(entryId) },
         });
+
+        // 2. Sync to Odoo (if odooVerificationId provided)
+        if (odooVerificationId) {
+            const odoo = await OdooSessionManager.getClient(
+                session.user.id,
+                session.user.email
+            );
+
+            const odooResult = await odoo.client.execute(
+                "custom.stock.inventory",
+                "delete_verification_qty",
+                [],
+                {
+                    verification_id: parseInt(odooVerificationId),
+                    line_id: parseInt(lineId),
+                }
+            );
+
+            if (!odooResult.success) {
+                console.warn("Odoo delete sync warning:", odooResult.message);
+            }
+            console.log("Odoo delete result:", odooResult);
+        }
 
         revalidatePath("/admin/verification");
         revalidatePath(`/admin/verification/${lineId}/edit`);
@@ -280,13 +315,25 @@ export async function getVerificationData(
                 entriesMap.set(e.odoo_line_id, current + e.product_qty);
             });
 
+            console.log("DEBUG: lineIds:", lineIds.slice(0, 5));
+            console.log("DEBUG: entries count:", entries.length);
+            console.log("DEBUG: entriesMap size:", entriesMap.size);
+
             for (let item of data) {
                 const additionalQty = entriesMap.get(item.id) || 0;
-                // Total Verified = Odoo Scanned + Local Additions
-                item.scanned_qty = (item.scanned_qty || 0) + additionalQty;
 
-                // Recalc Stats
-                item.diff_qty = item.scanned_qty - item.system_qty;
+                // Expose verification qty separately
+                item.verification_qty = additionalQty;
+                item.verification_hpp = additionalQty * (item.hpp || 0);
+
+                // Total Aktual = Scan (dari Odoo) + Verifikasi (dari Prisma)
+                // scanned_qty tetap original dari Odoo
+                const originalScannedQty = item.scanned_qty || 0;
+                item.total_qty = originalScannedQty + additionalQty;
+                item.total_hpp = item.total_qty * (item.hpp || 0);
+
+                // Recalc Stats - use total_qty for diff (Scan + Verifikasi - System)
+                item.diff_qty = item.total_qty - item.system_qty;
 
                 if (additionalQty > 0) {
                     item.is_verified = true;

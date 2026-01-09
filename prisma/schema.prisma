@@ -163,13 +163,15 @@ enum DocumentState {
 }
 
 model VerificationResult {
-  id           Int      @id @default(autoincrement())
-  odoo_line_id Int      // Removed @unique to allow multiple entries
-  product_qty  Float
-  location_id  Int
-  verifier_id  Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  odoo_line_id          Int      // Removed @unique to allow multiple entries
+  odoo_verification_id  Int?     // ID from Odoo's verification record
+  product_qty           Float
+  location_id           Int
+  verifier_id           Int
+  note                  String?  // Optional note/keterangan
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
   @@map("verification_results")
 }

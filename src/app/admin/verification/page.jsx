@@ -106,6 +106,19 @@ export default async function Page(props) {
                                         Status
                                     </TableHead>
                                     <TableHead>Lokasi</TableHead>
+                                    {/* Verification Columns (Green) - Before Aksi */}
+                                    <TableHead className="bg-green-100 text-green-800">
+                                        Verifikasi
+                                    </TableHead>
+                                    <TableHead className="bg-green-100 text-green-800 text-right">
+                                        HPP Verif
+                                    </TableHead>
+                                    <TableHead className="bg-green-100 text-green-800">
+                                        Total
+                                    </TableHead>
+                                    <TableHead className="bg-green-100 text-green-800 text-right">
+                                        Total HPP
+                                    </TableHead>
                                     <TableHead className="w-[50px]">
                                         Aksi
                                     </TableHead>
@@ -190,6 +203,24 @@ export default async function Page(props) {
                                             <TableCell className="whitespace-nowrap">
                                                 {item.location_name}
                                             </TableCell>
+                                            {/* Verification Columns (Green) - Before Aksi */}
+                                            <TableCell className="bg-green-50 font-bold text-green-700">
+                                                {item.verification_qty || 0}{" "}
+                                                {item.uom}
+                                            </TableCell>
+                                            <TableCell className="bg-green-50 text-right text-green-700 whitespace-nowrap">
+                                                {formatCurrency(
+                                                    item.verification_hpp || 0
+                                                )}
+                                            </TableCell>
+                                            <TableCell className="bg-green-50 font-bold text-green-800">
+                                                {item.total_qty || 0} {item.uom}
+                                            </TableCell>
+                                            <TableCell className="bg-green-50 text-right font-medium text-green-800 whitespace-nowrap">
+                                                {formatCurrency(
+                                                    item.total_hpp || 0
+                                                )}
+                                            </TableCell>
                                             <TableCell>
                                                 <a
                                                     href={`/admin/verification/${item.id}/edit`}
@@ -217,7 +248,7 @@ export default async function Page(props) {
                                 ) : (
                                     <TableRow>
                                         <TableCell
-                                            colSpan={11}
+                                            colSpan={16}
                                             className="h-24 text-center"
                                         >
                                             Tidak ada data ditemukan.

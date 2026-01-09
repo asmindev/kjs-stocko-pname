@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
     Command,
@@ -69,6 +70,9 @@ export function VerificationEditForm({ line, locations, users }) {
     const [openVerifier, setOpenVerifier] = useState(false);
     const [newVerifierId, setNewVerifierId] = useState("");
 
+    // Note State
+    const [newNote, setNewNote] = useState("");
+
     // Helper to get location name for display in table
     const getLocationName = (id) => {
         const loc = locations.find((l) => l.id === id);
@@ -113,7 +117,8 @@ export function VerificationEditForm({ line, locations, users }) {
                 line.id,
                 newQty,
                 newLocationId,
-                newVerifierId
+                newVerifierId,
+                newNote
             );
 
             if (result.success) {
@@ -121,6 +126,7 @@ export function VerificationEditForm({ line, locations, users }) {
                 setNewQty("");
                 setNewLocationId("");
                 setNewVerifierId("");
+                setNewNote("");
                 router.refresh();
             } else {
                 toast.error(result.message || "Gagal menambahkan data");
@@ -132,10 +138,14 @@ export function VerificationEditForm({ line, locations, users }) {
         }
     };
 
-    const handleDeleteEntry = async (entryId) => {
+    const handleDeleteEntry = async (entryId, odooVerificationId = null) => {
         setLoading(true);
         try {
-            const result = await deleteVerificationEntry(entryId, line.id);
+            const result = await deleteVerificationEntry(
+                entryId,
+                line.id,
+                odooVerificationId
+            );
             if (result.success) {
                 toast.success("Data berhasil dihapus");
                 router.refresh();
@@ -358,6 +368,16 @@ export function VerificationEditForm({ line, locations, users }) {
                                 </PopoverContent>
                             </Popover>
                         </div>
+                        <div className="flex-1 min-w-[200px]">
+                            <Label className="text-xs">Keterangan</Label>
+                            <Textarea
+                                placeholder="Catatan tambahan (opsional)"
+                                value={newNote}
+                                onChange={(e) => setNewNote(e.target.value)}
+                                className="h-9 min-h-[36px] text-xs resize-none"
+                                rows={1}
+                            />
+                        </div>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button
@@ -495,7 +515,8 @@ export function VerificationEditForm({ line, locations, users }) {
                                                             <AlertDialogAction
                                                                 onClick={() =>
                                                                     handleDeleteEntry(
-                                                                        entry.id
+                                                                        entry.id,
+                                                                        entry.odoo_verification_id
                                                                     )
                                                                 }
                                                                 className="bg-red-600 hover:bg-red-700"
