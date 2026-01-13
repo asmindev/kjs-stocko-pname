@@ -40,17 +40,17 @@ export function AdminSidebar() {
             icon: Home,
         },
         {
-            title: "Documents",
+            title: "Dokumen Inventori",
             url: "/admin/document",
             icon: Package,
         },
         {
-            title: "Unposted",
+            title: "Unposted Scan",
             url: "/admin/unposted",
             icon: Check,
         },
         {
-            title: "Sessions",
+            title: "Sesi Scan",
             url: "/admin/session",
             icon: User,
         },

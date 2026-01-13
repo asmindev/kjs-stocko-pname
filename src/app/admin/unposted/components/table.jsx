@@ -27,7 +27,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Import Input
 import { toast } from "sonner";
-import { actionBatchPostToOdoo } from "../post_to_odoo.action";
+import {
+    actionBatchPostToOdoo,
+    actionBatchDailyPostToOdoo,
+} from "../post_to_odoo.action";
 import PaginationControls from "@/components/ui/pagination-controls"; // Import Pagination
 import { Search } from "lucide-react"; // Import Search Icon
 import {
@@ -224,6 +227,43 @@ export default function UnpostedGroupedTable({
         }
     };
 
+    const handleDailyPostToOdoo = async () => {
+        if (selectedWarehouse === "all") {
+            toast.error("Silakan pilih warehouse terlebih dahulu.");
+            return;
+        }
+
+        try {
+            const result = toast.promise(
+                actionBatchDailyPostToOdoo({ warehouseId: selectedWarehouse }),
+                {
+                    loading: `Memproses Daily Opname (Split per User)...`,
+                    success: (res) => {
+                        if (res.success) {
+                            setPostResult({
+                                type: "success",
+                                message: res.message,
+                                details: res.details,
+                            });
+                            return res.message;
+                        } else {
+                            throw new Error(res.message);
+                        }
+                    },
+                    error: (err) => {
+                        setPostResult({
+                            type: "error",
+                            message: err.message || "Gagal posting.",
+                        });
+                        return err.message;
+                    },
+                }
+            );
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     return (
         <Card className="mt-4">
             <CardHeader>
@@ -318,6 +358,52 @@ export default function UnpostedGroupedTable({
                             </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
+                            {/* Daily Opname Button */}
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className={"hidden"}
+                                    >
+                                        DAILY OPNAME (Cycle Count)
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Posting Daily Opname?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Mode ini akan memposting data secara
+                                            terpisah berdasarkan USER (Cycle
+                                            Count).
+                                            <br />
+                                            <br />
+                                            Setiap user akan dibuatkan dokumen
+                                            inventory terpisah dengan format:{" "}
+                                            <br />
+                                            <b>
+                                                Cycle count - DD/MM/YY-HH-MM-SS
+                                                (User Name)
+                                            </b>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                            Batal
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() =>
+                                                handleDailyPostToOdoo()
+                                            }
+                                        >
+                                            Lanjutkan (Split User)
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button size="sm">
