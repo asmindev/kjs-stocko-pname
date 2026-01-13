@@ -1,5 +1,5 @@
 import React from "react";
-import { getVerificationData } from "./action";
+import { getVerificationData, getBrands } from "./action";
 import {
     Table,
     TableBody,
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusFilter } from "./status-filter";
 import { InventoryCombobox } from "@/components/inventory-combobox";
 import { CopyableText } from "@/components/copyable-text";
+import { BrandFilter } from "./brand-filter";
 
 export default async function Page(props) {
     const searchParams = await props.searchParams;
@@ -25,6 +26,7 @@ export default async function Page(props) {
     const search = searchParams?.q || "";
     const paramInventoryId = searchParams?.inventory_id;
     const status = searchParams?.status;
+    const brand = searchParams?.brand;
 
     // Fetch Data
     const verificationResult = await getVerificationData(
@@ -32,10 +34,15 @@ export default async function Page(props) {
         page,
         limit,
         search,
-        status
+        status,
+        brand
     );
 
     const { success, meta, data, error, inventories } = verificationResult;
+
+    // Fetch Brands for Filter
+    const brandsResult = await getBrands();
+    const brands = brandsResult.data || [];
 
     // Determine title based on selection
     let titleSubtitle = "Semua Inventory";
@@ -58,7 +65,7 @@ export default async function Page(props) {
 
     return (
         <div className="container mx-auto py-6 space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
                         Verifikasi Stock Opname
@@ -67,8 +74,9 @@ export default async function Page(props) {
                         Membandingkan data sistem vs hasil scan.
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto justify-end items-end">
                     <InventoryCombobox inventories={inventories} />
+                    <BrandFilter brands={brands} />
                     <StatusFilter />
                     <SearchInput placeholder="Cari barcode / produk..." />
                 </div>
@@ -93,6 +101,7 @@ export default async function Page(props) {
                                     <TableHead>Inventory</TableHead>
                                     <TableHead>Barcode</TableHead>
                                     <TableHead>Produk</TableHead>
+                                    <TableHead>Brand</TableHead>
                                     <TableHead>System</TableHead>
                                     <TableHead>Scan</TableHead>
                                     <TableHead>Selisih</TableHead>
@@ -105,7 +114,7 @@ export default async function Page(props) {
                                     <TableHead className="text-center">
                                         Status
                                     </TableHead>
-                                    <TableHead>Lokasi</TableHead>
+                                    {/* <TableHead>Lokasi</TableHead> */}
                                     {/* Verification Columns (Green) - Before Aksi */}
                                     <TableHead className="bg-green-100 text-green-800">
                                         Verifikasi
@@ -142,6 +151,9 @@ export default async function Page(props) {
                                                     text={item.product_name}
                                                     className="truncate block"
                                                 />
+                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">
+                                                {item.brand}
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
                                                 {item.system_qty} {item.uom}
@@ -200,9 +212,9 @@ export default async function Page(props) {
                                                     {item.status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="whitespace-nowrap">
+                                            {/* <TableCell className="whitespace-nowrap">
                                                 {item.location_name}
-                                            </TableCell>
+                                            </TableCell> */}
                                             {/* Verification Columns (Green) - Before Aksi */}
                                             <TableCell className="bg-green-50 font-bold text-green-700">
                                                 {item.verification_qty || 0}{" "}
@@ -213,7 +225,7 @@ export default async function Page(props) {
                                                     item.verification_hpp || 0
                                                 )}
                                             </TableCell>
-                                            <TableCell className="bg-green-50 font-bold text-green-800">
+                                            <TableCell className="bg-green-50 font-bold text-green-800 whitespace-nowrap">
                                                 {item.total_qty || 0} {item.uom}
                                             </TableCell>
                                             <TableCell className="bg-green-50 text-right font-medium text-green-800 whitespace-nowrap">

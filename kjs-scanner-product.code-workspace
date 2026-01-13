@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Docker/karya-jaya/custom-addons/custom_stock_opname"
+		},
+		{
+			"path": "../../Docker/karya-jaya/custom-addons/report_inventory_csi"
+		}
+	],
+	"settings": {}
+}

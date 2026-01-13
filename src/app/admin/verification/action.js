@@ -230,12 +230,92 @@ export async function deleteVerificationEntry(
     }
 }
 
+// Update Verification Total (Auto Calc)
+export async function updateVerificationTotal(
+    lineId,
+    totalQty,
+    locationId,
+    verifierId,
+    note = ""
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        // 1. Call Odoo to Calculate and Set Total
+        const odooResult = await odoo.client.execute(
+            "custom.stock.inventory",
+            "set_verification_total_qty",
+            [],
+            {
+                line_id: parseInt(lineId),
+                total_qty: parseFloat(totalQty),
+                location_id: parseInt(locationId),
+                verifier_id: parseInt(verifierId),
+                note: note || null,
+            }
+        );
+
+        console.log("Odoo calc result:", odooResult);
+
+        if (!odooResult.success) {
+            console.error("Odoo calc failed:", odooResult.message);
+            return {
+                success: false,
+                message: "Gagal update stok di Odoo: " + odooResult.message,
+            };
+        }
+
+        // 2. If Diff is 0, nothing to save locally
+        if (odooResult.diff === 0) {
+            return {
+                success: true,
+                message: "Tidak ada perubahan stok (selisih 0)",
+                no_change: true,
+            };
+        }
+
+        // 3. Save Adjustment to Prisma
+        // We save the DIFFERENCE returned by Odoo
+        await prisma.verificationResult.create({
+            data: {
+                odoo_line_id: parseInt(lineId),
+                odoo_verification_id: odooResult.verification_id,
+                product_qty: parseFloat(odooResult.diff), // Save the Difference
+                location_id: parseInt(locationId),
+                verifier_id: parseInt(verifierId),
+                note: note || `Update Total: ${totalQty}`,
+            },
+        });
+
+        revalidatePath("/admin/verification");
+        revalidatePath(`/admin/verification/${lineId}/edit`);
+
+        return {
+            success: true,
+            message: `Stok diupdate (Selisih: ${
+                odooResult.diff > 0 ? "+" : ""
+            }${odooResult.diff})`,
+            diff: odooResult.diff,
+        };
+    } catch (e) {
+        console.error("Error updating total:", e);
+        return { success: false, message: e.message };
+    }
+}
+
 export async function getVerificationData(
     inventoryId = null,
     page = 1,
     limit = 20,
     search = "",
-    status = null
+    status = null,
+    brand = null
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -289,6 +369,7 @@ export async function getVerificationData(
                 limit: parseInt(limit),
                 search_query: search || null,
                 status_filter: status || null,
+                brand_filter: brand || null,
             }
         );
 
@@ -366,5 +447,29 @@ export async function getVerificationData(
     } catch (error) {
         console.error("Error fetching verification data:", error);
         return { success: false, error: error.message };
+    }
+}
+
+export async function getBrands() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return { success: false, error: "Unauthorized" };
+
+        const odoo = await OdooSessionManager.getClient(
+            session.user.id,
+            session.user.email
+        );
+
+        const brands = await odoo.client.execute(
+            "custom.stock.inventory",
+            "get_all_brands",
+            [],
+            {}
+        );
+
+        return { success: true, data: brands || [] };
+    } catch (e) {
+        console.error("Error fetching brands:", e);
+        return { success: false, error: e.message };
     }
 }

@@ -21,7 +21,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { CardContent, CardFooter } from "@/components/ui/card";
-import { addVerificationEntry, deleteVerificationEntry } from "../../action";
+import { deleteVerificationEntry, updateVerificationTotal } from "../../action";
 import {
     Check,
     ChevronsUpDown,
@@ -59,8 +59,43 @@ export function VerificationEditForm({ line, locations, users }) {
     // Existing Entries
     const entries = line.entries || [];
 
-    // Form State for NEW Entry
-    const [newQty, setNewQty] = useState("");
+    // Filter previous scans by location
+    const location_ids = locations.map((loc) => loc.id);
+    const previousScans = (line.previousScans || []).filter((scan) =>
+        location_ids.includes(scan.location_id)
+    );
+
+    // Calculate totals
+    const totalVerified = entries.reduce((sum, e) => sum + e.product_qty, 0);
+    const totalScanned = previousScans.reduce((sum, s) => sum + s.quantity, 0);
+
+    // Base Total (Odoo Scan + Verified)
+    // Note: line.product_qty comes from Odoo as "Scanned Qty" usually.
+    // Let's verify: in action.js, line.product_qty is scanned_qty.
+    // Wait, in action.js:
+    // item.scanned_qty = line.product_qty
+    // item.total_qty = originalScannedQty + additionalQty
+    // So current total known to system is line.total_qty (if we pass the enriched line object)
+    // Let's check `getVerificationLine` in action.js
+    // It returns `...odooResult` and `entries`.
+    // data.entries = localEntries.
+    // It does NOT doing the calculation `total_qty` like `getVerificationData` list.
+
+    // We need to calculate Current Total here.
+    // IMPORTANT: line.product_qty from Odoo ALREADY includes all adjustments
+    // (Odoo updates product_qty when verification is added via set_verification_total_qty)
+    // So we should NOT add totalVerified again, otherwise we double count.
+    // The display "Verifikasi Tambahan" shows the HISTORY of adjustments, not additional qty.
+    const currentTotal = line.product_qty || 0;
+
+    // Form State for NEW Entry (Total Actual)
+    const [totalActualQty, setTotalActualQty] = useState("");
+
+    // Calculate Adjustment preview
+    const adjustmentQty = useMemo(() => {
+        if (!totalActualQty) return 0;
+        return parseFloat(totalActualQty) - currentTotal;
+    }, [totalActualQty, currentTotal]);
 
     // Location Combobox State
     const [openLocation, setOpenLocation] = useState(false);
@@ -98,10 +133,20 @@ export function VerificationEditForm({ line, locations, users }) {
     }, [users, newVerifierId]);
 
     const handleAddEntry = async () => {
-        if (!newQty || parseFloat(newQty) <= 0) {
-            toast.error("Mohon masukkan jumlah yang valid");
+        if (!totalActualQty) {
+            toast.error("Mohon masukkan total aktual");
             return;
         }
+
+        // Note: AdjustmentQty preview is still useful for UI,
+        // but we send the Total Actual to backend now.
+        if (adjustmentQty === 0) {
+            toast.error(
+                "Total aktual sama dengan total saat ini. Tidak ada perubahan."
+            );
+            return;
+        }
+
         if (!newLocationId) {
             toast.error("Mohon pilih lokasi");
             return;
@@ -113,17 +158,18 @@ export function VerificationEditForm({ line, locations, users }) {
 
         setLoading(true);
         try {
-            const result = await addVerificationEntry(
+            // Use UPDATE TOTAL action (Backend Logic)
+            const result = await updateVerificationTotal(
                 line.id,
-                newQty,
+                totalActualQty, // Send TOTAL
                 newLocationId,
                 newVerifierId,
                 newNote
             );
 
             if (result.success) {
-                toast.success("Data berhasil ditambahkan");
-                setNewQty("");
+                toast.success(result.message || "Data berhasil ditambahkan");
+                setTotalActualQty("");
                 setNewLocationId("");
                 setNewVerifierId("");
                 setNewNote("");
@@ -159,16 +205,6 @@ export function VerificationEditForm({ line, locations, users }) {
         }
     };
 
-    // Filter previous scans by location
-    const location_ids = locations.map((loc) => loc.id);
-    const previousScans = (line.previousScans || []).filter((scan) =>
-        location_ids.includes(scan.location_id)
-    );
-
-    // Calculate totals
-    const totalVerified = entries.reduce((sum, e) => sum + e.product_qty, 0);
-    const totalScanned = previousScans.reduce((sum, s) => sum + s.quantity, 0);
-
     return (
         <div>
             <CardContent className="space-y-4 pt-4">
@@ -197,7 +233,7 @@ export function VerificationEditForm({ line, locations, users }) {
                     </div>
                     <div className="bg-blue-50 rounded-lg p-3 text-center">
                         <div className="text-xs text-muted-foreground">
-                            Qty Odoo
+                            Scan Odoo
                         </div>
                         <div className="text-xl font-bold text-blue-600">
                             {line.product_qty}
@@ -205,18 +241,18 @@ export function VerificationEditForm({ line, locations, users }) {
                     </div>
                     <div className="bg-green-50 rounded-lg p-3 text-center">
                         <div className="text-xs text-muted-foreground">
-                            Verifikasi (+)
+                            Selisih (Diff)
                         </div>
                         <div className="text-xl font-bold text-green-600">
-                            +{totalVerified}
+                            {line.diff_qty || 0}
                         </div>
                     </div>
-                    <div className="bg-amber-50 rounded-lg p-3 text-center">
-                        <div className="text-xs text-muted-foreground">
-                            Riwayat Scan
+                    <div className="bg-indigo-50 rounded-lg p-3 text-center border border-indigo-100">
+                        <div className="text-xs font-semibold text-indigo-800">
+                            TOTAL SAAT INI
                         </div>
-                        <div className="text-xl font-bold text-amber-600">
-                            {totalScanned}
+                        <div className="text-2xl font-black text-indigo-700">
+                            {currentTotal}
                         </div>
                     </div>
                 </div>
@@ -226,20 +262,39 @@ export function VerificationEditForm({ line, locations, users }) {
                     <div className="flex items-center gap-2 mb-3">
                         <PackagePlus className="h-4 w-4 text-green-600" />
                         <span className="font-medium text-sm">
-                            Tambah Verifikasi
+                            Update Stok (Total Real)
                         </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 items-end">
-                        <div className="w-24">
-                            <Label className="text-xs">Qty</Label>
+                    <div className="flex flex-wrap gap-2 items-start">
+                        <div className="w-32">
+                            <Label className="text-xs font-bold text-green-800">
+                                Total Aktual (Real)
+                            </Label>
                             <Input
                                 type="number"
                                 step="0.01"
-                                placeholder="0"
-                                value={newQty}
-                                onChange={(e) => setNewQty(e.target.value)}
-                                className="h-9 font-bold"
+                                placeholder={currentTotal.toString()}
+                                value={totalActualQty}
+                                onChange={(e) =>
+                                    setTotalActualQty(e.target.value)
+                                }
+                                className="h-9 font-bold bg-white border-green-300 focus-visible:ring-green-500"
                             />
+                            {totalActualQty && (
+                                <div
+                                    className={cn(
+                                        "text-[10px] font-bold mt-1",
+                                        adjustmentQty > 0
+                                            ? "text-green-600"
+                                            : adjustmentQty < 0
+                                            ? "text-red-600"
+                                            : "text-gray-500"
+                                    )}
+                                >
+                                    Selisih: {adjustmentQty > 0 ? "+" : ""}
+                                    {adjustmentQty}
+                                </div>
+                            )}
                         </div>
                         <div className="flex-1 min-w-[180px]">
                             <Label className="text-xs">Lokasi</Label>
@@ -383,33 +438,69 @@ export function VerificationEditForm({ line, locations, users }) {
                                 <Button
                                     disabled={
                                         loading ||
-                                        !newQty ||
+                                        !totalActualQty ||
+                                        adjustmentQty === 0 ||
                                         !newLocationId ||
                                         !newVerifierId
                                     }
                                     size="sm"
-                                    className="h-9"
+                                    className="h-9 mt-4"
                                 >
                                     <Plus className="h-4 w-4 mr-1" />
-                                    Tambah
+                                    Update
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
                                     <AlertDialogTitle>
-                                        Konfirmasi Tambah Verifikasi
+                                        Konfirmasi Update Stok
                                     </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Anda akan menambahkan qty{" "}
-                                        <strong>{newQty || 0}</strong> ke
-                                        inventory line ini. Data akan disimpan
-                                        ke database dan Odoo. Lanjutkan?
-                                    </AlertDialogDescription>
+                                    <div>
+                                        <div className="space-y-2 mt-2">
+                                            <div className="flex justify-between text-sm">
+                                                <span>Total Saat Ini:</span>
+                                                <span className="font-medium">
+                                                    {currentTotal}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span>
+                                                    Total Aktual (Baru):
+                                                </span>
+                                                <span className="font-bold">
+                                                    {totalActualQty}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                                                <span>Adjusment/Selisih:</span>
+                                                <span
+                                                    className={cn(
+                                                        "font-bold",
+                                                        adjustmentQty > 0
+                                                            ? "text-green-600"
+                                                            : adjustmentQty < 0
+                                                            ? "text-red-600"
+                                                            : ""
+                                                    )}
+                                                >
+                                                    {adjustmentQty > 0
+                                                        ? "+"
+                                                        : ""}
+                                                    {adjustmentQty}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className="mt-4 text-xs text-muted-foreground">
+                                            System akan menambahkan entry
+                                            adjustment sebesar{" "}
+                                            <strong>{adjustmentQty}</strong>.
+                                        </span>
+                                    </div>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Batal</AlertDialogCancel>
                                     <AlertDialogAction onClick={handleAddEntry}>
-                                        Ya, Tambahkan
+                                        Ya, Update Stok
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -423,19 +514,22 @@ export function VerificationEditForm({ line, locations, users }) {
                     <div className="border rounded-lg overflow-hidden">
                         <div className="bg-green-100 px-3 py-2 flex items-center justify-between">
                             <span className="text-sm font-medium text-green-800">
-                                Verifikasi Tambahan ({entries.length})
+                                Log Verifikasi ({entries.length})
                             </span>
                             <Badge
                                 variant="outline"
                                 className="bg-white text-green-700"
                             >
-                                +{totalVerified}
+                                Total: {totalVerified > 0 ? "+" : ""}
+                                {totalVerified}
                             </Badge>
                         </div>
                         <Table>
                             <TableHeader>
                                 <TableRow className="text-xs">
-                                    <TableHead className="py-2">Qty</TableHead>
+                                    <TableHead className="py-2">
+                                        Adj Qty
+                                    </TableHead>
                                     <TableHead className="py-2">
                                         Lokasi
                                     </TableHead>
@@ -461,7 +555,19 @@ export function VerificationEditForm({ line, locations, users }) {
                                             key={entry.id}
                                             className="text-xs"
                                         >
-                                            <TableCell className="py-2 font-bold">
+                                            <TableCell
+                                                className={cn(
+                                                    "py-2 font-bold",
+                                                    entry.product_qty > 0
+                                                        ? "text-green-600"
+                                                        : entry.product_qty < 0
+                                                        ? "text-red-600"
+                                                        : ""
+                                                )}
+                                            >
+                                                {entry.product_qty > 0
+                                                    ? "+"
+                                                    : ""}
                                                 {entry.product_qty}
                                             </TableCell>
                                             <TableCell
