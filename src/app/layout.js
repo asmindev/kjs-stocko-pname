@@ -1,19 +1,19 @@
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import SessionWrapper from "@/components/SessionWrapper";
 import "./static/globals.css";
 import ProgressProviders from "./providers/progress";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
+// const geistSans = Geist({
+//     variable: "--font-geist-sans",
+//     subsets: ["latin"],
+// });
 
-const geistMono = Geist_Mono({
-    variable: "--font-geist-mono",
-    subsets: ["latin"],
-    display: "swap", // fallback saat fetch gagal
-});
+// const geistMono = Geist_Mono({
+//     variable: "--font-geist-mono",
+//     subsets: ["latin"],
+//     display: "swap", // fallback saat fetch gagal
+// });
 
 // export const metadata = {
 //     title: "Scanner Product",
@@ -26,7 +26,8 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased w-full`}
+                // className={`${geistSans.variable} ${geistMono.variable} antialiased w-full`}
+                className="antialiased w-full"
             >
                 <ProgressProviders>
                     <SessionWrapper>
