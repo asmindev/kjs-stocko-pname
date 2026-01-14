@@ -234,7 +234,7 @@ export async function deleteVerificationEntry(
 export async function updateVerificationTotal(
     lineId,
     totalQty,
-    locationId,
+    locationIds, // Changed to array
     verifierId,
     note = ""
 ) {
@@ -255,7 +255,7 @@ export async function updateVerificationTotal(
             {
                 line_id: parseInt(lineId),
                 total_qty: parseFloat(totalQty),
-                location_id: parseInt(locationId),
+                location_ids: locationIds, // Send array
                 verifier_id: parseInt(verifierId),
                 note: note || null,
             }
@@ -282,12 +282,14 @@ export async function updateVerificationTotal(
 
         // 3. Save Adjustment to Prisma
         // We save the DIFFERENCE returned by Odoo
+        // Note: For Prisma, we save the first location_id (for tracking purposes)
         await prisma.verificationResult.create({
             data: {
                 odoo_line_id: parseInt(lineId),
                 odoo_verification_id: odooResult.verification_id,
                 product_qty: parseFloat(odooResult.diff), // Save the Difference
-                location_id: parseInt(locationId),
+                location_id:
+                    locationIds.length > 0 ? parseInt(locationIds[0]) : null,
                 verifier_id: parseInt(verifierId),
                 note: note || `Update Total: ${totalQty}`,
             },
@@ -395,10 +397,6 @@ export async function getVerificationData(
                 const current = entriesMap.get(e.odoo_line_id) || 0;
                 entriesMap.set(e.odoo_line_id, current + e.product_qty);
             });
-
-            console.log("DEBUG: lineIds:", lineIds.slice(0, 5));
-            console.log("DEBUG: entries count:", entries.length);
-            console.log("DEBUG: entriesMap size:", entriesMap.size);
 
             for (let item of data) {
                 const additionalQty = entriesMap.get(item.id) || 0;

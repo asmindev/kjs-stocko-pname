@@ -237,7 +237,7 @@ export default function UnpostedGroupedTable({
             const result = toast.promise(
                 actionBatchDailyPostToOdoo({ warehouseId: selectedWarehouse }),
                 {
-                    loading: `Memproses Daily Opname (Split per User)...`,
+                    loading: `Memproses Daily Opname...`,
                     success: (res) => {
                         if (res.success) {
                             setPostResult({
@@ -361,11 +361,7 @@ export default function UnpostedGroupedTable({
                             {/* Daily Opname Button */}
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className={"hidden"}
-                                    >
+                                    <Button size="sm" variant="secondary">
                                         DAILY OPNAME (Cycle Count)
                                     </Button>
                                 </AlertDialogTrigger>
@@ -375,18 +371,14 @@ export default function UnpostedGroupedTable({
                                             Posting Daily Opname?
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            Mode ini akan memposting data secara
-                                            terpisah berdasarkan USER (Cycle
-                                            Count).
+                                            Mode ini akan memposting data
+                                            sebagai
+                                            <b>Daily Opname (Cycle Count)</b>.
                                             <br />
                                             <br />
-                                            Setiap user akan dibuatkan dokumen
-                                            inventory terpisah dengan format:{" "}
-                                            <br />
-                                            <b>
-                                                Cycle count - DD/MM/YY-HH-MM-SS
-                                                (User Name)
-                                            </b>
+                                            Data akan diposting dalam satu
+                                            dokumen inventory dengan penanda
+                                            khusus Cycle Count.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -398,7 +390,7 @@ export default function UnpostedGroupedTable({
                                                 handleDailyPostToOdoo()
                                             }
                                         >
-                                            Lanjutkan (Split User)
+                                            Lanjutkan (Cycle Count)
                                         </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>

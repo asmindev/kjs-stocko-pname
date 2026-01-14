@@ -1,8 +1,9 @@
+import { redirect } from "next/navigation";
 import {
     getVerificationLine,
     getInventoryLocationsForEdit,
     getOpnameUsers,
-} from "../../action";
+} from "./action";
 import { VerificationEditForm } from "./edit-form";
 import {
     Card,
@@ -21,6 +22,11 @@ export default async function EditPage(props) {
         getInventoryLocationsForEdit(),
         getOpnameUsers(),
     ]);
+
+    if (!lineReq.success) {
+        // kembali ke halaman list
+        redirect("/admin/verification");
+    }
 
     const locations = locReq.data.locations.filter(
         (loc) => loc.stock_location_id[0] === lineReq.data.location_id

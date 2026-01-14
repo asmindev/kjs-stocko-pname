@@ -167,15 +167,13 @@ async function updateProductStates(successProductIds, documentId) {
     }
 }
 
-export const actionPostToOdoo = async ({ data }) => {
+export const actionPostToOdoo = async ({ data, isDailyOpname = false }) => {
     console.log("Starting actionPostToOdoo with data length:", data.length);
-    console.log("Data sample:", JSON.stringify(data.slice(0, 2), null, 2));
+    console.log("Is Daily Opname:", isDailyOpname);
 
     // Parse environment variable with fallback to 500
     const MAX_LINES =
         parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
-    console.log("MAX LINES TO POST:", MAX_LINES);
-    console.log("ENV VALUE:", process.env.ODOO_MAX_POST_LINES_INVENTORY);
 
     // Track results for detailed error reporting
     const results = {
@@ -212,19 +210,24 @@ export const actionPostToOdoo = async ({ data }) => {
         const stockLocationId = warehouseId;
 
         // Generate inventory name
-        const inventoryName = generateInventoryName(warehouse.code);
+        let inventoryName = generateInventoryName(warehouse.code);
 
-        // Get date from last item in data
-        const lastItem = data[data.length - 1];
-        const item = new Date(
-            lastItem.details[lastItem.details.length - 1].created_at
-        );
-        const date = new Date(item)
-            .toISOString()
-            .slice(0, 19)
-            .replace("T", " ");
+        // Custom name for Daily Opname
+        if (isDailyOpname) {
+            const now = new Date();
+            const d = String(now.getDate()).padStart(2, "0");
+            const m = String(now.getMonth() + 1).padStart(2, "0");
+            const y = String(now.getFullYear()).slice(-2);
+            const H = String(now.getHours()).padStart(2, "0");
+            const M = String(now.getMinutes()).padStart(2, "0");
+            inventoryName = `Cycle Count ${d}/${m}/${y}-${H}${M} (${warehouse.code})`;
+        }
 
-        // Process all product items (no async needed, no Odoo calls)
+        // Get date from last item in data or current time
+        const now = new Date();
+        const date = now.toISOString().slice(0, 19).replace("T", " ");
+
+        // Process all product items
         const LINE_IDS = processProductItems(data, stockLocationId, results);
 
         if (LINE_IDS.length === 0) {
@@ -243,7 +246,8 @@ export const actionPostToOdoo = async ({ data }) => {
             filter: "partial",
             date,
             accounting_date: date,
-            line_ids: LINE_IDS, // Send lines directly, not wrapped in [0, 0, data]
+            line_ids: LINE_IDS,
+            is_daily_opname: isDailyOpname, // Send flag to Odoo
         };
 
         // Create inventory adjustment in Odoo
@@ -253,11 +257,6 @@ export const actionPostToOdoo = async ({ data }) => {
         const successProductIds = odooResult.data?.success || [];
         const errorProductIds = odooResult.data?.error || [];
         const skippedProductIds = odooResult.data?.skipped || [];
-
-        console.log(`Odoo processing results:
-            Success: ${successProductIds.length}
-            Error: ${errorProductIds.length}
-            Skipped: ${skippedProductIds.length}`);
 
         // Create document record in database
         const documentData = {
@@ -292,13 +291,20 @@ export const actionPostToOdoo = async ({ data }) => {
                 skippedProducts: skippedProductIds,
             },
         };
-    } catch (error) {}
+    } catch (error) {
+        console.error("Error in actionPostToOdoo:", error);
+        return {
+            success: false,
+            message: error.message || "Terjadi kesalahan internal",
+            results,
+        };
+    }
 };
 
 export const actionBatchPostToOdoo = async ({ warehouseId }) => {
     console.log("Starting Batch Post for warehouse:", warehouseId);
 
-    // 1. Fetch ALL unposted products for the warehouse (grouped/flat)
+    // 1. Fetch ALL unposted products
     const allData = await fetchAndGroupUnpostedProducts({ warehouseId });
 
     if (!allData || allData.length === 0) {
@@ -313,31 +319,12 @@ export const actionBatchPostToOdoo = async ({ warehouseId }) => {
         parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
     const dataToPost = allData.slice(0, MAX_LINES);
 
-    console.log(
-        `Found ${allData.length} items. Posting batch of ${dataToPost.length} items.`
-    );
-
-    // 3. Delegate to existing action logic
-    // We can call actionPostToOdoo directly, passing the prepared data.
-    // Note: actionPostToOdoo handles session auth again, which is fine.
-    // However, actionPostToOdoo also slices data to 300. We should update actionPostToOdoo limit or just rely on it.
-    // Let's modify actionPostToOdoo to accept a higher limit or respect input if possible.
-    // Actually, actionPostToOdoo hardcodes MAX_LINES = 300. We should probably update that too or duplicate logic.
-    // Better to update actionPostToOdoo to respect our slice, or increase its internal limit.
-
-    // Let's call the reuseable logic. But wait, `actionPostToOdoo` is a server action.
-    // We can call it as a function.
-
-    // NOTE: We rely on actionPostToOdoo to handle the posting.
-    // We previously saw actionPostToOdoo has `const MAX_LINES = 300;`.
-    // We should update `actionPostToOdoo` to support 500 first.
-
-    return await actionPostToOdoo({ data: dataToPost });
+    return await actionPostToOdoo({ data: dataToPost, isDailyOpname: false });
 };
 
 /**
  * Batch Post for Daily Opname (Cycle Count)
- * Groups data by USER and creates separate inventory for each user.
+ * NOW: Same as regular batch but sets isDailyOpname=true
  */
 export const actionBatchDailyPostToOdoo = async ({ warehouseId }) => {
     console.log("Starting Daily Batch Post for warehouse:", warehouseId);
@@ -352,230 +339,11 @@ export const actionBatchDailyPostToOdoo = async ({ warehouseId }) => {
         };
     }
 
-    // 2. Group by User
-    const userMap = new Map();
+    // 2. Limit to MAX_LINES (standard limit applies)
+    const MAX_LINES =
+        parseInt(process.env.ODOO_MAX_POST_LINES_INVENTORY) || 500;
+    const dataToPost = allData.slice(0, MAX_LINES);
 
-    for (const product of allData) {
-        // Iterate details to find who scanned what
-        for (const detail of product.details) {
-            // detail.user might be null/undefined if legacy data
-            const userId = detail.user?.id || 0;
-            const userName = detail.user?.name || "Unknown User";
-
-            if (!userMap.has(userId)) {
-                userMap.set(userId, {
-                    user: { id: userId, name: userName },
-                    lines: [],
-                });
-            }
-
-            const userEntry = userMap.get(userId);
-
-            // Add line for this user
-            // We need to match the format expected by processProductItems OR handle logic here.
-            // processProductItems takes `data` array of products.
-            // But here we are rebuilding the product list per user.
-
-            // To reuse logic, we can construct "Product-like" objects.
-            // detail has: quantity, uom, location.
-            // product has: product_id (string key), product (name).
-
-            // Check if we already have this product for this user (to aggregate)
-            // Key is ProductID + UOM + Location (ignoring location for now as per logic?)
-            // Logic in processProductItems: uses item.product_id, item.qty, item.targetUom/originalUom.
-
-            // Let's simplified: just push raw data and we will process it before sending.
-            // We need: product_id (tmpl), qty, uom.
-
-            // product.product_id is the key (e.g. "123").
-            // product.details doesn't have product_id directly, take from parent.
-
-            userEntry.lines.push({
-                product_id: product.product_id, // This is the ID we need
-                qty: detail.quantity, // Original qty
-                uom: detail.uom, // Original UOM
-                location: detail.location,
-            });
-        }
-    }
-
-    // 3. Process each User Group
-    const results = {
-        successCount: 0,
-        errorCount: 0,
-        details: [],
-    };
-
-    console.log(`Found ${userMap.size} unique users for daily opname.`);
-
-    // Helper to generate name logic
-    const generateCycleCountName = () => {
-        const now = new Date();
-        const d = String(now.getDate()).padStart(2, "0");
-        const m = String(now.getMonth() + 1).padStart(2, "0");
-        const y = String(now.getFullYear()).slice(-2); // YY
-        const H = String(now.getHours()).padStart(2, "0");
-        const M = String(now.getMinutes()).padStart(2, "0");
-        const S = String(now.getSeconds()).padStart(2, "0");
-        // Format: "Cycle count - {date}/{month}/{year}-{hour}-{minute}-{second}"
-        // Example: "Cycle count - 13/01/26-23-45-12"
-        return `Cycle count - ${d}/${m}/${y}-${H}-${M}-${S}`;
-    };
-
-    const session = await getServerSession(authOptions);
-    const odoo = await OdooSessionManager.getClient(
-        session.user.id,
-        session.user.email
-    );
-    const warehouse = await getWarehouseData(odoo, warehouseId);
-
-    // Iterate sequentially to avoid overwhelming Odoo
-    for (const [userId, userData] of userMap.entries()) {
-        try {
-            console.log(
-                `Processing ${userData.lines.length} lines for User: ${userData.user.name}`
-            );
-
-            // A. Aggregate lines per product/uom to avoid duplicates
-            // Map<ProductId-UomId, { ... }>
-            const aggregatedLines = new Map();
-
-            for (const line of userData.lines) {
-                const uomId = line.uom?.id;
-                if (!uomId) continue; // Skip if no UOM?
-
-                const key = `${line.product_id}-${uomId}`;
-
-                if (!aggregatedLines.has(key)) {
-                    aggregatedLines.set(key, {
-                        ...line,
-                        qty: 0,
-                    });
-                }
-                aggregatedLines.get(key).qty += line.qty;
-            }
-
-            // B. Convert to format for createInventoryAdjustment (via LINE_IDS logic)
-            // We can't use processProductItems directly because it mimics the Table structure.
-            // We will build LINE_IDS manually here.
-
-            const LINE_IDS = [];
-            for (const item of aggregatedLines.values()) {
-                LINE_IDS.push({
-                    product_tmpl_id: parseInt(item.product_id),
-                    product_uom_id: item.uom.id,
-                    product_qty: item.qty,
-                    location_id: parseInt(warehouseId), // Stock Location
-                });
-            }
-
-            if (LINE_IDS.length === 0) continue;
-
-            // C. Create Inventory
-            const inventoryName = `${generateCycleCountName()} (${
-                userData.user.name
-            })`;
-            const now = new Date(); // Use current time for date fields
-            const dateStr = now.toISOString().slice(0, 19).replace("T", " ");
-
-            const inventoryData = {
-                name: inventoryName,
-                location_id: parseInt(warehouseId),
-                filter: "partial",
-                date: dateStr,
-                accounting_date: dateStr,
-                line_ids: LINE_IDS,
-            };
-
-            const odooResult = await createInventoryAdjustment(
-                odoo,
-                inventoryData
-            );
-
-            // D. Save Document & Update States
-            // Get product IDs that were successfully posted
-            const successProductIds = odooResult.data?.success || [];
-
-            if (successProductIds.length > 0) {
-                const documentData = {
-                    name: inventoryName,
-                    warehouse_id: parseInt(warehouseId),
-                    warehouse_name: warehouse.name,
-                    inventory_id: odooResult.inventory_id,
-                    state: "POST",
-                    userId: parseInt(session.user.id), // Current Admin ID (who triggered upload)
-                };
-
-                const document = await createDocumentRecord(documentData);
-
-                // Update ONLY the lines that belong to this user and product
-                // BUT wait, `updateProductStates` updates by `product_id`.
-                // If User A and User B both scanned Product X.
-                // Product X is Unposted.
-                // We posted User A's part.
-                // IMPORTANT: In `product` table (database), are these separate rows?
-                // Yes. `actions.js` -> `prisma.product.findMany`.
-                // Each scan is a row in `product` table?
-                // Let's check `fetchAndGroupUnpostedProducts`.
-                // products = await prisma.product.findMany({ where: { state: "CONFIRMED" } ... })
-                // Yes, `product` table holds the individual scans?
-                // Wait, table name is `product`? That's weird naming for "Scanned Item".
-                // Yes, existing code: `prisma.product.updateMany({ where: { product_id: { in: successProductIds } } })`.
-                // WAIT. `product_id` in `where` clause refers to the Odoo Product ID column in the `product` table?
-                // `product` table in Prisma seems to be "ScannedItem".
-                // Schema: `product` table has `product_id` (Odoo ID), `session_id`, `user_id` (via session).
-
-                // CRITICAL ISSUE:
-                // `updateProductStates` uses `product_id: { in: successProductIds }`.
-                // This updates ALL scans of Product X to POSTED, regardless of who scanned it!
-                // If User A's inventory is posted, User B's scan of Product X will ALSO be marked as POSTED!
-                // Even though User B's inventory hasn't been created yet.
-
-                // We must fix `updateProductStates` or write a specific update query here.
-                // We need to update only records where:
-                // 1. product_id is in success list
-                // 2. session.user.id == userId (the user we are processing)
-
-                // Let's implement specific update logic here.
-
-                const updated = await prisma.product.updateMany({
-                    where: {
-                        product_id: { in: successProductIds },
-                        state: "CONFIRMED",
-                        session: {
-                            user: {
-                                id: userId,
-                            },
-                        },
-                    },
-                    data: {
-                        document_id: document.id,
-                        state: "POST",
-                    },
-                });
-
-                results.successCount++;
-                results.details.push(
-                    `Created ${inventoryName}: ${updated.count} items.`
-                );
-            } else {
-                results.errorCount++;
-                results.details.push(
-                    `Failed ${inventoryName}: No products success.`
-                );
-            }
-        } catch (e) {
-            console.error(`Error processing user ${userData.user.name}:`, e);
-            results.errorCount++;
-            results.details.push(`Error ${userData.user.name}: ${e.message}`);
-        }
-    }
-
-    revalidatePath("/admin/unposted");
-
-    return {
-        success: true,
-        message: `Daily Opname Processed. Success: ${results.successCount}, Error: ${results.errorCount}`,
-        details: results.details,
-    };
+    // 3. Call actionPostToOdoo with isDailyOpname=true
+    return await actionPostToOdoo({ data: dataToPost, isDailyOpname: true });
 };
