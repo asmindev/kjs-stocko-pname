@@ -57,7 +57,7 @@ export const getLeaders = async (odoo) => {
     }
 };
 
-export const getTotalProductsCount = async () => {
+export const getTotalProductsCount = async (warehouseId = null) => {
     // get total products count from odoo, count with odoosession
     try {
         const session = await getServerSession(authOptions);
@@ -67,11 +67,28 @@ export const getTotalProductsCount = async () => {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
-        const count = await odoo.client.searchCount("product.product", []);
-        console.log("Total products count from Odoo:", count);
+        if (warehouseId) {
+            const count = await odoo.client.execute(
+                "custom.stock.inventory",
+                "get_warehouse_product_count",
+                [[parseInt(warehouseId)]],
+            );
+            console.log(
+                `Total products count from Odoo (Warehouse ${warehouseId}):`,
+                count,
+            );
+            return count;
+        }
+
+        const count = await odoo.client.execute(
+            "custom.stock.inventory",
+            "get_warehouse_product_count",
+            [[]],
+        );
+        console.log("Total products count from Odoo (All):", count);
         return count;
     } catch (error) {
         console.error("Error fetching total products count:", error);

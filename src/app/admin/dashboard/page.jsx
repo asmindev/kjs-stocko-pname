@@ -33,7 +33,7 @@ export default async function page({ searchParams }) {
 
     const odoo = await OdooSessionManager.getClient(
         session.user.id,
-        session.user.email
+        session.user.email,
     );
 
     // Conditional fetching based on active tab
@@ -45,7 +45,7 @@ export default async function page({ searchParams }) {
             odoo.getWarehouses(),
             odoo.getInventoryLocations(),
             activeTab === "leader" ? getLeaders(odoo) : Promise.resolve([]),
-            getTotalProductsCount(),
+            getTotalProductsCount(warehouse),
         ]);
 
     const warehouses = warehousesData.warehouses;
@@ -67,7 +67,7 @@ export default async function page({ searchParams }) {
         where.session_id = { in: sessionIds };
 
         selectedWarehouse = warehouses.find(
-            (w) => w.lot_stock_id[0] === parseInt(warehouse)
+            (w) => w.lot_stock_id[0] === parseInt(warehouse),
         );
     } else if (leader) {
         selectedLeader = leaders.find((l) => l.id === parseInt(leader));
@@ -128,7 +128,7 @@ export default async function page({ searchParams }) {
     let targetLocations = [];
     if (selectedWarehouse) {
         targetLocations = locations.filter(
-            (l) => l.stock_location_id[0] === selectedWarehouse.lot_stock_id[0]
+            (l) => l.stock_location_id[0] === selectedWarehouse.lot_stock_id[0],
         );
     } else if (selectedLeader) {
         const leaderLocIds =
@@ -140,7 +140,7 @@ export default async function page({ searchParams }) {
         .map((l) => l.location_name)
         .filter(Boolean);
     const locationsWithoutProducts = targetLocations.filter(
-        (l) => !dbLocationNames.includes(l.display_name)
+        (l) => !dbLocationNames.includes(l.display_name),
     ).length;
 
     const stats = {
