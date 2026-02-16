@@ -18,12 +18,12 @@ async function getWarehouseData(odoo, warehouseId) {
         const [warehouse] = await odoo.client.searchRead(
             "stock.warehouse",
             [["lot_stock_id", "=", warehouseId]],
-            { fields: ["code", "name", "lot_stock_id"] }
+            { fields: ["code", "name", "lot_stock_id"] },
         );
 
         if (!warehouse) {
             throw new Error(
-                `Warehouse dengan ID ${warehouseId} tidak ditemukan`
+                `Warehouse dengan ID ${warehouseId} tidak ditemukan`,
             );
         }
 
@@ -112,12 +112,12 @@ async function createInventoryAdjustment(odoo, inventoryData) {
         }
 
         console.log(
-            `Bulk inventory created: ${result.name} with ${result.lines_count} lines`
+            `Bulk inventory created: ${result.name} with ${result.lines_count} lines`,
         );
         return result;
     } catch (error) {
         throw new Error(
-            `Gagal membuat inventory adjustment di Odoo: ${error.message}`
+            `Gagal membuat inventory adjustment di Odoo: ${error.message}`,
         );
     }
 }
@@ -133,7 +133,7 @@ async function createDocumentRecord(documentData) {
         return document;
     } catch (error) {
         throw new Error(
-            `Gagal menyimpan document ke database: ${error.message}`
+            `Gagal menyimpan document ke database: ${error.message}`,
         );
     }
 }
@@ -201,7 +201,7 @@ export const actionPostToOdoo = async ({ data, isDailyOpname = false }) => {
         const session = await getServerSession(authOptions);
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // Get warehouse data
@@ -268,6 +268,20 @@ export const actionPostToOdoo = async ({ data, isDailyOpname = false }) => {
             userId: parseInt(session.user.id),
         };
         const document = await createDocumentRecord(documentData);
+
+        // Update session records with inventory_id for better tracking
+        const relevantSessionIds = [
+            ...new Set(data.map((item) => item.session_id).filter(Boolean)),
+        ];
+        if (relevantSessionIds.length > 0) {
+            await prisma.session.updateMany({
+                where: { id: { in: relevantSessionIds } },
+                data: { inventory_id: odooResult.inventory_id },
+            });
+            console.log(
+                `Updated ${relevantSessionIds.length} sessions with inventory_id ${odooResult.inventory_id}`,
+            );
+        }
 
         // Update product states - ONLY for successfully processed products
         await updateProductStates(successProductIds, document.id);

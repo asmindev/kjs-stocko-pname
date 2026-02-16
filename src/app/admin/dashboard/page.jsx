@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { OdooSessionManager } from "@/lib/sessionManager";
 import { getServerSession } from "next-auth/next";
 import Dashboard from "./components/dashboard-page";
-import { getLeaders, getTotalProductsCount } from "./services/actions";
+import {
+    getAllInventoryIdsByType,
+    getLeaders,
+    getTotalProductsCount,
+} from "./services/actions";
 
 export default async function page({ searchParams }) {
     const session = await getServerSession(authOptions);
@@ -17,6 +21,7 @@ export default async function page({ searchParams }) {
     }
 
     const {
+        type = "cycle",
         warehouse,
         leader,
         tab,
@@ -45,7 +50,7 @@ export default async function page({ searchParams }) {
             odoo.getWarehouses(),
             odoo.getInventoryLocations(),
             activeTab === "leader" ? getLeaders(odoo) : Promise.resolve([]),
-            getTotalProductsCount(warehouse),
+            getTotalProductsCount(warehouse, type),
         ]);
 
     const warehouses = warehousesData.warehouses;
@@ -56,15 +61,79 @@ export default async function page({ searchParams }) {
     let selectedWarehouse = null;
     let selectedLeader = null;
 
+    // === TYPE FILTER STRATEGY ===
+    // 1. Query Odoo for ALL inventory IDs of the chosen type (cycle vs annual)
+    // 2. Find local Documents whose inventory_id matches
+    // 3. Products WITH matching document_id → filtered correctly
+    // 4. Products WITHOUT document_id → legacy data, shown on both tabs
+
+    // Step 1: Get ALL Odoo inventory IDs for this type
+    const allOdooInventoryIds = await getAllInventoryIdsByType(odoo, type);
+    console.log(
+        `[DASHBOARD] type=${type}, Odoo inventories found: ${allOdooInventoryIds.length}`,
+    );
+
     if (warehouse) {
-        // Fetch session IDs first to avoid ambiguous column error in groupBy (Product.state vs Session.state)
         const warehouseSessions = await prisma.session.findMany({
             where: { warehouse_id: parseInt(warehouse) },
             select: { id: true },
         });
         const sessionIds = warehouseSessions.map((s) => s.id);
 
-        where.session_id = { in: sessionIds };
+        // Find documents for this warehouse that match the type
+        const matchingDocs = await prisma.document.findMany({
+            where: {
+                warehouse_id: parseInt(warehouse),
+                inventory_id: { in: allOdooInventoryIds },
+            },
+            select: { id: true },
+        });
+        const matchingDocIds = matchingDocs.map((d) => d.id);
+
+        // Also find doc IDs for this warehouse that DON'T match the type
+        const nonMatchingDocs = await prisma.document.findMany({
+            where: {
+                warehouse_id: parseInt(warehouse),
+                inventory_id: { notIn: allOdooInventoryIds, not: null },
+            },
+            select: { id: true },
+        });
+        const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
+
+        console.log(
+            `[DASHBOARD] warehouse=${warehouse}, sessions: ${sessionIds.length}, matching docs: ${matchingDocIds.length}, non-matching docs: ${nonMatchingDocIds.length}`,
+        );
+
+        // Products that match:
+        // - Products linked to a matching document (correct type)
+        // - For CYCLE: Products with NO document_id but state is DRAFT/CONFIRMED (active unposted work)
+        // - For ANNUAL/STANDARD: Products with NO document_id (legacy data + unposted annual if any)
+        const orConditions = [{ document_id: { in: matchingDocIds } }];
+
+        if (type === "cycle") {
+            // For cycle: include unposted active work
+            orConditions.push({
+                document_id: null,
+                state: { in: ["DRAFT", "CONFIRMED"] },
+            });
+        } else {
+            // For annual: include all legacy (POSTED) products without documents
+            orConditions.push({
+                document_id: null,
+                state: "POST",
+            });
+        }
+
+        where.AND = [
+            { session_id: { in: sessionIds } },
+            { OR: orConditions },
+            // Exclude products linked to documents of the WRONG type
+            {
+                NOT: {
+                    document_id: { in: nonMatchingDocIds },
+                },
+            },
+        ];
 
         selectedWarehouse = warehouses.find(
             (w) => w.lot_stock_id[0] === parseInt(warehouse),
@@ -72,20 +141,103 @@ export default async function page({ searchParams }) {
     } else if (leader) {
         selectedLeader = leaders.find((l) => l.id === parseInt(leader));
         if (selectedLeader?.inventory_product_location_ids?.length) {
-            where.location_id = {
-                in: selectedLeader.inventory_product_location_ids,
-            };
+            const leaderLocationIds =
+                selectedLeader.inventory_product_location_ids;
+
+            // Find documents for products in this leader's locations that match the type
+            const matchingDocs = await prisma.document.findMany({
+                where: {
+                    inventory_id: { in: allOdooInventoryIds },
+                    products: {
+                        some: { location_id: { in: leaderLocationIds } },
+                    },
+                },
+                select: { id: true },
+            });
+            const matchingDocIds = matchingDocs.map((d) => d.id);
+
+            const nonMatchingDocs = await prisma.document.findMany({
+                where: {
+                    inventory_id: { notIn: allOdooInventoryIds, not: null },
+                    products: {
+                        some: { location_id: { in: leaderLocationIds } },
+                    },
+                },
+                select: { id: true },
+            });
+            const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
+
+            const orConditions = [{ document_id: { in: matchingDocIds } }];
+
+            if (type === "cycle") {
+                orConditions.push({
+                    document_id: null,
+                    state: { in: ["DRAFT", "CONFIRMED"] },
+                });
+            } else {
+                orConditions.push({
+                    document_id: null,
+                    state: "POST",
+                });
+            }
+
+            where.location_id = { in: leaderLocationIds };
+            where.OR = orConditions;
+
+            if (nonMatchingDocIds.length > 0) {
+                where.NOT = { document_id: { in: nonMatchingDocIds } };
+            }
         } else if (selectedLeader) {
-            // Leader has no locations, ensure no products match
             where.id = -1;
+        }
+    } else {
+        // Global Type Filter (when no warehouse/leader selected)
+        const matchingDocs = await prisma.document.findMany({
+            where: { inventory_id: { in: allOdooInventoryIds } },
+            select: { id: true },
+        });
+        const matchingDocIds = matchingDocs.map((d) => d.id);
+
+        const nonMatchingDocs = await prisma.document.findMany({
+            where: { inventory_id: { notIn: allOdooInventoryIds, not: null } },
+            select: { id: true },
+        });
+        const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
+
+        const orConditions = [{ document_id: { in: matchingDocIds } }];
+
+        if (type === "cycle") {
+            orConditions.push({
+                document_id: null,
+                state: { in: ["DRAFT", "CONFIRMED"] },
+            });
+        } else {
+            orConditions.push({
+                document_id: null,
+                state: "POST",
+            });
+        }
+
+        where.OR = orConditions;
+
+        if (nonMatchingDocIds.length > 0) {
+            where.NOT = { document_id: { in: nonMatchingDocIds } };
         }
     }
 
     if (search) {
-        where.OR = [
-            { name: { contains: search, mode: "insensitive" } },
-            { barcode: { contains: search, mode: "insensitive" } },
-        ];
+        // Preserve existing type filter and add search on top
+        const existingConditions = { ...where };
+        const searchCondition = {
+            OR: [
+                { name: { contains: search, mode: "insensitive" } },
+                { barcode: { contains: search, mode: "insensitive" } },
+            ],
+        };
+        // Merge: keep all existing filters AND add search
+        Object.assign(where, {
+            AND: [...(where.AND || [existingConditions]), searchCondition],
+        });
     }
 
     // Aggregations matching useDashboardData / useLeaderData

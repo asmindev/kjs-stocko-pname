@@ -36,12 +36,20 @@ export default function Dashboard({
     const searchParams = useSearchParams();
 
     // Handlers for interactions that change URL params
+    const handleTypeChange = (type) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("type", type);
+        params.delete("page"); // Reset page when type changes
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
     const handleWarehouseChange = (warehouse) => {
         const params = new URLSearchParams(searchParams);
         if (warehouse) {
             params.set("warehouse", warehouse.lot_stock_id[0]);
             params.delete("leader"); // Switch mode
             params.delete("page");
+            // Preserve type if it exists
         } else {
             params.delete("warehouse");
         }
@@ -103,19 +111,47 @@ export default function Dashboard({
             ? "leader"
             : "warehouse";
 
+    const activeType = searchParams.get("type") || "cycle";
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                    <h1 className="text-3xl font-bold">Dashboard</h1>
+                </div>
+
+                {/* Type Selection Tabs (Cycle vs Annual) */}
+                <Tabs
+                    value={activeType}
+                    onValueChange={handleTypeChange}
+                    className="w-full"
+                >
+                    <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 h-12">
+                        <TabsTrigger
+                            value="cycle"
+                            className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        >
+                            Opname Cycle (Harian)
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="annual"
+                            className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        >
+                            Opname Tahunan
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
             </div>
 
             {/* Tabs */}
             <Tabs
                 value={activeTab}
                 onValueChange={(val) => {
-                    // Simple router push with tab parameter
-                    router.push(`${pathname}?tab=${val}`);
+                    // Simple router push with tab parameter, preserve current type
+                    const params = new URLSearchParams(searchParams);
+                    params.set("tab", val);
+                    router.push(`${pathname}?${params.toString()}`);
                 }}
                 className="w-full"
             >
@@ -154,51 +190,55 @@ export default function Dashboard({
                         selectedWarehouse={selectedWarehouse}
                     />
 
-                    {paginatedProducts && paginatedProducts.length > 0 && (
-                        <div className="grid gap-6">
-                            <Tabs defaultValue="produk" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="produk">
-                                        Produk
-                                    </TabsTrigger>
-                                    <TabsTrigger value="lokasi">
-                                        Lokasi
-                                    </TabsTrigger>
-                                </TabsList>
-                                <TabsContent
-                                    value="produk"
-                                    className="space-y-6"
-                                >
-                                    {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
-                                    <ProductsTable
-                                        filteredProducts={paginatedProducts}
-                                        selectedWarehouse={selectedWarehouse}
-                                        pagination={pagination}
-                                    />
-                                </TabsContent>
-                                <TabsContent
-                                    value="lokasi"
-                                    className="space-y-6"
-                                >
-                                    <LocationsTable
-                                        products={paginatedProducts} // Note: This table shows locations of *paginated* products only?
-                                        // LocationsTable usually aggregates products. If only 20 products, table is useless.
-                                        // Ideally LocationsTable should use serverStats.locationCount!
-                                        // I need to check LocationsTable implementation.
-                                        title="Data Lokasi Warehouse"
-                                        description={
-                                            selectedWarehouse
-                                                ? `Daftar lokasi di ${selectedWarehouse.name}`
-                                                : "Daftar semua lokasi"
-                                        }
-                                        serverLocationCounts={
-                                            serverStats?.locationCount
-                                        } // Pass pre-aggregated data
-                                    />
-                                </TabsContent>
-                            </Tabs>
-                        </div>
-                    )}
+                    {selectedWarehouse &&
+                        paginatedProducts &&
+                        paginatedProducts.length > 0 && (
+                            <div className="grid gap-6">
+                                <Tabs defaultValue="produk" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="produk">
+                                            Produk
+                                        </TabsTrigger>
+                                        <TabsTrigger value="lokasi">
+                                            Lokasi
+                                        </TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent
+                                        value="produk"
+                                        className="space-y-6"
+                                    >
+                                        {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
+                                        <ProductsTable
+                                            filteredProducts={paginatedProducts}
+                                            selectedWarehouse={
+                                                selectedWarehouse
+                                            }
+                                            pagination={pagination}
+                                        />
+                                    </TabsContent>
+                                    <TabsContent
+                                        value="lokasi"
+                                        className="space-y-6"
+                                    >
+                                        <LocationsTable
+                                            products={paginatedProducts} // Note: This table shows locations of *paginated* products only?
+                                            // LocationsTable usually aggregates products. If only 20 products, table is useless.
+                                            // Ideally LocationsTable should use serverStats.locationCount!
+                                            // I need to check LocationsTable implementation.
+                                            title="Data Lokasi Warehouse"
+                                            description={
+                                                selectedWarehouse
+                                                    ? `Daftar lokasi di ${selectedWarehouse.name}`
+                                                    : "Daftar semua lokasi"
+                                            }
+                                            serverLocationCounts={
+                                                serverStats?.locationCount
+                                            } // Pass pre-aggregated data
+                                        />
+                                    </TabsContent>
+                                </Tabs>
+                            </div>
+                        )}
 
                     {selectedWarehouse &&
                         (!paginatedProducts ||
@@ -236,53 +276,57 @@ export default function Dashboard({
                         selectedLeader={selectedLeader}
                     />
 
-                    {paginatedProducts && paginatedProducts.length > 0 && (
-                        <div className="grid gap-6">
-                            <Tabs defaultValue="produk" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="produk">
-                                        Produk
-                                    </TabsTrigger>
-                                    <TabsTrigger value="lokasi">
-                                        Lokasi
-                                    </TabsTrigger>
-                                </TabsList>
-                                <TabsContent
-                                    value="produk"
-                                    className="space-y-6"
-                                >
-                                    <ProductsTable
-                                        filteredProducts={paginatedProducts}
-                                        selectedWarehouse={selectedWarehouse} // Or leader context? Table generic?
-                                        title="Data Produk Leader"
-                                        pagination={pagination}
-                                        description={
-                                            selectedLeader
-                                                ? `Daftar produk dalam tanggung jawab ${selectedLeader.name}`
-                                                : "Daftar semua produk leader"
-                                        }
-                                    />
-                                </TabsContent>
-                                <TabsContent
-                                    value="lokasi"
-                                    className="space-y-6"
-                                >
-                                    <LocationsTable
-                                        products={paginatedProducts}
-                                        serverLocationCounts={
-                                            serverStats?.locationCount
-                                        }
-                                        title="Data Lokasi Leader"
-                                        description={
-                                            selectedLeader
-                                                ? `Daftar lokasi dalam tanggung jawab ${selectedLeader.name}`
-                                                : "Daftar semua lokasi leader"
-                                        }
-                                    />
-                                </TabsContent>
-                            </Tabs>
-                        </div>
-                    )}
+                    {selectedLeader &&
+                        paginatedProducts &&
+                        paginatedProducts.length > 0 && (
+                            <div className="grid gap-6">
+                                <Tabs defaultValue="produk" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="produk">
+                                            Produk
+                                        </TabsTrigger>
+                                        <TabsTrigger value="lokasi">
+                                            Lokasi
+                                        </TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent
+                                        value="produk"
+                                        className="space-y-6"
+                                    >
+                                        <ProductsTable
+                                            filteredProducts={paginatedProducts}
+                                            selectedWarehouse={
+                                                selectedWarehouse
+                                            } // Or leader context? Table generic?
+                                            title="Data Produk Leader"
+                                            pagination={pagination}
+                                            description={
+                                                selectedLeader
+                                                    ? `Daftar produk dalam tanggung jawab ${selectedLeader.name}`
+                                                    : "Daftar semua produk leader"
+                                            }
+                                        />
+                                    </TabsContent>
+                                    <TabsContent
+                                        value="lokasi"
+                                        className="space-y-6"
+                                    >
+                                        <LocationsTable
+                                            products={paginatedProducts}
+                                            serverLocationCounts={
+                                                serverStats?.locationCount
+                                            }
+                                            title="Data Lokasi Leader"
+                                            description={
+                                                selectedLeader
+                                                    ? `Daftar lokasi dalam tanggung jawab ${selectedLeader.name}`
+                                                    : "Daftar semua lokasi leader"
+                                            }
+                                        />
+                                    </TabsContent>
+                                </Tabs>
+                            </div>
+                        )}
 
                     {selectedLeader &&
                         (!paginatedProducts ||
