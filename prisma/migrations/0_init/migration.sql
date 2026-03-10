@@ -165,4 +165,3 @@ ALTER TABLE "public"."Product" ADD CONSTRAINT "Product_document_id_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "public"."uoms" ADD CONSTRAINT "uoms_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."uom_categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-

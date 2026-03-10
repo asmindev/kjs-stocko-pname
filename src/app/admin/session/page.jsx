@@ -70,6 +70,26 @@ export default async function SessionPage({ searchParams }) {
                                   },
                               },
                           },
+                          {
+                              products: {
+                                  some: {
+                                      OR: [
+                                          {
+                                              barcode: {
+                                                  contains: searchTerm,
+                                                  mode: "insensitive",
+                                              },
+                                          },
+                                          {
+                                              name: {
+                                                  contains: searchTerm,
+                                                  mode: "insensitive",
+                                              },
+                                          },
+                                      ],
+                                  },
+                              },
+                          },
                       ],
                   }
                 : {},
