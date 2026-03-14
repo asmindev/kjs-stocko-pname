@@ -14,7 +14,7 @@ export async function GET(req) {
         if (!warehouseId) {
             return NextResponse.json(
                 { error: "warehouseId parameter is required" },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -27,6 +27,7 @@ export async function GET(req) {
                     {
                         session: {
                             warehouse_id: parseInt(warehouseId),
+                            state: "DRAFT",
                         },
                     },
                     {
@@ -59,14 +60,14 @@ export async function GET(req) {
         });
 
         console.log(
-            `Found ${products.length} products for warehouse ${warehouseId}`
+            `Found ${products.length} products for warehouse ${warehouseId}`,
         );
 
         // ===== FETCH BRANDS FROM ODOO =====
         const session = await getServerSession(authOptions);
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // Get unique barcodes
@@ -75,7 +76,7 @@ export async function GET(req) {
         ];
 
         console.log(
-            `Fetching brands for ${barcodes.length} unique barcodes...`
+            `Fetching brands for ${barcodes.length} unique barcodes...`,
         );
 
         // Bulk fetch product templates from Odoo by barcode
@@ -86,7 +87,7 @@ export async function GET(req) {
                 [["barcode", "in", barcodes]],
                 {
                     fields: ["barcode", "brand_id"],
-                }
+                },
             );
 
             console.log(`Found ${productTemplates.length} products in Odoo`);
@@ -120,7 +121,7 @@ export async function GET(req) {
                 console.log(
                     "Error mapping product to worksheet data:",
                     error,
-                    product
+                    product,
                 );
                 throw error;
             }
@@ -251,7 +252,7 @@ export async function GET(req) {
         console.log("Error exporting to Excel:", error);
         return NextResponse.json(
             { error: "Failed to export", details: error.message },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }
