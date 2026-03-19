@@ -70,12 +70,19 @@ function processProductItems(data, stockLocationId, results) {
             if (item.needsConversion) {
                 UOM_ID = item.targetUom.id;
             }
+            console.log({
+                location_id: item.location_id,
+                locationId: item.locationId,
+                stockLocationId,
+            });
+            // Perlu cek location_id ini dari inventory product location atau warehouse location, seharusnya dari warehouse location karena ini yang dipakai untuk inventory adjustment
             const lineData = {
                 product_tmpl_id: product_tmpl_id, // Send template ID only
                 product_uom_id: UOM_ID,
                 product_qty: qty, // Ambil dari item.qty
                 location_id: stockLocationId,
             };
+            console.log(lineData);
 
             LINE_IDS.push(lineData);
 
