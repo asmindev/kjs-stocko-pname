@@ -15,7 +15,7 @@ export default async function Page() {
         // Ambil Odoo client dari session manager (akan load dari database)
         const client = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
             // Tidak perlu password karena sudah tersimpan di database
         );
 

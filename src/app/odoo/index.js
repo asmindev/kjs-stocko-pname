@@ -56,7 +56,7 @@ class Client {
                         "role_opname_react",
                     ],
                     limit: 1,
-                }
+                },
             );
 
             if (userInfo.length === 0) {
@@ -91,7 +91,7 @@ class Client {
             const product = await this.client.searchRead(
                 "product.template",
                 domain,
-                options
+                options,
             );
 
             if (product.length === 0) {
@@ -117,7 +117,7 @@ class Client {
             const warehouses = await this.client.searchRead(
                 "stock.warehouse",
                 domain,
-                options
+                options,
             );
             return { warehouses };
         } catch (error) {
@@ -141,13 +141,32 @@ class Client {
             const locations = await this.client.searchRead(
                 "inventory.product.locations",
                 domain,
-                options
+                options,
             );
 
             return { locations };
         } catch (error) {
             console.error("Error fetching inventory locations:", error);
             return { error: error.message };
+        }
+    }
+
+    async getResPartners({ searchQuery = "", limit = 50 } = {}) {
+        try {
+            await this.client.authenticate();
+            const partners = await this.client.execute(
+                "custom.stock.inventory",
+                "get_all_res_partners",
+                [],
+                {
+                    search_query: searchQuery || false,
+                    limit,
+                },
+            );
+            return { partners: partners || [] };
+        } catch (error) {
+            console.error("Error fetching partners:", error);
+            return { error: error.message, partners: [] };
         }
     }
 }

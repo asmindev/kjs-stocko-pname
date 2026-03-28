@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/route";
-import { uploadToOdoo } from "./actions";
 import { OdooSessionManager } from "@/lib/sessionManager";
 
 export async function POST(request) {
@@ -12,7 +11,7 @@ export async function POST(request) {
         if (!session) {
             return Response.json(
                 { success: false, error: "Unauthorized. Please login first." },
-                { status: 401 }
+                { status: 401 },
             );
         }
 
@@ -29,13 +28,13 @@ export async function POST(request) {
 
             const odoo = await OdooSessionManager.getClient(
                 session.user.id,
-                session.user.email
+                session.user.email,
             );
             // get stock.location from odoo
             const [location] = await odoo.client.read(
                 "stock.location",
                 [parseInt(warehouse)],
-                ["location_id"]
+                ["location_id"],
             );
 
             // sequence format: LOCATION/YY/MM/DD HH/MM
@@ -56,29 +55,37 @@ export async function POST(request) {
                 },
             });
 
-            const results = [];
+            const errors = [];
             let successCount = 0;
             let failedCount = 0;
 
             // Process each product
             for (const product of products) {
                 try {
+                    const parsedUomId = product.uom_id
+                        ? parseInt(product.uom_id)
+                        : null;
                     const productData = {
                         barcode: product.barcode,
                         name: product.name || "",
                         product_id: product.product_id || null, // ID dari Odoo
-                        uom_id: product.uom_id
-                            ? parseInt(product.uom_id)
-                            : null,
                         uom_name: product.uom_name || null,
                         quantity: product.quantity || 1,
-                        session_id: scanSession.id,
-                        userId: userId,
                         location_id: product.location_id
                             ? parseInt(product.location_id)
                             : null,
                         location_name: product.location_name || null,
+                        res_partner_id: product.res_partner_id
+                            ? parseInt(product.res_partner_id)
+                            : null,
+                        res_partner_name: product.res_partner_name || null,
+                        session: { connect: { id: scanSession.id } },
+                        User: { connect: { id: userId } },
                     };
+
+                    if (parsedUomId) {
+                        productData.uom = { connect: { id: parsedUomId } };
+                    }
 
                     await prisma.product.create({
                         data: productData,
@@ -87,19 +94,29 @@ export async function POST(request) {
                 } catch (error) {
                     console.error(
                         `Error creating product for barcode ${product.barcode}:`,
-                        error
+                        error,
                     );
+                    errors.push({
+                        barcode: product.barcode,
+                        error: error.message,
+                    });
                     failedCount++;
                 }
             }
-            return Response.json({
-                success: successCount > 0,
-                successCount,
-                failedCount,
-                sessionId: scanSession.id,
-                warehouseId: parseInt(warehouse),
-                message: `${successCount} produk berhasil disimpan di gudang, ${failedCount} gagal`,
-            });
+
+            const success = successCount > 0;
+            return Response.json(
+                {
+                    success,
+                    successCount,
+                    failedCount,
+                    errors,
+                    sessionId: scanSession.id,
+                    warehouseId: parseInt(warehouse),
+                    message: `${successCount} produk berhasil disimpan di gudang, ${failedCount} gagal`,
+                },
+                { status: success ? 200 : 400 },
+            );
         }
         // Check if data contains products array (legacy batch submission)
         else if (data.products && Array.isArray(data.products)) {
@@ -115,22 +132,35 @@ export async function POST(request) {
             });
 
             const results = [];
+            const errors = [];
             let successCount = 0;
             let failedCount = 0;
 
             // Process each product
             for (const product of products) {
                 try {
+                    const parsedUomId = product.uom_id
+                        ? parseInt(product.uom_id)
+                        : null;
                     const createdProduct = await prisma.product.create({
                         data: {
                             barcode: product.barcode,
                             name: product.name || "",
-                            uom_id: product.uom_id
-                                ? parseInt(product.uom_id)
+                            uom_name: product.uom_name || null,
+                            location_id: product.location_id
+                                ? parseInt(product.location_id)
                                 : null,
+                            location_name: product.location_name || null,
+                            res_partner_id: product.res_partner_id
+                                ? parseInt(product.res_partner_id)
+                                : null,
+                            res_partner_name: product.res_partner_name || null,
                             quantity: product.quantity || 1,
-                            session_id: scanSession.id,
-                            userId: userId,
+                            session: { connect: { id: scanSession.id } },
+                            User: { connect: { id: userId } },
+                            ...(parsedUomId
+                                ? { uom: { connect: { id: parsedUomId } } }
+                                : {}),
                         },
                     });
 
@@ -143,25 +173,34 @@ export async function POST(request) {
                 } catch (error) {
                     console.error(
                         `Error creating product for barcode ${product.barcode}:`,
-                        error
+                        error,
                     );
                     results.push({
                         success: false,
                         error: error.message,
                         originalData: product,
                     });
+                    errors.push({
+                        barcode: product.barcode,
+                        error: error.message,
+                    });
                     failedCount++;
                 }
             }
 
-            return Response.json({
-                success: successCount > 0,
-                successCount,
-                failedCount,
-                sessionId: scanSession.id,
-                results,
-                message: `${successCount} produk berhasil disimpan, ${failedCount} gagal`,
-            });
+            const success = successCount > 0;
+            return Response.json(
+                {
+                    success,
+                    successCount,
+                    failedCount,
+                    errors,
+                    sessionId: scanSession.id,
+                    results,
+                    message: `${successCount} produk berhasil disimpan, ${failedCount} gagal`,
+                },
+                { status: success ? 200 : 400 },
+            );
         }
     } catch (error) {
         console.error("Error in scan API:", error);
@@ -171,7 +210,7 @@ export async function POST(request) {
                 error: "Failed to process request",
                 details: error.message,
             },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

@@ -35,6 +35,7 @@ import {
 import { useProductSearch } from "../../../scan/hooks/useProductSearch";
 import UomSelect from "../../../scan/components/UomSelect";
 import LocationSelect from "../../../scan/components/LocationSelect";
+import OwnerSelect from "../../../scan/components/OwnerSelect";
 
 export default function EditSession({
     sessionData,
@@ -58,6 +59,8 @@ export default function EditSession({
                     uom_name: product.uom_name || "",
                     location_id: product.location_id || null,
                     location_name: product.location_name || "",
+                    res_partner_id: product.res_partner_id || null,
+                    res_partner_name: product.res_partner_name || "",
                     quantity: product.quantity || 1,
                 })),
             };
@@ -166,7 +169,7 @@ export default function EditSession({
                         Object.keys(initialProductData).length
                     } products (skipped ${
                         Object.keys(initialProductData).length
-                    } API calls)`
+                    } API calls)`,
                 );
             }
         }
@@ -261,7 +264,7 @@ export default function EditSession({
                 description: "Arahkan kamera ke barcode",
             });
         },
-        [handleScanResult]
+        [handleScanResult],
     );
 
     /**
@@ -297,7 +300,13 @@ export default function EditSession({
         // Use watch to get the most up-to-date values
         const lastLocationId = watch(`products.${lastRowIndex}.location_id`);
         const lastLocationName = watch(
-            `products.${lastRowIndex}.location_name`
+            `products.${lastRowIndex}.location_name`,
+        );
+        const lastResPartnerId = watch(
+            `products.${lastRowIndex}.res_partner_id`,
+        );
+        const lastResPartnerName = watch(
+            `products.${lastRowIndex}.res_partner_name`,
         );
 
         // Create new row with copied values from the last row
@@ -309,6 +318,10 @@ export default function EditSession({
                     location_id: lastLocationId,
                     location_name: lastLocationName,
                 }),
+            ...(lastResPartnerId && {
+                res_partner_id: lastResPartnerId,
+                res_partner_name: lastResPartnerName || "",
+            }),
             // Optionally copy UoM data if you want
             // ...(lastRowData?.uom_id && {
             //     uom_id: lastRowData.uom_id,
@@ -332,7 +345,7 @@ export default function EditSession({
                 toast.error("Minimal harus ada 1 produk");
             }
         },
-        [fields.length, remove, clearProductData]
+        [fields.length, remove, clearProductData],
     );
 
     // Handle form submission
@@ -356,10 +369,13 @@ export default function EditSession({
                                 uom_name: product.uom_name,
                                 location_id: product.location_id,
                                 location_name: product.location_name,
+                                res_partner_id: product.res_partner_id || null,
+                                res_partner_name:
+                                    product.res_partner_name || "",
                                 quantity: product.quantity,
                             })),
                         }),
-                    }
+                    },
                 );
 
                 const result = await response.json();
@@ -392,7 +408,7 @@ export default function EditSession({
                 setIsSubmitting(false);
             }
         },
-        [sessionData.id, router]
+        [sessionData.id, router],
     );
 
     // Handle back navigation
@@ -484,6 +500,9 @@ export default function EditSession({
                                         <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                             UoM
                                         </TableHead>
+                                        <TableHead className="min-w-[200px] sm:min-w-[240px] whitespace-nowrap">
+                                            Owner (Opsional)
+                                        </TableHead>
                                         <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
                                             Lokasi Produk
                                         </TableHead>
@@ -526,30 +545,42 @@ export default function EditSession({
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.product_id`
+                                                            `products.${index}.product_id`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.uom_name`
+                                                            `products.${index}.uom_name`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.location_id`
+                                                            `products.${index}.location_id`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.location_name`
+                                                            `products.${index}.location_name`,
+                                                        )}
+                                                    />
+                                                    <input
+                                                        type="hidden"
+                                                        {...register(
+                                                            `products.${index}.res_partner_id`,
+                                                        )}
+                                                    />
+                                                    <input
+                                                        type="hidden"
+                                                        {...register(
+                                                            `products.${index}.res_partner_name`,
                                                         )}
                                                     />
                                                     <Input
                                                         {...register(
-                                                            `products.${index}.barcode`
+                                                            `products.${index}.barcode`,
                                                         )}
                                                         placeholder="Scan/masukkan barcode"
                                                         autoFocus={index === 0}
@@ -558,7 +589,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.barcode &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]
@@ -581,7 +612,7 @@ export default function EditSession({
                                                     <Input
                                                         disabled={true}
                                                         {...register(
-                                                            `products.${index}.name`
+                                                            `products.${index}.name`,
                                                         )}
                                                         placeholder="Nama produk"
                                                         className={cn(
@@ -589,7 +620,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.name &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]
@@ -609,29 +640,60 @@ export default function EditSession({
                                             <TableCell className="px-1">
                                                 <UomSelect
                                                     product={getProductDataForUom(
-                                                        index
+                                                        index,
                                                     )}
                                                     value={
                                                         watch(
-                                                            `products.${index}.uom_id`
+                                                            `products.${index}.uom_id`,
                                                         ) || ""
                                                     }
                                                     onValueChange={(
                                                         value,
-                                                        uomName
+                                                        uomName,
                                                     ) => {
                                                         setValue(
                                                             `products.${index}.uom_id`,
-                                                            value
+                                                            value,
                                                         );
                                                         if (uomName) {
                                                             setValue(
                                                                 `products.${index}.uom_name`,
-                                                                uomName
+                                                                uomName,
                                                             );
                                                         }
                                                     }}
                                                 />
+                                            </TableCell>
+
+                                            {/* Owner Select */}
+                                            <TableCell className="px-1">
+                                                <div className="space-y-1 min-w-[200px] sm:min-w-[240px]">
+                                                    <OwnerSelect
+                                                        value={
+                                                            watch(
+                                                                `products.${index}.res_partner_id`,
+                                                            ) || ""
+                                                        }
+                                                        selectedName={
+                                                            watch(
+                                                                `products.${index}.res_partner_name`,
+                                                            ) || ""
+                                                        }
+                                                        onValueChange={(
+                                                            ownerData,
+                                                        ) => {
+                                                            setValue(
+                                                                `products.${index}.res_partner_id`,
+                                                                ownerData.res_partner_id,
+                                                            );
+                                                            setValue(
+                                                                `products.${index}.res_partner_name`,
+                                                                ownerData.res_partner_name ||
+                                                                    "",
+                                                            );
+                                                        }}
+                                                    />
+                                                </div>
                                             </TableCell>
 
                                             {/* Location Select */}
@@ -639,7 +701,7 @@ export default function EditSession({
                                                 <div className="space-y-1 min-w-[200px] sm:min-w-[250px]">
                                                     <LocationSelect
                                                         value={watch(
-                                                            `products.${index}.location_id`
+                                                            `products.${index}.location_id`,
                                                         )}
                                                         selectedWarehouse={
                                                             sessionData?.warehouse_id
@@ -648,15 +710,15 @@ export default function EditSession({
                                                             inventoryLocations
                                                         }
                                                         onValueChange={(
-                                                            locationData
+                                                            locationData,
                                                         ) => {
                                                             setValue(
                                                                 `products.${index}.location_id`,
-                                                                locationData.location_id
+                                                                locationData.location_id,
                                                             );
                                                             setValue(
                                                                 `products.${index}.location_name`,
-                                                                locationData.location_name
+                                                                locationData.location_name,
                                                             );
                                                         }}
                                                     />
@@ -682,7 +744,7 @@ export default function EditSession({
                                                             `products.${index}.quantity`,
                                                             {
                                                                 valueAsNumber: true,
-                                                            }
+                                                            },
                                                         )}
                                                         type="number"
                                                         min="0.1"
@@ -693,7 +755,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.quantity &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]

@@ -32,6 +32,7 @@ import { useProductSearch } from "../hooks/useProductSearch";
 import { submitProducts } from "../services/product.service";
 import UomSelect from "./UomSelect";
 import LocationSelect from "./LocationSelect";
+import OwnerSelect from "./OwnerSelect";
 
 /**
  * ProductTableForm Component
@@ -54,7 +55,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
         inventoryLocations = [],
         onFormStateChange,
     },
-    ref
+    ref,
 ) {
     const {
         control,
@@ -101,13 +102,13 @@ const ProductTableForm = forwardRef(function ProductTableForm(
             // Trigger search when barcode changes and has minimum length
             if (barcode !== prevBarcode && barcode && barcode.length >= 6) {
                 console.log(
-                    `Barcode changed at index ${index}: "${prevBarcode}" -> "${barcode}"`
+                    `Barcode changed at index ${index}: "${prevBarcode}" -> "${barcode}"`,
                 );
 
                 // If barcode changed and the row already has product data, clear it first
                 if (prevBarcode && currentProduct?.name) {
                     console.log(
-                        `Clearing previous product data for index ${index}`
+                        `Clearing previous product data for index ${index}`,
                     );
                     // Clear all product-related fields when barcode changes
                     setValue(`products.${index}.product_id`, "");
@@ -120,7 +121,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
 
                 // Always perform search when barcode changes (no cache, no search state check)
                 console.log(
-                    `Triggering search for barcode: ${barcode} at index ${index}`
+                    `Triggering search for barcode: ${barcode} at index ${index}`,
                 );
                 performSearch(barcode, index);
             }
@@ -142,7 +143,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                 onRequestScan(rowIndex, handleScanResult);
             }
         },
-        [onRequestScan, handleScanResult]
+        [onRequestScan, handleScanResult],
     );
 
     /**
@@ -180,7 +181,13 @@ const ProductTableForm = forwardRef(function ProductTableForm(
         // Use watch to get the most up-to-date values
         const lastLocationId = watch(`products.${lastRowIndex}.location_id`);
         const lastLocationName = watch(
-            `products.${lastRowIndex}.location_name`
+            `products.${lastRowIndex}.location_name`,
+        );
+        const lastResPartnerId = watch(
+            `products.${lastRowIndex}.res_partner_id`,
+        );
+        const lastResPartnerName = watch(
+            `products.${lastRowIndex}.res_partner_name`,
         );
 
         // Create new row with copied values from the last row
@@ -192,6 +199,10 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                     location_id: lastLocationId,
                     location_name: lastLocationName,
                 }),
+            ...(lastResPartnerId && {
+                res_partner_id: lastResPartnerId,
+                res_partner_name: lastResPartnerName || "",
+            }),
             // Optionally copy UoM data if you want
             // ...(lastRowData?.uom_id && {
             //     uom_id: lastRowData.uom_id,
@@ -216,7 +227,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                 toast.error("Minimal harus ada 1 produk");
             }
         },
-        [fields.length, remove, clearProductData]
+        [fields.length, remove, clearProductData],
     );
 
     /**
@@ -233,7 +244,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                 const result = await submitProducts(
                     data.products,
                     selectedWarehouse,
-                    selectedWarehouseName
+                    selectedWarehouseName,
                 );
 
                 if (result.success) {
@@ -246,7 +257,13 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                 console.error("Submit error:", error);
             }
         },
-        [reset, resetSearchData, onSuccess, selectedWarehouse]
+        [
+            reset,
+            resetSearchData,
+            onSuccess,
+            selectedWarehouse,
+            selectedWarehouseName,
+        ],
     );
 
     /**
@@ -267,7 +284,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
             isSubmitting,
             fieldsLength: fields.length,
         }),
-        [handleSubmit, onSubmit, handleReset, isSubmitting, fields.length]
+        [handleSubmit, onSubmit, handleReset, isSubmitting, fields.length],
     );
 
     // Notify parent of form state changes
@@ -299,6 +316,9 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                 </TableHead>
                                 <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                     UoM
+                                </TableHead>
+                                <TableHead className="min-w-[200px] sm:min-w-[240px] whitespace-nowrap">
+                                    Owner (Opsional)
                                 </TableHead>
                                 <TableHead className="min-w-[200px] sm:min-w-[250px] max-w-fit whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
                                     Lokasi Produk
@@ -339,33 +359,47 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                             <input
                                                 type="hidden"
                                                 {...register(
-                                                    `products.${index}.product_id`
+                                                    `products.${index}.product_id`,
                                                 )}
                                             />
                                             {/* Hidden input for UoM Name */}
                                             <input
                                                 type="hidden"
                                                 {...register(
-                                                    `products.${index}.uom_name`
+                                                    `products.${index}.uom_name`,
                                                 )}
                                             />
                                             {/* Hidden input for Location ID */}
                                             <input
                                                 type="hidden"
                                                 {...register(
-                                                    `products.${index}.location_id`
+                                                    `products.${index}.location_id`,
                                                 )}
                                             />
                                             {/* Hidden input for Location Name */}
                                             <input
                                                 type="hidden"
                                                 {...register(
-                                                    `products.${index}.location_name`
+                                                    `products.${index}.location_name`,
+                                                )}
+                                            />
+                                            {/* Hidden input for Partner ID */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.res_partner_id`,
+                                                )}
+                                            />
+                                            {/* Hidden input for Partner Name */}
+                                            <input
+                                                type="hidden"
+                                                {...register(
+                                                    `products.${index}.res_partner_name`,
                                                 )}
                                             />
                                             <Input
                                                 {...register(
-                                                    `products.${index}.barcode`
+                                                    `products.${index}.barcode`,
                                                 )}
                                                 placeholder="Scan/masukkan barcode"
                                                 autoFocus={index === 0}
@@ -373,7 +407,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     "w-full text-sm",
                                                     errors.products?.[index]
                                                         ?.barcode &&
-                                                        "border-red-500"
+                                                        "border-red-500",
                                                 )}
                                             />
                                             {errors.products?.[index]
@@ -394,14 +428,14 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                             <Input
                                                 disabled={true}
                                                 {...register(
-                                                    `products.${index}.name`
+                                                    `products.${index}.name`,
                                                 )}
                                                 placeholder="Nama produk"
                                                 className={cn(
                                                     "w-full text-sm",
                                                     errors.products?.[index]
                                                         ?.name &&
-                                                        "border-red-500"
+                                                        "border-red-500",
                                                 )}
                                             />
                                             {errors.products?.[index]?.name && (
@@ -421,22 +455,51 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                             product={getProductData(index)}
                                             value={
                                                 watch(
-                                                    `products.${index}.uom_id`
+                                                    `products.${index}.uom_id`,
                                                 ) || ""
                                             }
                                             onValueChange={(value, uomName) => {
                                                 setValue(
                                                     `products.${index}.uom_id`,
-                                                    value
+                                                    value,
                                                 );
                                                 if (uomName) {
                                                     setValue(
                                                         `products.${index}.uom_name`,
-                                                        uomName
+                                                        uomName,
                                                     );
                                                 }
                                             }}
                                         />
+                                    </TableCell>
+
+                                    {/* Owner Select */}
+                                    <TableCell className="px-1">
+                                        <div className="space-y-1 min-w-[200px] sm:min-w-[240px]">
+                                            <OwnerSelect
+                                                value={
+                                                    watch(
+                                                        `products.${index}.res_partner_id`,
+                                                    ) || ""
+                                                }
+                                                selectedName={
+                                                    watch(
+                                                        `products.${index}.res_partner_name`,
+                                                    ) || ""
+                                                }
+                                                onValueChange={(ownerData) => {
+                                                    setValue(
+                                                        `products.${index}.res_partner_id`,
+                                                        ownerData.res_partner_id,
+                                                    );
+                                                    setValue(
+                                                        `products.${index}.res_partner_name`,
+                                                        ownerData.res_partner_name ||
+                                                            "",
+                                                    );
+                                                }}
+                                            />
+                                        </div>
                                     </TableCell>
 
                                     {/* Location Select */}
@@ -444,7 +507,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                         <div className="space-y-1 min-w-[200px] sm:min-w-[250px] max-w-fit">
                                             <LocationSelect
                                                 value={watch(
-                                                    `products.${index}.location_id`
+                                                    `products.${index}.location_id`,
                                                 )}
                                                 selectedWarehouse={
                                                     selectedWarehouse
@@ -453,15 +516,15 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     inventoryLocations
                                                 }
                                                 onValueChange={(
-                                                    locationData
+                                                    locationData,
                                                 ) => {
                                                     setValue(
                                                         `products.${index}.location_id`,
-                                                        locationData.location_id
+                                                        locationData.location_id,
                                                     );
                                                     setValue(
                                                         `products.${index}.location_name`,
-                                                        locationData.location_name
+                                                        locationData.location_name,
                                                     );
                                                 }}
                                             />
@@ -485,7 +548,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     `products.${index}.quantity`,
                                                     {
                                                         valueAsNumber: true,
-                                                    }
+                                                    },
                                                 )}
                                                 type="number"
                                                 min="0.1"
@@ -495,7 +558,7 @@ const ProductTableForm = forwardRef(function ProductTableForm(
                                                     "w-full text-sm text-center",
                                                     errors.products?.[index]
                                                         ?.quantity &&
-                                                        "border-red-500"
+                                                        "border-red-500",
                                                 )}
                                             />
                                             {errors.products?.[index]

@@ -60,14 +60,14 @@ export default function Scanner({ warehouses, inventoryLocations = [] }) {
     const handleFormSuccess = () => {
         setScanningForRow(null);
         setScanResultCallback(null);
-        setSessionData({ warehouse: "" }); // Reset session data
+        setSessionData({ warehouse: "", warehouseName: "" }); // Reset session data
         toast.success("Semua produk berhasil disimpan!");
     };
 
     const handleFormReset = () => {
         setScanningForRow(null);
         setScanResultCallback(null);
-        setSessionData({ warehouse: "" }); // Reset session data
+        setSessionData({ warehouse: "", warehouseName: "" }); // Reset session data
     };
 
     const handleRequestScan = (rowIndex, callback) => {

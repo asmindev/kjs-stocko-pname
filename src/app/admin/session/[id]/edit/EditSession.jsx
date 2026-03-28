@@ -41,6 +41,7 @@ import {
 import { useProductSearch } from "@/app/user/scan/hooks/useProductSearch";
 import UomSelect from "@/app/user/scan/components/UomSelect";
 import LocationSelect from "@/app/user/scan/components/LocationSelect";
+import OwnerSelect from "@/app/user/scan/components/OwnerSelect";
 import { ArrowLeft, Plus, QrCode, Save, Trash2 } from "lucide-react";
 
 export default function EditSession({
@@ -54,16 +55,16 @@ export default function EditSession({
     const [scanResultCallback, setScanResultCallback] = useState(null);
     // Find the warehouse that matches the session's warehouse_id
     const currentWarehouse = warehouses.find(
-        (wh) => wh.lot_stock_id[0] === sessionData?.warehouse_id
+        (wh) => wh.lot_stock_id[0] === sessionData?.warehouse_id,
     );
 
     const [selectedWarehouse, setSelectedWarehouse] = useState(
-        currentWarehouse?.lot_stock_id?.[0] || null
+        currentWarehouse?.lot_stock_id?.[0] || null,
     );
 
     // Store initial warehouse to avoid clearing locations on initial load
     const initialWarehouseRef = useRef(
-        currentWarehouse?.lot_stock_id?.[0] || null
+        currentWarehouse?.lot_stock_id?.[0] || null,
     );
 
     // Transform existing products to form format
@@ -78,6 +79,8 @@ export default function EditSession({
                     uom_name: product.uom_name || "",
                     location_id: product.location_id || null,
                     location_name: product.location_name || "",
+                    res_partner_id: product.res_partner_id || null,
+                    res_partner_name: product.res_partner_name || "",
                     quantity: product.quantity || 1,
                 })),
             };
@@ -164,7 +167,7 @@ export default function EditSession({
                         ...prev,
                         [parseInt(index)]: productData,
                     }));
-                }
+                },
             );
         }
         // Mark that we've initialized existing products
@@ -185,7 +188,7 @@ export default function EditSession({
         // ✅ Skip validation on initial load
         if (isInitialLoadRef.current) {
             console.log(
-                "⏭️  Admin Edit: Skipping barcode validation on initial load"
+                "⏭️  Admin Edit: Skipping barcode validation on initial load",
             );
             return;
         }
@@ -254,7 +257,7 @@ export default function EditSession({
                 description: "Arahkan kamera ke barcode",
             });
         },
-        [handleScanResult]
+        [handleScanResult],
     );
 
     // Add new row to the form
@@ -272,7 +275,7 @@ export default function EditSession({
                 toast.error("Minimal harus ada 1 produk");
             }
         },
-        [fields.length, remove, clearProductData]
+        [fields.length, remove, clearProductData],
     );
 
     // Handle form submission
@@ -283,7 +286,7 @@ export default function EditSession({
 
                 // Find the warehouse ID from the selected lot_stock_id
                 const selectedWh = warehouses.find(
-                    (wh) => wh.lot_stock_id[0] === selectedWarehouse
+                    (wh) => wh.lot_stock_id[0] === selectedWarehouse,
                 );
 
                 const warehouseId = selectedWh?.lot_stock_id?.[0] || null;
@@ -303,10 +306,13 @@ export default function EditSession({
                                 uom_name: product.uom_name,
                                 location_id: product.location_id,
                                 location_name: product.location_name,
+                                res_partner_id: product.res_partner_id || null,
+                                res_partner_name:
+                                    product.res_partner_name || "",
                                 quantity: product.quantity,
                             })),
                         }),
-                    }
+                    },
                 );
 
                 const result = await response.json();
@@ -340,7 +346,7 @@ export default function EditSession({
                 setIsSubmitting(false);
             }
         },
-        [sessionData.id, router]
+        [sessionData.id, router],
         // revalidatePath(`/admin/session/${sessionData.id}`
     );
 
@@ -393,7 +399,7 @@ export default function EditSession({
                                         ? warehouses.find(
                                               (wh) =>
                                                   wh.lot_stock_id[0] ===
-                                                  selectedWarehouse
+                                                  selectedWarehouse,
                                           )?.name || "Pilih warehouse"
                                         : "Pilih warehouse"}
                                 </SelectValue>
@@ -457,6 +463,9 @@ export default function EditSession({
                                         <TableHead className="w-20 sm:w-24 whitespace-nowrap">
                                             UoM
                                         </TableHead>
+                                        <TableHead className="min-w-[200px] sm:min-w-[240px] whitespace-nowrap">
+                                            Owner (Opsional)
+                                        </TableHead>
                                         <TableHead className="min-w-[200px] sm:min-w-[250px] whitespace-nowrap after:content-['*'] after:text-red-500 after:ml-1">
                                             Lokasi Produk
                                         </TableHead>
@@ -499,30 +508,42 @@ export default function EditSession({
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.product_id`
+                                                            `products.${index}.product_id`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.uom_name`
+                                                            `products.${index}.uom_name`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.location_id`
+                                                            `products.${index}.location_id`,
                                                         )}
                                                     />
                                                     <input
                                                         type="hidden"
                                                         {...register(
-                                                            `products.${index}.location_name`
+                                                            `products.${index}.location_name`,
+                                                        )}
+                                                    />
+                                                    <input
+                                                        type="hidden"
+                                                        {...register(
+                                                            `products.${index}.res_partner_id`,
+                                                        )}
+                                                    />
+                                                    <input
+                                                        type="hidden"
+                                                        {...register(
+                                                            `products.${index}.res_partner_name`,
                                                         )}
                                                     />
                                                     <Input
                                                         {...register(
-                                                            `products.${index}.barcode`
+                                                            `products.${index}.barcode`,
                                                         )}
                                                         placeholder="Scan/masukkan barcode"
                                                         autoFocus={index === 0}
@@ -531,7 +552,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.barcode &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]
@@ -554,7 +575,7 @@ export default function EditSession({
                                                     <Input
                                                         disabled={true}
                                                         {...register(
-                                                            `products.${index}.name`
+                                                            `products.${index}.name`,
                                                         )}
                                                         placeholder="Nama produk"
                                                         className={cn(
@@ -562,7 +583,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.name &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]
@@ -582,29 +603,60 @@ export default function EditSession({
                                             <TableCell className="px-1">
                                                 <UomSelect
                                                     product={getProductData(
-                                                        index
+                                                        index,
                                                     )}
                                                     value={
                                                         watch(
-                                                            `products.${index}.uom_id`
+                                                            `products.${index}.uom_id`,
                                                         ) || ""
                                                     }
                                                     onValueChange={(
                                                         value,
-                                                        uomName
+                                                        uomName,
                                                     ) => {
                                                         setValue(
                                                             `products.${index}.uom_id`,
-                                                            value
+                                                            value,
                                                         );
                                                         if (uomName) {
                                                             setValue(
                                                                 `products.${index}.uom_name`,
-                                                                uomName
+                                                                uomName,
                                                             );
                                                         }
                                                     }}
                                                 />
+                                            </TableCell>
+
+                                            {/* Owner Select */}
+                                            <TableCell className="px-1">
+                                                <div className="space-y-1 min-w-[200px] sm:min-w-[240px]">
+                                                    <OwnerSelect
+                                                        value={
+                                                            watch(
+                                                                `products.${index}.res_partner_id`,
+                                                            ) || ""
+                                                        }
+                                                        selectedName={
+                                                            watch(
+                                                                `products.${index}.res_partner_name`,
+                                                            ) || ""
+                                                        }
+                                                        onValueChange={(
+                                                            ownerData,
+                                                        ) => {
+                                                            setValue(
+                                                                `products.${index}.res_partner_id`,
+                                                                ownerData.res_partner_id,
+                                                            );
+                                                            setValue(
+                                                                `products.${index}.res_partner_name`,
+                                                                ownerData.res_partner_name ||
+                                                                    "",
+                                                            );
+                                                        }}
+                                                    />
+                                                </div>
                                             </TableCell>
 
                                             {/* Location Select */}
@@ -612,7 +664,7 @@ export default function EditSession({
                                                 <div className="space-y-1 min-w-[200px] sm:min-w-[250px]">
                                                     <LocationSelect
                                                         value={watch(
-                                                            `products.${index}.location_id`
+                                                            `products.${index}.location_id`,
                                                         )}
                                                         selectedWarehouse={
                                                             selectedWarehouse
@@ -621,15 +673,15 @@ export default function EditSession({
                                                             inventoryLocations
                                                         }
                                                         onValueChange={(
-                                                            locationData
+                                                            locationData,
                                                         ) => {
                                                             setValue(
                                                                 `products.${index}.location_id`,
-                                                                locationData.location_id
+                                                                locationData.location_id,
                                                             );
                                                             setValue(
                                                                 `products.${index}.location_name`,
-                                                                locationData.location_name
+                                                                locationData.location_name,
                                                             );
                                                         }}
                                                     />
@@ -655,7 +707,7 @@ export default function EditSession({
                                                             `products.${index}.quantity`,
                                                             {
                                                                 valueAsNumber: true,
-                                                            }
+                                                            },
                                                         )}
                                                         type="number"
                                                         min="0.1"
@@ -666,7 +718,7 @@ export default function EditSession({
                                                             errors.products?.[
                                                                 index
                                                             ]?.quantity &&
-                                                                "border-red-500"
+                                                                "border-red-500",
                                                         )}
                                                     />
                                                     {errors.products?.[index]

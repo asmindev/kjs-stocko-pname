@@ -26,6 +26,15 @@ export const productTableSchema = z.object({
                         message: "Lokasi produk wajib dipilih",
                     }), // ID lokasi inventori (required)
                 location_name: z.string().default(""), // Nama lokasi inventori
+                res_partner_id: z
+                    .union([z.number(), z.string(), z.null()])
+                    .transform((val) => {
+                        if (val === null || val === undefined || val === "")
+                            return null;
+                        return typeof val === "string" ? parseInt(val) : val;
+                    })
+                    .optional(),
+                res_partner_name: z.string().default(""),
                 quantity: z
                     .float64({
                         required_error: "Quantity wajib diisi",
@@ -40,9 +49,9 @@ export const productTableSchema = z.object({
                         {
                             message:
                                 "Quantity harus berupa bilangan bulat atau 2 desimal",
-                        }
+                        },
                     ),
-            })
+            }),
         )
         .min(1, "Minimal harus ada 1 produk"),
 });
@@ -57,6 +66,8 @@ export const defaultProductItem = {
     quantity: null,
     location_id: null, // ID lokasi inventori, akan diisi otomatis
     location_name: "", // Nama lokasi inventori, akan diisi otomatis
+    res_partner_id: null,
+    res_partner_name: "",
 };
 
 export const defaultProductTableValues = {

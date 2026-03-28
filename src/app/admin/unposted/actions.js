@@ -69,10 +69,9 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
     // First pass: collect all UOMs per product to determine target UOM
     for (const p of products) {
         const warehouseId = p.session?.warehouse_id ?? 0;
-        // Hilangkan location dari key agar produk yang sama digabung
-        const productKey = `${
-            p.product_id ?? p.barcode ?? p.name ?? "UNKNOWN"
-        }`;
+        const partnerKey = p.res_partner_id ?? "NO_PARTNER";
+        const productIdPart = p.product_id ?? p.barcode ?? p.name ?? "UNKNOWN";
+        const productKey = `${productIdPart}::${partnerKey}`;
 
         const fullKey = `${warehouseId}-${productKey}`;
 
@@ -109,7 +108,7 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
                 const smallerUomInProduct = uomsInProduct.find(
                     (uom) =>
                         uom.uom_type === "smaller" ||
-                        uom.uom_type === "reference"
+                        uom.uom_type === "reference",
                 );
                 // Gunakan smaller UOM yang ada di produk
                 targetUom = smallerUomInProduct;
@@ -138,24 +137,26 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
         }
         const warehouseEntry = warehouseMap.get(key);
 
-        // Create unique key untuk product (tanpa location agar digabung)
-        const productKey = `${
-            p.product_id ?? p.barcode ?? p.name ?? "UNKNOWN"
-        }`;
+        const partnerKey = p.res_partner_id ?? "NO_PARTNER";
+        const productIdPart = p.product_id ?? p.barcode ?? p.name ?? "UNKNOWN";
+        const productKey = `${productIdPart}::${partnerKey}`;
 
         const fullKey = `${warehouseId}-${productKey}`;
 
         let productEntry = warehouseEntry.products.find(
-            (it) => it.key === productKey
+            (it) => it.key === productKey,
         );
         if (!productEntry) {
             const targetInfo = productTargetUomMap.get(fullKey);
 
             productEntry = {
                 key: productKey,
+                productId: productIdPart,
                 name: p.name || p.barcode || `Produk ${productKey}`,
                 warehouse_id: warehouseId,
                 warehouse_name: warehouseName,
+                res_partner_id: p.res_partner_id || null,
+                res_partner_name: p.res_partner_name || "",
                 quantity: 0, // akan diisi dengan konversi ke target UOM
                 targetUom: targetInfo?.needsConversion
                     ? targetInfo.targetUom
@@ -178,7 +179,7 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
             convertedQty = convertDirectly(
                 originalQty,
                 p.uom,
-                targetInfo.targetUom
+                targetInfo.targetUom,
             );
         }
 
@@ -213,6 +214,10 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
                 id: p.location_id ?? null,
                 name: p.location_name || "-",
             },
+            owner: {
+                id: p.res_partner_id || null,
+                name: p.res_partner_name || "",
+            },
         });
     }
 
@@ -223,7 +228,7 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
             .map((prod) => ({
                 ...prod,
                 data: prod.data.sort(
-                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at),
                 ),
             })),
     }));
@@ -234,10 +239,12 @@ export const fetchAndGroupUnpostedProducts = async (params = {}) => {
         wh.products.forEach((prod) => {
             flatList.push({
                 key: `${wh.warehouse_id}-${prod.key}`,
-                product_id: prod.key,
+                product_id: prod.productId,
                 product: prod.name,
                 warehouse: wh.warehouse_name || `Warehouse ${wh.warehouse_id}`,
                 warehouseId: wh.warehouse_id,
+                res_partner_id: prod.res_partner_id,
+                res_partner_name: prod.res_partner_name,
                 qty: prod.quantity,
                 targetUom: prod.targetUom,
                 originalUom: prod.originalUom,
@@ -277,7 +284,7 @@ export const getWarehousesList = async () => {
     const session = await getServerSession(authOptions);
     const odoo = await OdooSessionManager.getClient(
         session.user.id,
-        session.user.email
+        session.user.email,
     );
     const { warehouses } = await odoo.getWarehouses();
     return warehouses;
@@ -381,7 +388,7 @@ export const getProductDetails = async (warehouseId, productKey) => {
             // Cari smaller UOM dari UOM yang ada di produk ini
             const smallerUomInProduct = uomsInProduct.find(
                 (uom) =>
-                    uom.uom_type === "smaller" || uom.uom_type === "reference"
+                    uom.uom_type === "smaller" || uom.uom_type === "reference",
             );
             // Gunakan smaller UOM yang ada di produk
             targetUom = smallerUomInProduct;

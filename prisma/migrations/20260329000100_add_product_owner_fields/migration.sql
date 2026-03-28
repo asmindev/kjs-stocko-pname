@@ -1,0 +1,3 @@
+ALTER TABLE "Product"
+ADD COLUMN IF NOT EXISTS "res_partner_id" INTEGER,
+ADD COLUMN IF NOT EXISTS "res_partner_name" TEXT;

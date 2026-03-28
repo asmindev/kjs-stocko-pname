@@ -8,7 +8,9 @@ const consolidateProductsByBarcode = (products) => {
     const productMap = new Map();
 
     for (const product of products) {
-        const key = product.barcode;
+        const key = `${product.barcode}_${product.location_id || "null"}_${
+            product.res_partner_id || "null"
+        }`;
 
         if (productMap.has(key)) {
             // Jika produk dengan barcode yang sama sudah ada, gabungkan quantity
@@ -38,7 +40,7 @@ export const uploadToOdoo = async (sessionId) => {
         });
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const date = result.created_at
@@ -48,7 +50,7 @@ export const uploadToOdoo = async (sessionId) => {
 
         // Gabungkan produk yang memiliki barcode sama
         const consolidatedProducts = consolidateProductsByBarcode(
-            result.products
+            result.products,
         );
 
         for (const item of consolidatedProducts) {
@@ -70,7 +72,7 @@ export const uploadToOdoo = async (sessionId) => {
                 const [product] = await odoo.client.read(
                     "product.product",
                     productId,
-                    ["qty_available"]
+                    ["qty_available"],
                 );
                 const data = {
                     product_id: productId,
@@ -79,6 +81,10 @@ export const uploadToOdoo = async (sessionId) => {
                     location_id: result.warehouse_id,
                     diff_qty: product.qty_available - item.quantity,
                 };
+
+                if (item.res_partner_id) {
+                    data.partner_id = item.res_partner_id;
+                }
                 LINE_IDS.push([0, 0, data]);
             } catch (error) {
                 continue;
@@ -97,7 +103,7 @@ export const uploadToOdoo = async (sessionId) => {
 
         const inventory = await odoo.client.create(
             MODELS,
-            FIELDS_INVENTORY_START
+            FIELDS_INVENTORY_START,
         );
         return inventory;
     } catch (error) {

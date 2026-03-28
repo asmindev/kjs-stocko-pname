@@ -23,7 +23,7 @@ export default async function EditSessionPage({ params }) {
         if (session?.user) {
             const client = await OdooSessionManager.getClient(
                 session.user.id,
-                session.user.email
+                session.user.email,
             );
             const locations = await client.getInventoryLocations();
             const warehouseData = await client.getWarehouses();

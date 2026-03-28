@@ -1,10 +1,5 @@
-// Prisma schema for barcode scanner app
-// Database: PostgreSQL
-// field must be snake_case
-
 generator client {
     provider = "prisma-client-js"
-    // output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -13,39 +8,36 @@ datasource db {
 }
 
 model User {
-    id          Int           @id // ID dari Odoo langsung
+    id          Int           @id
     name        String
     email       String        @unique
     password    String
     created_at  DateTime      @default(now())
     updated_at  DateTime      @default(now()) @updatedAt
     is_admin    Boolean       @default(false)
-    role        String        @default("checker") // "checker" or "admin" or "leader"
-    Session     Session[] // One-to-many relation with sessions
-    Product     Product[]
-    OdooSession OdooSession[]
+    role        String        @default("checker")
     Document    Document[]
+    Product     Product[]
+    Session     Session[]
+    OdooSession OdooSession[]
 }
 
 model OdooSession {
     id           String    @id @default(cuid())
     user_id      Int
-    email        String // Email untuk Odoo
-    session_data Json // Menyimpan data session Odoo (terenkripsi)
+    email        String
+    session_data Json
     expires_at   DateTime?
     is_active    Boolean   @default(true)
     created_at   DateTime  @default(now())
     updated_at   DateTime  @updatedAt
-
-    // Relasi ke User
-    user User @relation(fields: [user_id], references: [id])
+    user         User      @relation(fields: [user_id], references: [id])
 
     @@index([user_id])
     @@index([expires_at])
     @@map("odoo_sessions")
 }
 
-// create model session for one-to-many relation with products resulting from scans
 model Session {
     id             Int          @id @default(autoincrement())
     name           String
@@ -53,62 +45,51 @@ model Session {
     state          SessionState @default(DRAFT)
     warehouse_id   Int?
     warehouse_name String?
-    inventory_id   Int? // ID dari Odoo
-
-    // Foreign key to user
-    user_id Int?
-
-    // Relationships
-    products Product[] // One-to-many relation with products
-    user     User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+    inventory_id   Int?
+    user_id        Int?
+    products       Product[]
+    user           User?        @relation(fields: [user_id], references: [id])
 
     @@index([user_id])
     @@index([created_at])
 }
 
-// model untuk menyimpan dokumen hasil post ke Odoo (inventory adjustment)
 model Document {
     id             Int           @id @default(autoincrement())
-    inventory_id   Int? // ID dari Odoo
+    inventory_id   Int?
     name           String?
     created_at     DateTime      @default(now())
     warehouse_id   Int?
     warehouse_name String?
     state          DocumentState @default(POST)
-    // Foreign key to user
     userId         Int?
-    products       Product[] // One-to-many relation with products
-
-    // Relationships
-    user User? @relation(fields: [userId], references: [id])
+    user           User?         @relation(fields: [userId], references: [id])
+    products       Product[]
 
     @@index([created_at])
 }
 
 model Product {
-    id            Int      @id @default(autoincrement())
-    product_id    Int? // ID dari Odoo
-    barcode       String
-    name          String?
-    created_at    DateTime @default(now())
-    quantity      Float    @default(1)
-    uom_id        Int? // Unit of Measure ID
-    uom_name      String? // Unit of Measure Name (backup)
-    location_id   Int? // ID lokasi inventori dari Odoo
-    location_name String? // Nama lokasi inventori dari Odoo
-
-    state ProductState @default(DRAFT)
-
-    // Foreign key to session
-    session_id Int?
-    userId     Int?
-
-    // Relationship
-    session     Session?  @relation(fields: [session_id], references: [id], onDelete: Restrict)
-    User        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-    uom         Uom?      @relation(fields: [uom_id], references: [id], onDelete: SetNull)
-    Document    Document? @relation(fields: [document_id], references: [id], onDelete: SetNull)
-    document_id Int?
+    id               Int          @id @default(autoincrement())
+    product_id       Int?
+    barcode          String
+    name             String?
+    created_at       DateTime     @default(now())
+    quantity         Float        @default(1)
+    uom_id           Int?
+    uom_name         String?
+    location_id      Int?
+    location_name    String?
+    res_partner_id   Int?
+    res_partner_name String?
+    state            ProductState @default(DRAFT)
+    session_id       Int?
+    userId           Int?
+    document_id      Int?
+    Document         Document?    @relation(fields: [document_id], references: [id])
+    session          Session?     @relation(fields: [session_id], references: [id], onDelete: Restrict)
+    uom              Uom?         @relation(fields: [uom_id], references: [id])
+    User             User?        @relation(fields: [userId], references: [id])
 
     @@index([state])
     @@index([barcode])
@@ -117,61 +98,57 @@ model Product {
     @@index([product_id])
 }
 
-enum SessionState {
-    DRAFT // draft for checker Session
-    CONFIRMED // checker confirmed Session and will process by admin to post to odoo
-    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
-    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
-}
-
 model UomCategory {
-    id   Int    @id // ID dari Odoo
+    id   Int    @id
     name String
-
-    // Relationships
     uoms Uom[]
 
     @@map("uom_categories")
 }
 
 model Uom {
-    id          Int    @id // ID dari Odoo
+    id          Int         @id
     name        String
     category_id Int
-    uom_type    String // "reference", "bigger", "smaller"
-    factor_inv  Float? // untuk uom_type "bigger"
-    factor      Float? // untuk uom_type "smaller"
-
-    // Relationships
-    category UomCategory @relation(fields: [category_id], references: [id])
-    products Product[]
+    uom_type    String
+    factor_inv  Float?
+    factor      Float?
+    products    Product[]
+    category    UomCategory @relation(fields: [category_id], references: [id])
 
     @@index([category_id])
     @@map("uoms")
 }
 
-enum ProductState {
-    DRAFT // draft for checker products
-    CONFIRMED // checker confirmed products and will process by admin to post to odoo
-    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
-    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
-}
-
-enum DocumentState {
-    POST // admin posted to odoo and in odoo inventory adjustment state `IN PROGRESS`
-    DONE // admin done post to odoo and in odoo inventory adjustment state `DONE`
-}
-
 model VerificationResult {
     id                   Int      @id @default(autoincrement())
-    odoo_line_id         Int // Removed @unique to allow multiple entries
-    odoo_verification_id Int? // ID from Odoo's verification record
+    odoo_line_id         Int
     product_qty          Float
     location_id          Int
     verifier_id          Int
-    note                 String? // Optional note/keterangan
     created_at           DateTime @default(now())
     updated_at           DateTime @updatedAt
+    note                 String?
+    odoo_verification_id Int?
 
     @@map("verification_results")
+}
+
+enum SessionState {
+    DRAFT
+    CONFIRMED
+    POST
+    DONE
+}
+
+enum ProductState {
+    DRAFT
+    CONFIRMED
+    POST
+    DONE
+}
+
+enum DocumentState {
+    POST
+    DONE
 }

@@ -16,7 +16,7 @@ export async function getVerificationLine(lineId) {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // 1. Fetch Odoo Data (Base)
@@ -24,7 +24,7 @@ export async function getVerificationLine(lineId) {
             "custom.stock.inventory",
             "get_verification_line_detail",
             [],
-            { line_id: parseInt(lineId) }
+            { line_id: parseInt(lineId) },
         );
         console.log("Odoo result:", odooResult);
 
@@ -85,7 +85,7 @@ export async function getInventoryLocationsForEdit() {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const locations = await odoo.getInventoryLocations();
@@ -107,7 +107,7 @@ export async function getOpnameUsers() {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
         const LIMIT = 100;
         const DOMAIN = [[["can_access_opname_react", "=", true]]];
@@ -118,7 +118,7 @@ export async function getOpnameUsers() {
             "res.users",
             "search_read",
             DOMAIN,
-            PARAMS
+            PARAMS,
         );
 
         return { success: true, data: users };
@@ -137,7 +137,7 @@ export async function updateVerificationTotal(
     locationIds,
     verifierId,
     note = "",
-    verificationDateTime = ""
+    verificationDateTime = "",
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -145,7 +145,7 @@ export async function updateVerificationTotal(
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // Call Odoo to calculate and set total
@@ -159,7 +159,7 @@ export async function updateVerificationTotal(
                 location_ids: locationIds,
                 verifier_id: parseInt(verifierId),
                 note: note || null,
-            }
+            },
         );
 
         console.log("Odoo calc result:", odooResult);
@@ -169,15 +169,6 @@ export async function updateVerificationTotal(
             return {
                 success: false,
                 message: "Gagal update stok di Odoo: " + odooResult.message,
-            };
-        }
-
-        // If diff is 0, nothing to save locally
-        if (odooResult.diff === 0) {
-            return {
-                success: true,
-                message: "Tidak ada perubahan stok (selisih 0)",
-                no_change: true,
             };
         }
 
@@ -205,9 +196,12 @@ export async function updateVerificationTotal(
 
         return {
             success: true,
-            message: `Stok diupdate (Selisih: ${
-                odooResult.diff > 0 ? "+" : ""
-            }${odooResult.diff})`,
+            message:
+                odooResult.diff === 0
+                    ? "Verifikasi disimpan (tanpa selisih stok)"
+                    : `Stok diupdate (Selisih: ${
+                          odooResult.diff > 0 ? "+" : ""
+                      }${odooResult.diff})`,
             diff: odooResult.diff,
         };
     } catch (e) {
@@ -222,7 +216,7 @@ export async function updateVerificationTotal(
 export async function deleteVerificationEntry(
     entryId,
     lineId,
-    odooVerificationId = null
+    odooVerificationId = null,
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -237,7 +231,7 @@ export async function deleteVerificationEntry(
         if (odooVerificationId) {
             const odoo = await OdooSessionManager.getClient(
                 session.user.id,
-                session.user.email
+                session.user.email,
             );
 
             const odooResult = await odoo.client.execute(
@@ -247,7 +241,7 @@ export async function deleteVerificationEntry(
                 {
                     verification_id: parseInt(odooVerificationId),
                     line_id: parseInt(lineId),
-                }
+                },
             );
 
             if (!odooResult.success) {

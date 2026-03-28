@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
         if (!session) {
             return Response.json(
                 { success: false, error: "Unauthorized. Please login first." },
-                { status: 401 }
+                { status: 401 },
             );
         }
 
@@ -43,7 +43,7 @@ export async function POST(request, { params }) {
                     success: false,
                     error: "Session not found or access denied.",
                 },
-                { status: 404 }
+                { status: 404 },
             );
         }
 
@@ -54,7 +54,7 @@ export async function POST(request, { params }) {
                     success: false,
                     error: "Cannot add products to posted session.",
                 },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -78,18 +78,20 @@ export async function POST(request, { params }) {
         if (!products || !Array.isArray(products)) {
             return Response.json(
                 { success: false, error: "Products array is required." },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
         let successCount = 0;
         let failedCount = 0;
 
-        // First, consolidate products with same barcode and location
-        // Group by barcode + location_id and sum quantities
+        // First, consolidate products with same barcode, location, and owner
+        // Group by barcode + location_id + res_partner_id and sum quantities
         const consolidatedProducts = products.reduce((acc, product) => {
-            // Create unique key from barcode and location_id
-            const key = `${product.barcode}_${product.location_id || "null"}`;
+            // Create unique key from barcode, location_id, and owner
+            const key = `${product.barcode}_${product.location_id || "null"}_${
+                product.res_partner_id || "null"
+            }`;
 
             if (acc[key]) {
                 // If exists, add quantity
@@ -108,7 +110,7 @@ export async function POST(request, { params }) {
         const productsToSave = Object.values(consolidatedProducts);
 
         console.log(
-            `Consolidated ${products.length} products into ${productsToSave.length} unique entries`
+            `Consolidated ${products.length} products into ${productsToSave.length} unique entries`,
         );
 
         // Delete all existing products for this session
@@ -123,24 +125,36 @@ export async function POST(request, { params }) {
         // Process each consolidated product - create all as new
         for (const product of productsToSave) {
             try {
+                const parsedUomId = product.uom_id
+                    ? parseInt(product.uom_id)
+                    : null;
                 const productData = {
                     barcode: product.barcode,
                     name: product.name || "",
                     product_id: product.product_id || null, // ID dari Odoo
-                    uom_id: product.uom_id ? parseInt(product.uom_id) : null,
                     uom_name: product.uom_name || null,
                     quantity: parseFloat(product.quantity) || 1,
-                    session_id: parseInt(id),
-                    userId: originalUserId, // Use original session creator's userId
                     location_id: product.location_id
                         ? parseInt(product.location_id)
                         : null,
                     location_name: product.location_name || null,
+                    res_partner_id: product.res_partner_id
+                        ? parseInt(product.res_partner_id)
+                        : null,
+                    res_partner_name: product.res_partner_name || null,
+                    session: { connect: { id: parseInt(id) } },
+                    ...(originalUserId
+                        ? { User: { connect: { id: originalUserId } } }
+                        : {}),
                 };
+
+                if (parsedUomId) {
+                    productData.uom = { connect: { id: parsedUomId } };
+                }
 
                 console.log(
                     "Processing product:",
-                    JSON.stringify(productData, null, 2)
+                    JSON.stringify(productData, null, 2),
                 );
 
                 // Create new product entry
@@ -152,7 +166,7 @@ export async function POST(request, { params }) {
             } catch (error) {
                 console.error(
                     `Error processing product for barcode ${product.barcode}:`,
-                    error
+                    error,
                 );
                 failedCount++;
             }
@@ -175,7 +189,7 @@ export async function POST(request, { params }) {
                 error: "Failed to process request",
                 details: error.message,
             },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

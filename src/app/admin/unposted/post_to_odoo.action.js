@@ -82,6 +82,10 @@ function processProductItems(data, stockLocationId, results) {
                 product_qty: qty, // Ambil dari item.qty
                 location_id: stockLocationId,
             };
+
+            if (item.res_partner_id) {
+                lineData.partner_id = parseInt(item.res_partner_id);
+            }
             console.log(lineData);
 
             LINE_IDS.push(lineData);

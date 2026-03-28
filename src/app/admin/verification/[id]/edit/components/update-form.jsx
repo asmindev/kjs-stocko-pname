@@ -33,38 +33,42 @@ export function UpdateForm({
     newNote,
     verificationDateTime,
     loading,
-    
+
     // Setters
     onTotalActualChange,
     onLocationSelectionChange,
     onVerifierChange,
     onNoteChange,
     onDateTimeChange,
-    
+
     // State controls
     openLocation,
     setOpenLocation,
     openVerifier,
     setOpenVerifier,
-    
+
     // Data
     locations,
     users,
-    
+
     // Handler
     onSubmit,
 }) {
     const handleLocationRemove = (locationId) => {
-        onLocationSelectionChange(selectedLocationIds.filter(id => id !== locationId));
+        onLocationSelectionChange(
+            selectedLocationIds.filter((id) => id !== locationId),
+        );
     };
 
     return (
         <div className="border rounded-lg p-3 bg-green-50/30">
             <div className="flex items-center gap-2 mb-3">
                 <PackagePlus className="h-4 w-4 text-green-600" />
-                <span className="font-medium text-sm">Update Stok (Total Real)</span>
+                <span className="font-medium text-sm">
+                    Update Stok (Total Real)
+                </span>
             </div>
-            
+
             <div className="flex flex-wrap gap-2 items-start">
                 {/* Total Actual Input */}
                 <div className="w-32">
@@ -136,7 +140,6 @@ export function UpdateForm({
                             disabled={
                                 loading ||
                                 !totalActualQty ||
-                                adjustmentQty === 0 ||
                                 selectedLocationIds.length === 0 ||
                                 !newVerifierId
                             }
@@ -149,16 +152,22 @@ export function UpdateForm({
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Konfirmasi Update Stok</AlertDialogTitle>
+                            <AlertDialogTitle>
+                                Konfirmasi Update Stok
+                            </AlertDialogTitle>
                             <div>
                                 <div className="space-y-2 mt-2">
                                     <div className="flex justify-between text-sm">
                                         <span>Total Saat Ini:</span>
-                                        <span className="font-medium">{currentTotal}</span>
+                                        <span className="font-medium">
+                                            {currentTotal}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span>Total Aktual (Baru):</span>
-                                        <span className="font-bold">{totalActualQty}</span>
+                                        <span className="font-bold">
+                                            {totalActualQty}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between text-sm border-t pt-2 mt-2">
                                         <span>Adjusment/Selisih:</span>
@@ -168,8 +177,8 @@ export function UpdateForm({
                                                 adjustmentQty > 0
                                                     ? "text-green-600"
                                                     : adjustmentQty < 0
-                                                    ? "text-red-600"
-                                                    : ""
+                                                      ? "text-red-600"
+                                                      : "",
                                             )}
                                         >
                                             {adjustmentQty > 0 ? "+" : ""}
@@ -178,8 +187,8 @@ export function UpdateForm({
                                     </div>
                                 </div>
                                 <span className="mt-4 text-xs text-muted-foreground block">
-                                    System akan menambahkan entry adjustment sebesar{" "}
-                                    <strong>{adjustmentQty}</strong>.
+                                    System akan menambahkan entry adjustment
+                                    sebesar <strong>{adjustmentQty}</strong>.
                                 </span>
                             </div>
                         </AlertDialogHeader>

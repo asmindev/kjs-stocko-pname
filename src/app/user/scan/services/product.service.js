@@ -14,7 +14,7 @@ import { toast } from "sonner";
 export const submitProducts = async (
     products,
     warehouseId,
-    warehouseName = null
+    warehouseName = null,
 ) => {
     const loadingToast = toast.loading("Menyimpan produk...");
 
@@ -31,6 +31,8 @@ export const submitProducts = async (
                 uom_name: product.uom_name,
                 location_id: product.location_id, // ID lokasi inventori
                 location_name: product.location_name, // Nama lokasi inventori
+                res_partner_id: product.res_partner_id || null,
+                res_partner_name: product.res_partner_name || "",
                 quantity: product.quantity,
             })),
         };
@@ -45,9 +47,9 @@ export const submitProducts = async (
         const result = await response.json();
         toast.dismiss(loadingToast);
 
-        if (response.ok) {
-            const successCount = result.successCount || products.length;
-            const failedCount = result.failedCount || 0;
+        if (response.ok && result.success) {
+            const successCount = result.successCount ?? products.length;
+            const failedCount = result.failedCount ?? 0;
 
             toast.success(`${successCount} produk berhasil disimpan!`, {
                 description:
@@ -68,6 +70,7 @@ export const submitProducts = async (
                 description:
                     result.details ||
                     result.error ||
+                    result.message ||
                     "Terjadi kesalahan pada server",
             });
 
@@ -162,7 +165,7 @@ export const batchSubmitProducts = async (products, options = {}) => {
     }
 
     const loadingToast = toast.loading(
-        `Menyimpan ${products.length} produk...`
+        `Menyimpan ${products.length} produk...`,
     );
     const results = [];
     let successCount = 0;
@@ -225,7 +228,7 @@ export const batchSubmitProducts = async (products, options = {}) => {
             if (i + batchSize < products.length) {
                 toast.dismiss(loadingToast);
                 const progress = Math.round(
-                    ((i + batchSize) / products.length) * 100
+                    ((i + batchSize) / products.length) * 100,
                 );
                 toast.loading(`Menyimpan produk... ${progress}%`);
             }

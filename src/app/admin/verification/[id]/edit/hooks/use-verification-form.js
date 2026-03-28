@@ -38,13 +38,13 @@ export function useVerificationForm(line, locations, users) {
     // Filtered scans
     const previousScans = useMemo(
         () => filterScansByLocation(line.previousScans || [], locationIds),
-        [line.previousScans, locationIds]
+        [line.previousScans, locationIds],
     );
 
     // Totals
     const { verified: totalVerified, scanned: totalScanned } = useMemo(
         () => calculateTotals(entries, previousScans),
-        [entries, previousScans]
+        [entries, previousScans],
     );
 
     // Current total from Odoo
@@ -81,13 +81,6 @@ export function useVerificationForm(line, locations, users) {
             return;
         }
 
-        if (adjustmentQty === 0) {
-            toast.error(
-                "Total aktual sama dengan total saat ini. Tidak ada perubahan."
-            );
-            return;
-        }
-
         if (selectedLocationIds.length === 0) {
             toast.error("Mohon pilih minimal satu lokasi");
             return;
@@ -106,7 +99,7 @@ export function useVerificationForm(line, locations, users) {
                 selectedLocationIds,
                 newVerifierId,
                 newNote,
-                verificationDateTime
+                verificationDateTime,
             );
 
             if (result.success) {
@@ -139,7 +132,7 @@ export function useVerificationForm(line, locations, users) {
             const result = await deleteVerificationEntry(
                 entryId,
                 line.id,
-                odooVerificationId
+                odooVerificationId,
             );
 
             if (result.success) {
