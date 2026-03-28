@@ -290,6 +290,7 @@ export default function EditSession({
                 );
 
                 const warehouseId = selectedWh?.lot_stock_id?.[0] || null;
+                const warehouseName = selectedWh?.name || null;
 
                 const response = await fetch(
                     `/api/session/${sessionData.id}/products`,
@@ -298,6 +299,7 @@ export default function EditSession({
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             warehouse_id: warehouseId, // Include warehouse update
+                            warehouse_name: warehouseName,
                             products: data.products.map((product) => ({
                                 product_id: product.product_id,
                                 barcode: product.barcode,

@@ -70,7 +70,10 @@ export async function POST(request, { params }) {
                 where: { id: parseInt(id) },
                 data: {
                     warehouse_id: parseInt(warehouse_id),
-                    warehouse_name: warehouse_name || null,
+                    warehouse_name:
+                        warehouse_name !== undefined
+                            ? warehouse_name || null
+                            : existingSession.warehouse_name,
                 },
             });
         }
