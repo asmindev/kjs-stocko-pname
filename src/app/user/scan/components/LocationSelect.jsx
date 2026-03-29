@@ -123,7 +123,7 @@ export default function LocationSelect({
             }
 
             const selectedLoc = warehouseLocations.find(
-                (loc) => loc.id === parseInt(locationId)
+                (loc) => loc.id === parseInt(locationId),
             );
 
             if (selectedLoc && onValueChange) {
@@ -136,15 +136,15 @@ export default function LocationSelect({
             }
             setOpen(false);
         },
-        [warehouseLocations, onValueChange]
+        [warehouseLocations, onValueChange],
     );
 
     const formatLocationLabel = (location) => {
         const name = location.display_name;
         if (!name) return "";
-        //    remove "/Stock/" from the end of the name
-        const formattedName = name.split("/Stock/")[1]?.trim();
-        return formattedName;
+        // Support /Stock/ dan /STOCK/ (case-insensitive)
+        const formattedName = name.split(/\/stock\//i)[1]?.trim();
+        return formattedName || name;
     };
 
     // Handle popover state
@@ -264,14 +264,14 @@ export default function LocationSelect({
                                                 value={location.id.toString()}
                                                 onSelect={() =>
                                                     handleLocationChange(
-                                                        location.id
+                                                        location.id,
                                                     )
                                                 }
                                                 className="cursor-pointer transition-colors w-full"
                                             >
                                                 <p className="text-sm">
                                                     {formatLocationLabel(
-                                                        location
+                                                        location,
                                                     )}
                                                 </p>
                                             </CommandItem>
