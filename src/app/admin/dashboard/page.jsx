@@ -57,7 +57,11 @@ export default async function page({ searchParams }) {
     const locations = locationsData.locations;
 
     // Determine Filter
-    const where = {};
+    const where = {
+        created_at: {
+            gte: new Date("2026-03-25T00:00:00.000Z"),
+        },
+    };
     let selectedWarehouse = null;
     let selectedLeader = null;
 
@@ -90,18 +94,8 @@ export default async function page({ searchParams }) {
         });
         const matchingDocIds = matchingDocs.map((d) => d.id);
 
-        // Also find doc IDs for this warehouse that DON'T match the type
-        const nonMatchingDocs = await prisma.document.findMany({
-            where: {
-                warehouse_id: parseInt(warehouse),
-                inventory_id: { notIn: allOdooInventoryIds, not: null },
-            },
-            select: { id: true },
-        });
-        const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
-
         console.log(
-            `[DASHBOARD] warehouse=${warehouse}, sessions: ${sessionIds.length}, matching docs: ${matchingDocIds.length}, non-matching docs: ${nonMatchingDocIds.length}`,
+            `[DASHBOARD] warehouse=${warehouse}, sessions: ${sessionIds.length}, matching docs: ${matchingDocIds.length}`,
         );
 
         // Products that match:
@@ -117,23 +111,14 @@ export default async function page({ searchParams }) {
                 state: { in: ["DRAFT", "CONFIRMED"] },
             });
         } else {
-            // For annual: include all legacy (POSTED) products without documents
+            // For annual: include all legacy (POSTED) products without documents and currently active ones
             orConditions.push({
                 document_id: null,
-                state: "POST",
+                state: { in: ["DRAFT", "CONFIRMED", "POST"] },
             });
         }
 
-        where.AND = [
-            { session_id: { in: sessionIds } },
-            { OR: orConditions },
-            // Exclude products linked to documents of the WRONG type
-            {
-                NOT: {
-                    document_id: { in: nonMatchingDocIds },
-                },
-            },
-        ];
+        where.AND = [{ session_id: { in: sessionIds } }, { OR: orConditions }];
 
         selectedWarehouse = warehouses.find(
             (w) => w.lot_stock_id[0] === parseInt(warehouse),
@@ -156,17 +141,6 @@ export default async function page({ searchParams }) {
             });
             const matchingDocIds = matchingDocs.map((d) => d.id);
 
-            const nonMatchingDocs = await prisma.document.findMany({
-                where: {
-                    inventory_id: { notIn: allOdooInventoryIds, not: null },
-                    products: {
-                        some: { location_id: { in: leaderLocationIds } },
-                    },
-                },
-                select: { id: true },
-            });
-            const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
-
             const orConditions = [{ document_id: { in: matchingDocIds } }];
 
             if (type === "cycle") {
@@ -177,16 +151,12 @@ export default async function page({ searchParams }) {
             } else {
                 orConditions.push({
                     document_id: null,
-                    state: "POST",
+                    state: { in: ["DRAFT", "CONFIRMED", "POST"] },
                 });
             }
 
             where.location_id = { in: leaderLocationIds };
             where.OR = orConditions;
-
-            if (nonMatchingDocIds.length > 0) {
-                where.NOT = { document_id: { in: nonMatchingDocIds } };
-            }
         } else if (selectedLeader) {
             where.id = -1;
         }
@@ -198,12 +168,6 @@ export default async function page({ searchParams }) {
         });
         const matchingDocIds = matchingDocs.map((d) => d.id);
 
-        const nonMatchingDocs = await prisma.document.findMany({
-            where: { inventory_id: { notIn: allOdooInventoryIds, not: null } },
-            select: { id: true },
-        });
-        const nonMatchingDocIds = nonMatchingDocs.map((d) => d.id);
-
         const orConditions = [{ document_id: { in: matchingDocIds } }];
 
         if (type === "cycle") {
@@ -214,15 +178,11 @@ export default async function page({ searchParams }) {
         } else {
             orConditions.push({
                 document_id: null,
-                state: "POST",
+                state: { in: ["DRAFT", "CONFIRMED", "POST"] },
             });
         }
 
         where.OR = orConditions;
-
-        if (nonMatchingDocIds.length > 0) {
-            where.NOT = { document_id: { in: nonMatchingDocIds } };
-        }
     }
 
     if (search) {
