@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import PaginationControls from "@/components/ui/pagination-controls";
+import Link from "next/link";
 
 import {
     Select,
@@ -217,9 +218,16 @@ export default function ProductsTable({
                                                 </Badge>
                                             </td>
                                             <td className="p-2">
-                                                <div className="text-sm">
-                                                    {product.session?.name}
-                                                </div>
+                                                {product.session ? (
+                                                    <Link
+                                                        href={`/admin/session/${product.session.id}`}
+                                                        className="text-sm text-blue-600 hover:underline"
+                                                    >
+                                                        {product.session.name}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">—</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
