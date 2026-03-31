@@ -190,55 +190,51 @@ export default function Dashboard({
                         selectedWarehouse={selectedWarehouse}
                     />
 
-                    {selectedWarehouse &&
-                        paginatedProducts &&
-                        paginatedProducts.length > 0 && (
-                            <div className="grid gap-6">
-                                <Tabs defaultValue="produk" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-2">
-                                        <TabsTrigger value="produk">
-                                            Produk
-                                        </TabsTrigger>
-                                        <TabsTrigger value="lokasi">
-                                            Lokasi
-                                        </TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent
-                                        value="produk"
-                                        className="space-y-6"
-                                    >
-                                        {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
-                                        <ProductsTable
-                                            filteredProducts={paginatedProducts}
-                                            selectedWarehouse={
-                                                selectedWarehouse
-                                            }
-                                            pagination={pagination}
-                                        />
-                                    </TabsContent>
-                                    <TabsContent
-                                        value="lokasi"
-                                        className="space-y-6"
-                                    >
-                                        <LocationsTable
-                                            products={paginatedProducts} // Note: This table shows locations of *paginated* products only?
-                                            // LocationsTable usually aggregates products. If only 20 products, table is useless.
-                                            // Ideally LocationsTable should use serverStats.locationCount!
-                                            // I need to check LocationsTable implementation.
-                                            title="Data Lokasi Warehouse"
-                                            description={
-                                                selectedWarehouse
-                                                    ? `Daftar lokasi di ${selectedWarehouse.name}`
-                                                    : "Daftar semua lokasi"
-                                            }
-                                            serverLocationCounts={
-                                                serverStats?.locationCount
-                                            } // Pass pre-aggregated data
-                                        />
-                                    </TabsContent>
-                                </Tabs>
-                            </div>
-                        )}
+                    {selectedWarehouse && paginatedProducts && (
+                        <div className="grid gap-6">
+                            <Tabs defaultValue="produk" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="produk">
+                                        Produk
+                                    </TabsTrigger>
+                                    <TabsTrigger value="lokasi">
+                                        Lokasi
+                                    </TabsTrigger>
+                                </TabsList>
+                                <TabsContent
+                                    value="produk"
+                                    className="space-y-6"
+                                >
+                                    {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
+                                    <ProductsTable
+                                        filteredProducts={paginatedProducts}
+                                        selectedWarehouse={selectedWarehouse}
+                                        pagination={pagination}
+                                    />
+                                </TabsContent>
+                                <TabsContent
+                                    value="lokasi"
+                                    className="space-y-6"
+                                >
+                                    <LocationsTable
+                                        products={paginatedProducts} // Note: This table shows locations of *paginated* products only?
+                                        // LocationsTable usually aggregates products. If only 20 products, table is useless.
+                                        // Ideally LocationsTable should use serverStats.locationCount!
+                                        // I need to check LocationsTable implementation.
+                                        title="Data Lokasi Warehouse"
+                                        description={
+                                            selectedWarehouse
+                                                ? `Daftar lokasi di ${selectedWarehouse.name}`
+                                                : "Daftar semua lokasi"
+                                        }
+                                        serverLocationCounts={
+                                            serverStats?.locationCount
+                                        } // Pass pre-aggregated data
+                                    />
+                                </TabsContent>
+                            </Tabs>
+                        </div>
+                    )}
 
                     {selectedWarehouse &&
                         (!paginatedProducts ||
