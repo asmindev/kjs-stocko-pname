@@ -1,3 +1,4 @@
+"use client";
 import {
     Card,
     CardContent,
@@ -20,6 +21,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { updateProduct } from "@/app/user/dashboard/services/actions";
+import { toast } from "sonner";
+import EditableProductRow from "./EditableProductRow";
+import { useSession } from "next-auth/react";
 
 export default function ProductsTable({
     filteredProducts, // This is now paginatedProducts
@@ -27,7 +32,17 @@ export default function ProductsTable({
     title = "Data Produk",
     description,
     pagination,
+    inventoryLocations = [],
 }) {
+    const { data: sessionData } = useSession();
+    const isAdmin = sessionData?.user?.role === "admin" || sessionData?.user?.role === "leader";
+    
+    const [localProducts, setLocalProducts] = useState(filteredProducts);
+
+    // Sync local state when props change (server-side search/pagination)
+    useEffect(() => {
+        setLocalProducts(filteredProducts);
+    }, [filteredProducts]);
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -67,6 +82,28 @@ export default function ProductsTable({
     useEffect(() => {
         setSearchTerm(searchParams.get("search") || "");
     }, [searchParams]);
+
+    const handleUpdateProduct = async (productId, newData) => {
+        const previousProducts = [...localProducts];
+        
+        // Optimistic update
+        setLocalProducts((prev) =>
+            prev.map((p) => (p.id === productId ? { ...p, ...newData } : p))
+        );
+
+        const result = await updateProduct(productId, newData);
+
+        if (!result.success) {
+            // Revert on failure
+            setLocalProducts(previousProducts);
+            toast.error("Gagal memperbarui produk", {
+                description: result.error || "Terjadi kesalahan saat menyimpan data",
+            });
+            throw new Error(result.error);
+        } else {
+            toast.success("Produk berhasil diperbarui");
+        }
+    };
 
     if (!filteredProducts) return null;
 
@@ -176,66 +213,20 @@ export default function ProductsTable({
                                         <th className="text-left p-2">
                                             Session
                                         </th>
+                                        <th className="text-center p-2">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredProducts.map((product) => (
-                                        <tr
+                                    {localProducts.map((product) => (
+                                        <EditableProductRow
                                             key={product.id}
-                                            className="border-b"
-                                        >
-                                            <td className="p-2">
-                                                <div className="font-medium">
-                                                    {product.name}
-                                                </div>
-                                            </td>
-                                            <td className="p-2 font-mono text-sm">
-                                                {product.barcode}
-                                            </td>
-                                            <td className="p-2">
-                                                {product.quantity}
-                                            </td>
-                                            <td className="p-2">
-                                                {product.uom_name}
-                                            </td>
-                                            <td className="p-2">
-                                                <div className="text-sm">
-                                                    {product.location_name
-                                                        ?.split("/")
-                                                        .slice(-2)
-                                                        .join("/")}
-                                                </div>
-                                            </td>
-                                            <td className="p-2">
-                                                <div className="text-sm">
-                                                    {product.session?.user?.name || product.User?.name || "—"}
-                                                </div>
-                                            </td>
-                                            <td className="p-2">
-                                                <Badge
-                                                    variant={
-                                                        product.state ===
-                                                        "CONFIRMED"
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                >
-                                                    {product.state}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-2">
-                                                {product.session ? (
-                                                    <Link
-                                                        href={`/admin/session/${product.session.id}`}
-                                                        className="text-sm text-blue-600 hover:underline"
-                                                    >
-                                                        {product.session.name}
-                                                    </Link>
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">—</span>
-                                                )}
-                                            </td>
-                                        </tr>
+                                            product={product}
+                                            onUpdate={handleUpdateProduct}
+                                            inventoryLocations={inventoryLocations}
+                                            isAdmin={isAdmin}
+                                        />
                                     ))}
                                 </tbody>
                             </table>

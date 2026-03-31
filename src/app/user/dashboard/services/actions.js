@@ -159,3 +159,80 @@ export async function getSessionById(sessionId) {
         return { success: false, error: "Failed to fetch session" };
     }
 }
+
+export async function updateProduct(productId, data) {
+    try {
+        const session = await getServerSession(authOptions);
+
+        if (!session) {
+            return {
+                success: false,
+                error: "Unauthorized. Please login first.",
+            };
+        }
+
+        const is_allowed_role = ["leader", "admin"];
+        const userRole = session?.user?.role;
+        const isAllowed = is_allowed_role.includes(userRole);
+
+        // Basic validation: ensure productId is provided
+        if (!productId) {
+            return { success: false, error: "Product ID is required" };
+        }
+
+        // For non-admins/leaders, ensure they own the session the product belongs to
+        if (!isAllowed) {
+            const product = await prisma.product.findUnique({
+                where: { id: parseInt(productId) },
+                include: { session: true },
+            });
+
+            if (!product || product.session?.user_id !== parseInt(session.user.id)) {
+                return { success: false, error: "Unauthorized access to this product" };
+            }
+        }
+
+        // Filter data to only allow updating specific fields
+        const allowedFields = ["quantity", "barcode", "location_name", "state"];
+        const updateData = {};
+        Object.keys(data).forEach((key) => {
+            if (allowedFields.includes(key)) {
+                updateData[key] = data[key];
+            }
+        });
+
+        const updatedProduct = await prisma.product.update({
+            where: { id: parseInt(productId) },
+            data: updateData,
+            include: {
+                session: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                },
+                User: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        return {
+            success: true,
+            data: {
+                ...updatedProduct,
+                created_at: updatedProduct.created_at.toISOString(),
+            },
+        };
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return { success: false, error: "Failed to update product" };
+    }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Table,
@@ -18,7 +19,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Calendar, User, Edit, MapPin } from "lucide-react";
+import { ArrowLeft, Package, Calendar, User, Edit, MapPin, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { confirmSession } from "./actions";
@@ -48,6 +50,15 @@ const DISABLE_ON_STATE = ["CONFIRMED", "POST", "DONE"];
 export default function SessionDetail({ data }) {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const filteredProducts = searchTerm
+        ? data.products.filter(
+              (p) =>
+                  p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  p.barcode?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        : data.products;
     const formatDate = (dateString) => {
         try {
             return format(new Date(dateString), "dd/MM/yyyy HH:mm:ss");
@@ -180,11 +191,29 @@ export default function SessionDetail({ data }) {
                 <CardHeader>
                     <CardTitle>Produk yang Discan</CardTitle>
                     <CardDescription>
-                        Total {data.products.length} produk dalam dokumen ini
+                        Total {filteredProducts.length} dari {data.products.length} produk dalam dokumen ini
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {data.products.length === 0 ? (
+                    {/* Search Input */}
+                    <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                            placeholder="Cari nama produk atau barcode..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 pr-10"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                    {filteredProducts.length === 0 ? (
                         <p className="text-muted-foreground text-center py-8">
                             Belum ada produk yang discan dalam session ini
                         </p>
@@ -203,7 +232,7 @@ export default function SessionDetail({ data }) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {data.products.map((product, index) => (
+                                {filteredProducts.map((product, index) => (
                                     <TableRow key={product.id}>
                                         <TableCell className="font-medium">
                                             {index + 1}

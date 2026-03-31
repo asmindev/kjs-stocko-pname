@@ -205,11 +205,11 @@ export default function Dashboard({
                                     value="produk"
                                     className="space-y-6"
                                 >
-                                    {/* ProductsTable needs to handle pagination prop if we pass it, or just render list */}
                                     <ProductsTable
                                         filteredProducts={paginatedProducts}
                                         selectedWarehouse={selectedWarehouse}
                                         pagination={pagination}
+                                        inventoryLocations={locations}
                                     />
                                 </TabsContent>
                                 <TabsContent
@@ -301,6 +301,7 @@ export default function Dashboard({
                                                     ? `Daftar produk dalam tanggung jawab ${selectedLeader.name}`
                                                     : "Daftar semua produk leader"
                                             }
+                                            inventoryLocations={locations}
                                         />
                                     </TabsContent>
                                     <TabsContent
