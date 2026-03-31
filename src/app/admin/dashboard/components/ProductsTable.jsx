@@ -32,7 +32,7 @@ export default function ProductsTable({
     const searchParams = useSearchParams();
 
     const [searchTerm, setSearchTerm] = useState(
-        searchParams.get("search") || ""
+        searchParams.get("search") || "",
     );
 
     const handleSearch = () => {
