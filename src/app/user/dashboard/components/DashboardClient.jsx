@@ -31,22 +31,24 @@ export default function DashboardClient({ sessions, pagination }) {
         searchParams.get("search") || ""
     );
 
-    // Debounce search update
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (searchTerm !== (searchParams.get("search") || "")) {
-                const params = new URLSearchParams(searchParams);
-                if (searchTerm) {
-                    params.set("search", searchTerm);
-                } else {
-                    params.delete("search");
-                }
-                params.set("page", "1"); // Reset to page 1
-                router.push(`${pathname}?${params.toString()}`);
+    const handleSearch = () => {
+        if (searchTerm !== (searchParams.get("search") || "")) {
+            const params = new URLSearchParams(searchParams);
+            if (searchTerm) {
+                params.set("search", searchTerm);
+            } else {
+                params.delete("search");
             }
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, router, pathname, searchParams]);
+            params.set("page", "1"); // Reset to page 1
+            router.push(`${pathname}?${params.toString()}`);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
 
     const handleViewDetail = (sessionId) => {
         setSelectedSessionId(sessionId);
@@ -108,9 +110,10 @@ export default function DashboardClient({ sessions, pagination }) {
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                    placeholder="Cari session..."
+                    placeholder="Cari session, barcode produk..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="pl-10"
                 />
             </div>

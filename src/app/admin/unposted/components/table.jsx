@@ -64,22 +64,24 @@ export default function UnpostedGroupedTable({
     );
     const [postResult, setPostResult] = useState(null); // State for post result
 
-    // Sync Search with URL
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (searchTerm !== (searchQuery.get("search") || "")) {
-                const params = new URLSearchParams(searchQuery);
-                if (searchTerm) {
-                    params.set("search", searchTerm);
-                } else {
-                    params.delete("search");
-                }
-                params.set("page", "1");
-                router.push(`${pathname}?${params.toString()}`);
+    const handleSearch = () => {
+        if (searchTerm !== (searchQuery.get("search") || "")) {
+            const params = new URLSearchParams(searchQuery);
+            if (searchTerm) {
+                params.set("search", searchTerm);
+            } else {
+                params.delete("search");
             }
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, router, pathname, searchQuery]);
+            params.set("page", "1");
+            router.push(`${pathname}?${params.toString()}`);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
 
     // Sync state from props (for back/forward navigation)
     useEffect(() => {
@@ -134,6 +136,7 @@ export default function UnpostedGroupedTable({
                             placeholder="Cari..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             className="pl-10"
                         />
                     </div>
@@ -439,6 +442,7 @@ export default function UnpostedGroupedTable({
                                 placeholder="Cari produk..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 className="pl-10 h-9"
                             />
                         </div>

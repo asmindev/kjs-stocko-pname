@@ -106,15 +106,17 @@ const SessionsTable = ({ sessions, pagination, filters, onRefresh }) => {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    // Debounce search
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (searchTerm !== (searchParams.get("search") || "")) {
-                updateUrl("search", searchTerm);
-            }
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm]); // Removed other deps to avoid loops
+    const handleSearch = () => {
+        if (searchTerm !== (searchParams.get("search") || "")) {
+            updateUrl("search", searchTerm);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
 
     const uniqueUsers = filters?.users || [];
     const uniqueWarehouses = filters?.warehouses || [];
@@ -232,9 +234,10 @@ const SessionsTable = ({ sessions, pagination, filters, onRefresh }) => {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Cari berdasarkan nama dokumen, checker, warehouse, lokasi, atau produk..."
+                                placeholder="Cari berdasarkan nama dokumen, checker, warehouse, lokasi, produk, atau barcode..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 className="pl-10"
                             />
                         </div>

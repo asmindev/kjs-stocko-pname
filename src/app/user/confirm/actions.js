@@ -333,3 +333,87 @@ export async function getSessionDetails(sessionId) {
         return { success: false, error: "Failed to fetch session details" };
     }
 }
+
+export async function getConfirmableProducts({
+    page = 1,
+    limit = 10,
+    search = "",
+    user = "",
+    warehouse = "",
+    location = "",
+} = {}) {
+    try {
+        const skip = (page - 1) * limit;
+        const sessionWhere = { state: "DRAFT" };
+        
+        if (user) sessionWhere.user = { name: user };
+        if (warehouse) sessionWhere.warehouse_name = warehouse;
+        
+        const where = {
+            state: "DRAFT",
+            session: sessionWhere
+        };
+
+        if (location) {
+            where.location_name = location;
+        }
+
+        if (search) {
+            where.OR = [
+                { name: { contains: search, mode: "insensitive" } },
+                { barcode: { contains: search, mode: "insensitive" } },
+                { location_name: { contains: search, mode: "insensitive" } },
+                { session: { name: { contains: search, mode: "insensitive" } } },
+                { session: { warehouse_name: { contains: search, mode: "insensitive" } } },
+                { session: { user: { name: { contains: search, mode: "insensitive" } } } },
+            ];
+        }
+
+        const [products, totalCount, productStats, sessionCount] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    uom: true,
+                    session: {
+                        select: {
+                            id: true,
+                            name: true,
+                            warehouse_name: true,
+                            user: {
+                                select: {
+                                    name: true
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: { created_at: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.product.count({ where }),
+            prisma.product.aggregate({
+                where: { session: sessionWhere, state: "DRAFT" },
+                _count: { _all: true },
+                _sum: { quantity: true },
+            }),
+            prisma.session.count({ where: sessionWhere }),
+        ]);
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return {
+            success: true,
+            data: products,
+            pagination: { page, limit, totalCount, totalPages },
+            stats: {
+                totalSessions: sessionCount,
+                totalProducts: productStats._count._all,
+                totalQuantity: productStats._sum.quantity || 0,
+            }
+        };
+    } catch (error) {
+        console.error("Error fetching confirmable products:", error);
+        return { success: false, error: "Failed to fetch products" };
+    }
+}

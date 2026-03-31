@@ -8,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import PaginationControls from "@/components/ui/pagination-controls";
 
@@ -35,22 +35,32 @@ export default function ProductsTable({
         searchParams.get("search") || ""
     );
 
-    // Debounce search update to URL
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (searchTerm !== (searchParams.get("search") || "")) {
-                const params = new URLSearchParams(searchParams);
-                if (searchTerm) {
-                    params.set("search", searchTerm);
-                } else {
-                    params.delete("search");
-                }
-                params.set("page", "1"); // Reset to page 1
-                router.push(`${pathname}?${params.toString()}`);
+    const handleSearch = () => {
+        if (searchTerm !== (searchParams.get("search") || "")) {
+            const params = new URLSearchParams(searchParams);
+            if (searchTerm) {
+                params.set("search", searchTerm);
+            } else {
+                params.delete("search");
             }
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, router, pathname, searchParams]);
+            params.set("page", "1"); // Reset to page 1
+            router.push(`${pathname}?${params.toString()}`);
+        }
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm("");
+        const params = new URLSearchParams(searchParams);
+        params.delete("search");
+        params.set("page", "1"); // Reset to page 1
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     // Sync state with URL params
     useEffect(() => {
@@ -86,8 +96,17 @@ export default function ProductsTable({
                             placeholder="Cari berdasarkan nama produk, barcode... (Server Search)"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
+                            onKeyDown={handleKeyDown}
+                            className="pl-10 pr-10"
                         />
+                        {searchTerm && (
+                            <button
+                                onClick={handleClearSearch}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
                     <Select
                         value={`${searchParams.get("sortBy") || "created_at"}-${

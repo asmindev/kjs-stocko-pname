@@ -55,23 +55,24 @@ export default function SessionList({
         searchParams?.state || "all"
     );
 
-    // Debounce search
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (searchTerm !== (searchParams?.search || "")) {
-                const params = new URLSearchParams(searchParamsHook);
-                if (searchTerm) {
-                    params.set("search", searchTerm);
-                } else {
-                    params.delete("search");
-                }
-                params.set("page", "1"); // Reset to page 1 on search
-                router.push(`${pathname}?${params.toString()}`);
+    const handleSearch = () => {
+        if (searchTerm !== (searchParams?.search || "")) {
+            const params = new URLSearchParams(searchParamsHook);
+            if (searchTerm) {
+                params.set("search", searchTerm);
+            } else {
+                params.delete("search");
             }
-        }, 500);
+            params.set("page", "1"); // Reset to page 1 on search
+            router.push(`${pathname}?${params.toString()}`);
+        }
+    };
 
-        return () => clearTimeout(timeoutId);
-    }, [searchTerm, router, pathname, searchParamsHook, searchParams?.search]);
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleSearch();
+        }
+    };
 
     // Sync state with URL params (for back/forward navigation)
     useEffect(() => {
@@ -231,6 +232,7 @@ export default function SessionList({
                                     onChange={(e) =>
                                         setSearchTerm(e.target.value)
                                     }
+                                    onKeyDown={handleKeyDown}
                                     className="pl-10"
                                 />
                             </div>

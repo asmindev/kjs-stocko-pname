@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
     Card,
     CardContent,
@@ -11,15 +11,23 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SessionsTable from "./components/SessionsTable";
+import ProductsTable from "./components/ProductsTable";
 import RefreshButton from "./components/RefreshButton";
-import { getConfirmableSessions, getConfirmPageFilters } from "./actions";
+import { getConfirmableSessions, getConfirmableProducts, getConfirmPageFilters } from "./actions";
 import { AlertCircle, CheckCircle2, Users } from "lucide-react";
 
 function ConfirmPageContent() {
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
+    const activeTab = searchParams.get("tab") || "sessions";
+
     const [sessions, setSessions] = useState([]);
+    const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState(null);
+    const [productPagination, setProductPagination] = useState(null);
     const [filters, setFilters] = useState(null);
     const [stats, setStats] = useState({
         totalSessions: 0,
@@ -68,17 +76,58 @@ function ConfirmPageContent() {
         }
     }, [searchParams]);
 
+    const fetchProducts = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const params = {
+                page: searchParams.get("page") || 1,
+                limit: searchParams.get("limit") || 10,
+                search: searchParams.get("search") || "",
+                user: searchParams.get("user") || "",
+                warehouse: searchParams.get("warehouse") || "",
+                location: searchParams.get("location") || "",
+            };
+
+            const result = await getConfirmableProducts(params);
+
+            if (result.success) {
+                setProducts(result.data);
+                setProductPagination(result.pagination);
+                if (result.stats) {
+                    setStats(result.stats);
+                }
+            } else {
+                setError(result.error || "Gagal memuat data produk");
+            }
+        } catch (err) {
+            setError("Terjadi kesalahan saat memuat data produk");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [searchParams]);
+
     useEffect(() => {
         fetchFilters();
     }, []);
 
     useEffect(() => {
-        fetchSessions();
-    }, [fetchSessions]);
+        if (activeTab === "sessions") {
+            fetchSessions();
+        } else {
+            fetchProducts();
+        }
+    }, [activeTab, fetchSessions, fetchProducts]);
 
     const handleRefresh = () => {
-        fetchSessions();
+        if (activeTab === "sessions") {
+            fetchSessions();
+        } else {
+            fetchProducts();
+        }
     };
+
 
     // Statistics from server
     const { totalSessions, totalProducts, totalQuantity } = stats;
@@ -187,41 +236,64 @@ function ConfirmPageContent() {
             )}
 
             {/* Loading skeleton */}
-            {isLoading ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>
-                            <Skeleton className="h-6 w-48" />
-                        </CardTitle>
-                        <CardDescription>
-                            <Skeleton className="h-4 w-96" />
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {[...Array(5)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="flex items-center space-x-4"
-                            >
-                                <Skeleton className="h-4 w-4" />
-                                <Skeleton className="h-4 w-32" />
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-4 w-20" />
-                                <Skeleton className="h-4 w-16" />
-                                <Skeleton className="h-4 w-20" />
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-            ) : (
-                /* Sessions table */
-                <SessionsTable
-                    sessions={sessions}
-                    pagination={pagination}
-                    filters={filters}
-                    onRefresh={handleRefresh}
-                />
-            )}
+            <Tabs defaultValue={activeTab} onValueChange={(value) => {
+                const params = new URLSearchParams(searchParams);
+                params.set("tab", value);
+                params.set("page", "1");
+                router.push(`${pathname}?${params.toString()}`);
+            }}>
+                <TabsList className="mb-4">
+                    <TabsTrigger value="sessions">Daftar Dokumen (Sesi)</TabsTrigger>
+                    <TabsTrigger value="products">Daftar Produk</TabsTrigger>
+                </TabsList>
+                
+                {isLoading ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                <Skeleton className="h-6 w-48" />
+                            </CardTitle>
+                            <CardDescription>
+                                <Skeleton className="h-4 w-96" />
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center space-x-4"
+                                >
+                                    <Skeleton className="h-4 w-4" />
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-4 w-20" />
+                                    <Skeleton className="h-4 w-16" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <>
+                        <TabsContent value="sessions">
+                            <SessionsTable
+                                sessions={sessions}
+                                pagination={pagination}
+                                filters={filters}
+                                onRefresh={handleRefresh}
+                            />
+                        </TabsContent>
+                        <TabsContent value="products">
+                            <ProductsTable
+                                products={products}
+                                pagination={productPagination}
+                                filters={filters}
+                                onRefresh={handleRefresh}
+                            />
+                        </TabsContent>
+                    </>
+                )}
+            </Tabs>
         </div>
     );
 }

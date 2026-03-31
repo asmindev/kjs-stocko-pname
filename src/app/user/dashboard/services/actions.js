@@ -24,10 +24,24 @@ export async function getSessions({ page = 1, limit = 10, search = "" } = {}) {
         };
 
         if (search) {
-            where.name = {
-                contains: search,
-                mode: "insensitive",
-            };
+            where.OR = [
+                {
+                    name: {
+                        contains: search,
+                        mode: "insensitive",
+                    },
+                },
+                {
+                    products: {
+                        some: {
+                            barcode: {
+                                contains: search,
+                                mode: "insensitive",
+                            },
+                        },
+                    },
+                },
+            ];
         }
 
         // Parallel fetch for data and count
