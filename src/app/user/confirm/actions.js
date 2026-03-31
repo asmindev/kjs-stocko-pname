@@ -343,7 +343,9 @@ export async function getConfirmableProducts({
     location = "",
 } = {}) {
     try {
-        const skip = (page - 1) * limit;
+        const pageInt = parseInt(page) || 1;
+        const limitInt = parseInt(limit) || 10;
+        const skip = (pageInt - 1) * limitInt;
         const sessionWhere = { state: "DRAFT" };
         
         if (user) sessionWhere.user = { name: user };
@@ -389,7 +391,7 @@ export async function getConfirmableProducts({
                 },
                 orderBy: { created_at: "desc" },
                 skip,
-                take: limit,
+                take: limitInt,
             }),
             prisma.product.count({ where }),
             prisma.product.aggregate({
@@ -400,12 +402,12 @@ export async function getConfirmableProducts({
             prisma.session.count({ where: sessionWhere }),
         ]);
 
-        const totalPages = Math.ceil(totalCount / limit);
+        const totalPages = Math.ceil(totalCount / limitInt);
 
         return {
             success: true,
             data: products,
-            pagination: { page, limit, totalCount, totalPages },
+            pagination: { page: pageInt, limit: limitInt, totalCount, totalPages },
             stats: {
                 totalSessions: sessionCount,
                 totalProducts: productStats._count._all,
