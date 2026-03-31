@@ -169,6 +169,7 @@ export default function ProductsTable({
                                         <th className="text-left p-2">
                                             Lokasi
                                         </th>
+                                        <th className="text-left p-2">PIC</th>
                                         <th className="text-left p-2">
                                             Status
                                         </th>
@@ -203,6 +204,11 @@ export default function ProductsTable({
                                                         ?.split("/")
                                                         .slice(-2)
                                                         .join("/")}
+                                                </div>
+                                            </td>
+                                            <td className="p-2">
+                                                <div className="text-sm">
+                                                    {product.session?.user?.name || product.User?.name || "—"}
                                                 </div>
                                             </td>
                                             <td className="p-2">

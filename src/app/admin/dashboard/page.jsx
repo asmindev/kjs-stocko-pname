@@ -290,7 +290,9 @@ export default async function page({ searchParams }) {
     const products = await prisma.product.findMany({
         where,
         include: {
-            session: true,
+            session: {
+                include: { user: true },
+            },
             User: true,
         },
         orderBy,
