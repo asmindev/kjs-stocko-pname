@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PaginationControls from "@/components/ui/pagination-controls";
 import SearchInput from "./search-input";
 import { Badge } from "@/components/ui/badge";
-import { StatusFilter } from "./status-filter";
+import { MultiSelectStatusFilter } from "./multi-select-status-filter";
 import { InventoryCombobox } from "@/components/inventory-combobox";
 import { CopyableText } from "@/components/copyable-text";
 import { BrandFilter } from "./brand-filter";
@@ -77,7 +77,7 @@ export default async function Page(props) {
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto justify-end items-end">
                     <InventoryCombobox inventories={inventories} />
                     <BrandFilter brands={brands} />
-                    <StatusFilter />
+                    <MultiSelectStatusFilter />
                     <SearchInput placeholder="Cari barcode / produk..." />
                 </div>
             </div>

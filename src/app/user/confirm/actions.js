@@ -17,8 +17,10 @@ export async function getConfirmableSessions({
     warehouse = "",
     location = "",
 } = {}) {
+    const pageInt = parseInt(page) || 1;
+    const limitInt = parseInt(limit) || 10;
     try {
-        const skip = (page - 1) * limit;
+        const skip = (pageInt - 1) * limitInt;
         const where = {
             state: "DRAFT",
         };
@@ -104,7 +106,7 @@ export async function getConfirmableSessions({
                     created_at: "desc",
                 },
                 skip,
-                take: limit,
+                take: limitInt,
             }),
             prisma.session.count({ where }),
             prisma.product.aggregate({
@@ -139,10 +141,10 @@ export async function getConfirmableSessions({
             success: true,
             data: sessionsWithStats,
             pagination: {
-                page,
-                limit,
+                page: pageInt,
+                limit: limitInt,
                 totalCount,
-                totalPages,
+                totalPages: Math.ceil(totalCount / limitInt),
             },
             stats: {
                 totalSessions: totalCount,

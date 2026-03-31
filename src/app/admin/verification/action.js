@@ -361,6 +361,12 @@ export async function getVerificationData(
             session.user.email
         );
 
+        // Handle multi-select status (comma separated string from URL)
+        let statusArray = null;
+        if (status) {
+            statusArray = status.split(",").filter(Boolean);
+        }
+
         const result = await odoo.client.execute(
             "custom.stock.inventory",
             "get_data_for_verification",
@@ -370,7 +376,7 @@ export async function getVerificationData(
                 page: parseInt(page),
                 limit: parseInt(limit),
                 search_query: search || null,
-                status_filter: status || null,
+                status_filter: statusArray, // Send as array
                 brand_filter: brand || null,
             }
         );
