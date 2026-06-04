@@ -16,7 +16,7 @@ export async function getVerificationLine(lineId) {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // 1. Fetch Odoo Data (Base)
@@ -24,7 +24,7 @@ export async function getVerificationLine(lineId) {
             "custom.stock.inventory",
             "get_verification_line_detail",
             [],
-            { line_id: parseInt(lineId) }
+            { line_id: parseInt(lineId) },
         );
 
         if (!odooResult) return { success: false, error: "Line not found" };
@@ -76,7 +76,7 @@ export async function getInventoryLocationsForEdit() {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const locations = await odoo.getInventoryLocations();
@@ -96,7 +96,7 @@ export async function getOpnameUsers() {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const users = await odoo.client.execute(
@@ -106,7 +106,7 @@ export async function getOpnameUsers() {
             {
                 fields: ["id", "name", "login"],
                 limit: 100,
-            }
+            },
         );
 
         return { success: true, data: users };
@@ -122,7 +122,7 @@ export async function addVerificationEntry(
     qty,
     locationId,
     verifierId,
-    note = ""
+    note = "",
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -131,7 +131,7 @@ export async function addVerificationEntry(
         // 1. Sync to Odoo FIRST (to get verification_id)
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const odooResult = await odoo.client.execute(
@@ -144,7 +144,7 @@ export async function addVerificationEntry(
                 inventory_product_location_id: parseInt(locationId),
                 verifier_id: parseInt(verifierId),
                 note: note || null,
-            }
+            },
         );
 
         if (!odooResult.success) {
@@ -186,7 +186,7 @@ export async function addVerificationEntry(
 export async function deleteVerificationEntry(
     entryId,
     lineId,
-    odooVerificationId = null
+    odooVerificationId = null,
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -201,7 +201,7 @@ export async function deleteVerificationEntry(
         if (odooVerificationId) {
             const odoo = await OdooSessionManager.getClient(
                 session.user.id,
-                session.user.email
+                session.user.email,
             );
 
             const odooResult = await odoo.client.execute(
@@ -211,7 +211,7 @@ export async function deleteVerificationEntry(
                 {
                     verification_id: parseInt(odooVerificationId),
                     line_id: parseInt(lineId),
-                }
+                },
             );
 
             if (!odooResult.success) {
@@ -236,7 +236,7 @@ export async function updateVerificationTotal(
     totalQty,
     locationIds, // Changed to array
     verifierId,
-    note = ""
+    note = "",
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -244,7 +244,7 @@ export async function updateVerificationTotal(
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // 1. Call Odoo to Calculate and Set Total
@@ -258,7 +258,7 @@ export async function updateVerificationTotal(
                 location_ids: locationIds, // Send array
                 verifier_id: parseInt(verifierId),
                 note: note || null,
-            }
+            },
         );
 
         console.log("Odoo calc result:", odooResult);
@@ -286,7 +286,10 @@ export async function updateVerificationTotal(
         await prisma.verificationResult.create({
             data: {
                 odoo_line_id: parseInt(lineId),
-                odoo_verification_id: odooResult.verification_id,
+                odoo_verification_id:
+                    odooResult?.data?.verification_id ??
+                    odooResult?.verification_id ??
+                    null,
                 product_qty: parseFloat(odooResult.diff), // Save the Difference
                 location_id:
                     locationIds.length > 0 ? parseInt(locationIds[0]) : null,
@@ -317,7 +320,7 @@ export async function getVerificationData(
     limit = 20,
     search = "",
     status = null,
-    brand = null
+    brand = null,
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -358,7 +361,7 @@ export async function getVerificationData(
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         // Handle multi-select status (comma separated string from URL)
@@ -378,7 +381,7 @@ export async function getVerificationData(
                 search_query: search || null,
                 status_filter: statusArray, // Send as array
                 brand_filter: brand || null,
-            }
+            },
         );
 
         if (!result) {
@@ -439,7 +442,7 @@ export async function getVerificationData(
                 name: d.name,
             }));
         const uniqueInventories = Array.from(
-            new Map(inventories.map((item) => [item.id, item])).values()
+            new Map(inventories.map((item) => [item.id, item])).values(),
         );
 
         return {
@@ -461,14 +464,14 @@ export async function getBrands() {
 
         const odoo = await OdooSessionManager.getClient(
             session.user.id,
-            session.user.email
+            session.user.email,
         );
 
         const brands = await odoo.client.execute(
             "custom.stock.inventory",
             "get_all_brands",
             [],
-            {}
+            {},
         );
 
         return { success: true, data: brands || [] };

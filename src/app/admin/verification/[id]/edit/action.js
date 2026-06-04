@@ -179,16 +179,20 @@ export async function updateVerificationTotal(
         }
 
         // Save adjustment to Prisma
+        const data = {
+            odoo_line_id: parseInt(lineId),
+            odoo_verification_id: odooResult.data?.verification_id ?? null,
+            product_qty: parseFloat(odooResult.diff),
+            location_id:
+                locationIds.length > 0 ? parseInt(locationIds[0]) : null,
+            verifier_id: parseInt(verifierId),
+            note: finalNote,
+        };
+        console.log("Data to save in Prisma:", data);
+        if (data.odoo_verification_id === null) {
+        }
         await prisma.verificationResult.create({
-            data: {
-                odoo_line_id: parseInt(lineId),
-                odoo_verification_id: odooResult.verification_id,
-                product_qty: parseFloat(odooResult.diff),
-                location_id:
-                    locationIds.length > 0 ? parseInt(locationIds[0]) : null,
-                verifier_id: parseInt(verifierId),
-                note: finalNote,
-            },
+            data,
         });
 
         revalidatePath("/admin/verification");

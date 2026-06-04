@@ -29,6 +29,7 @@ export function ScanHistoryTable({ scans, total }) {
                     <TableRow className="text-xs">
                         <TableHead className="py-2">Qty</TableHead>
                         <TableHead className="py-2">Lokasi</TableHead>
+                        <TableHead className="py-2">Supplier</TableHead>
                         <TableHead className="py-2">Scanner</TableHead>
                         <TableHead className="py-2">Waktu</TableHead>
                     </TableRow>
@@ -57,11 +58,14 @@ export function ScanHistoryTable({ scans, total }) {
                                         "N/A"}
                                 </TableCell>
                                 <TableCell className="py-2">
+                                    {scan.res_partner_name || "-"}
+                                </TableCell>
+                                <TableCell className="py-2">
                                     {scan.User?.name || "-"}
                                 </TableCell>
                                 <TableCell className="py-2 text-muted-foreground">
                                     {new Date(
-                                        scan.created_at
+                                        scan.created_at,
                                     ).toLocaleDateString("id-ID", {
                                         day: "2-digit",
                                         month: "short",
